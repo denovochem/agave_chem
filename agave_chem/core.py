@@ -239,7 +239,7 @@ class AgaveChemMapper():
                     if not smarts_fragment_has_match:
                         reactant_mol_has_substruct_match = False
                 
-                if product_mol_has_substruct_match and reactant_mol_has_substruct_match:
+                if product_mol_has_substruct_match:
                     outcomes = rdc.rdchiralRun(rdc_rxn, rdc_reactants, return_mapped=True)
                     all_outcomes.append(outcomes)
             except:
@@ -312,6 +312,6 @@ class AgaveChemMapper():
                         mapped_outcomes.append('.'.join(reactants_list) +  '>>' + atom_mapped_product)
     
         possible_mappings = list(set(mapped_outcomes))
-        if len(possible_mappings) == 1:
+        if len(possible_mappings) > 0:
             return self._canonicalize_atom_mapping(mapped_outcomes[0])
         return ''
