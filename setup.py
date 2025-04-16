@@ -7,6 +7,11 @@ setup(
     name='agave_chem',
     version='0.0.1',
     packages=find_packages(),
+    package_data={
+        'agave_chem': ['datafiles/*.json'],
+    },
+    include_package_data=True,
+    zip_safe=False,
     install_requires=requirements,
     author='De Novo Chem Team',
     author_email='carson.britt@denovochem.com',
