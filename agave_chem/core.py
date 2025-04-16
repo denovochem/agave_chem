@@ -305,9 +305,9 @@ class AgaveChemMapper():
                             if fragment not in unmapped_outcome.split('.'):
                                 spectators.append(fragment)
                         spectators_string = '.'.join(spectators)
-                        atom_mapped_reactants = spectators_string + mapped_outcome
+                        reactants_list = [ele for ele in [spectators_string, mapped_outcome] if ele != '']
 
-                        mapped_outcomes.append(atom_mapped_reactants +  '>>' + atom_mapped_product)
+                        mapped_outcomes.append('.'.join(reactants_list) +  '>>' + atom_mapped_product)
     
         possible_mappings = list(set(mapped_outcomes))
         if len(possible_mappings) == 1:
