@@ -101,6 +101,8 @@ class AgaveChemMapper():
             # Reverse the SMIRKS pattern (products >> reactants becomes reactants >> products)
             smirks = reaction['smirks'].split('>>')[1] + '>>' + reaction['smirks'].split('>>')[0]
             
+            all_smirks.extend([smirks])
+            
             # Only include patterns that don't expand to too many variations
             if len(self._expand_all_recursively(smirks)) < 100:
                 all_smirks.extend(self._expand_all_recursively(smirks))
