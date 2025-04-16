@@ -26,3 +26,7 @@ print(mapped_reaction)
 ## Documentation
 
 Additional documentation coming soon.
+
+## Reference
+
+Initial reaction SMIRKS came from https://github.com/mrodobbe/Rxn-INSIGHT
