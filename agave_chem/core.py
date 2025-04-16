@@ -4,6 +4,7 @@ from rdchiral import main as rdc
 import json
 from ast import literal_eval
 import re
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 SMIRKS_PATTERNS_FILE = BASE_DIR / 'datafiles' / 'smirks_patterns.json'
