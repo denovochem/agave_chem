@@ -1,0 +1,471 @@
+{
+    "superclasses": [
+      {
+        "id": 1,
+        "name": "Heteroatom Alkylation and Arylation",
+        "description": "Reactions involving the formation of bonds between heteroatoms and carbon atoms",
+        "classes": [
+          {
+            "id": 1,
+            "name": "N-alkylation",
+            "description": "Formation of bonds between nitrogen atoms and alkyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "O-alkylation",
+            "description": "Formation of bonds between oxygen atoms and alkyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "S-alkylation",
+            "description": "Formation of bonds between sulfur atoms and alkyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "N-arylation",
+            "description": "Formation of bonds between nitrogen atoms and aryl groups (Buchwald-Hartwig)",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "O-arylation",
+            "description": "Formation of bonds between oxygen atoms and aryl groups",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Williamson ether synthesis",
+            "description": "Formation of ethers via nucleophilic substitution of alkyl halides with alkoxides",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Acylation and Related Processes",
+        "description": "Reactions involving the introduction of acyl groups (R-C=O) into molecules",
+        "classes": [
+          {
+            "id": 1,
+            "name": "N-acylation",
+            "description": "Formation of bonds between nitrogen atoms and acyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "O-acylation",
+            "description": "Formation of bonds between oxygen atoms and acyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Friedel-Crafts acylation",
+            "description": "Electrophilic aromatic substitution with acyl groups",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Esterification",
+            "description": "Formation of esters from carboxylic acids and alcohols",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Amide formation",
+            "description": "Formation of amides from carboxylic acids or derivatives and amines",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Acid chloride formation",
+            "description": "Formation of acyl chlorides from carboxylic acids",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Deprotections",
+        "description": "Removal of a protecting group for a molecule",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Amine deprotection",
+            "description": "Removal of a protecting group for an amine",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Alcohol deprotection",
+            "description": "Removal of a protecting group for an alcohol",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Carboxylic acid deprotection",
+            "description": "Removal of a protecting group for a carboxylic acid",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Carbonyl deprotection",
+            "description": "Removal of a protecting group for a carbonyl group",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Hydrogenolysis",
+            "description": "Removal of a protecting group by hydrogenolysis",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "C-C bond forming reactions",
+        "description": "Reactions that form carbon-carbon bonds",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Aldol condensation",
+            "description": "Two carbonyl moieties (of aldehydes or ketones) react to form a β-hydroxyaldehyde or β-hydroxyketone (an aldol reaction), and this is then followed by dehydration to give a conjugated enone",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Suzuki coupling",
+            "description": "Palladium-catalyzed cross-coupling reaction of organoboronic acids or esters with organic halides to form a new carbon-carbon bond",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Grignard reaction",
+            "description": "Nucleophilic addition reaction where an organomagnesium halide (Grignard reagent (RMgX)) reacts with a carbonyl to form a new carbon-carbon bond, resulting in the formation of an alcohol",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Diels-Alder reaction",
+            "description": "[4+2] cycloaddition reaction in which a conjugated diene reacts with a dienophile to form a six-membered ring",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Michael addition",
+            "description": "Nucleophilic addition reaction where a nucleophile (Michael donor) attacks the β-carbon of an α,β-unsaturated carbonyl compound (Michael acceptor), forming a new carbon-carbon bond",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Wittig reaction",
+            "description": "Reaction that converts aldehydes and ketones into alkenes using a phosphonium ylide (Wittig reagent), forming carbon-carbon double bonds",
+            "subclasses": []
+          },
+          {
+            "id": 7,
+            "name": "Heck reaction",
+            "description": "Reaction of an unsaturated halide (or triflate) with an alkene in the presence of a base and a palladium catalyst to form a substituted alkene",
+            "subclasses": []
+          },
+          {
+            "id": 8,
+            "name": "Cross coupling reactions",
+            "description": "Reactions where two different fragments are joined",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Functional Group Interconversion (FGI)",
+        "description": "Interconversion of functional groups",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Alcohol to alkyl halide",
+            "description": "Conversion of an alcohol to an alkyl halide",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Acid to ester",
+            "description": "Conversion of an acid to an ester",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Ester to acid",
+            "description": "Conversion of an ester to an acid",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Alkene to alkane",
+            "description": "Conversion of an alkene to an alkane",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Ketone to alcohol",
+            "description": "Conversion of a ketone to an alcohol",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Nitrile to amine",
+            "description": "Conversion of a nitrile to an amine",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Reductions",
+        "description": "Reduction of a molecule",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Carbonyl reduction",
+            "description": "Reduction of a carbonyl group",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Nitro reduction",
+            "description": "Reduction of a nitro group",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Alkene reduction",
+            "description": "Reduction of an alkene to an alkane",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Nitrile reduction",
+            "description": "Reduction of a nitrile to an amine",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Ester reduction",
+            "description": "Reduction of an ester",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Amide reduction",
+            "description": "Reduction of an amide",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Functional Group Addition (FGA)",
+        "description": "Addition of a functional group to a molecule",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Hydroxylation",
+            "description": "Installation of a hydroxyl group (−OH) into an organic compound",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Halogenation",
+            "description": "Reaction that introduces one or more halogens into a chemical compound",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Sulfonation",
+            "description": "A sulfonic acid group (-SO3H) replaces a hydrogen atom on an aromatic ring",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Nitration",
+            "description": "Introduction of a nitro group (-NO2) into a molecule, typically by replacing a hydrogen atom",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Carboxylation",
+            "description": "Reaction where carbon dioxide (CO2) is incorporated into an organic molecule, typically resulting in the formation of a carboxylic acid group (-COOH) or a similar functional group",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "name": "Heterocycle Formation",
+        "description": "Formation of heterocycles",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Pyridine synthesis",
+            "description": "Synthesis of pyridine (C5H5N)",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Indole synthesis",
+            "description": "Synthesis of indole (C8H7N)",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Pyrrole synthesis",
+            "description": "Synthesis of pyrrole (C4H5N)",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Furan synthesis",
+            "description": "Synthesis of furan (C4H4O)",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Thiophene synthesis",
+            "description": "Synthesis of thiophene (C4H4S)",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Oxazole synthesis",
+            "description": "Synthesis of oxazole (C4H5N)",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "name": "Protections",
+        "description": "Addition of a protecting group to a molecule",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Alcohol protection",
+            "description": "Addition of a protecting group to an alcohol",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Amine protection",
+            "description": "Addition of a protecting group to an amine",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Carbonyl protection",
+            "description": "Addition of a protecting group to a carbonyl group",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Carboxylic acid protection",
+            "description": "Addition of a protecting group to a carboxylic acid",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Thiol protection",
+            "description": "Addition of a protecting group to a thiol",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "name": "Oxidations",
+        "description": "Oxidation of an organic molecule",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Alcohol oxidation",
+            "description": "Oxidation of alcohols",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Alkene oxidation",
+            "description": "Oxidation of alkenes",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Aldehyde oxidation",
+            "description": "Oxidation of aldehydes",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Baeyer-Villiger oxidation",
+            "description": "Formation of an ester from a ketone or a lactone from a cyclic ketone, using peroxyacids or peroxides as the oxidant",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Epoxidation",
+            "description": "Addition of a single oxygen atom across a carbon-carbon double bond, forming an oxirane",
+            "subclasses": []
+          },
+          {
+            "id": 6,
+            "name": "Sulfide oxidation",
+            "description": "Oxidation of sulfides",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "name": "Resolutions",
+        "description": "Separation of a racemic mixture into its respective enantiomers",
+        "classes": [
+          {
+            "id": 1,
+            "name": "Crystallization",
+            "description": "Solid formation from a solution, gas, or liquid, resulting in a highly structured crystal with a well-defined three-dimensional lattice",
+            "subclasses": []
+          },
+          {
+            "id": 2,
+            "name": "Enzymatic resolution",
+            "description": "An enzyme preferentially binds one enantiomer and performs a chemical reaction on it",
+            "subclasses": []
+          },
+          {
+            "id": 3,
+            "name": "Kinetic resolution",
+            "description": "Selective transformation of one enantiomer of a racemic mixture into a product at a faster rate than the other enantiomer",
+            "subclasses": []
+          },
+          {
+            "id": 4,
+            "name": "Chiral chromatography",
+            "description": "Separation of enantiomers of chiral compounds by chromatographic methods",
+            "subclasses": []
+          },
+          {
+            "id": 5,
+            "name": "Diastereomeric salt formation",
+            "description": "Formation of a diastereomeric salt when an enantiomerically pure acid or base reacts with a racemic mixture of the complementary acid or base, creating a mixture of diastereomers",
+            "subclasses": []
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "name": "Uncategorized",
+        "description": "Uncategorized reactions",
+        "classes": []
+      }
+    ]
+}
