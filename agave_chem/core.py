@@ -300,7 +300,14 @@ class AgaveChemMapper():
                         if fragment not in unmapped_reactants.split('.'):
                             all_fragments_present = False
                     if all_fragments_present:
-                        mapped_outcomes.append(mapped_outcome + '>>' + atom_mapped_product)
+                        spectators = []
+                        for fragment in unmapped_reactants.split('.'):
+                            if fragment not in unmapped_outcome.split('.'):
+                                spectators.append(fragment)
+                        spectators_string = '.'.join(spectators)
+                        atom_mapped_reactants = spectators_string + mapped_outcome
+
+                        mapped_outcomes.append(atom_mapped_reactants +  '>>' + atom_mapped_product)
     
         possible_mappings = list(set(mapped_outcomes))
         if len(possible_mappings) == 1:
