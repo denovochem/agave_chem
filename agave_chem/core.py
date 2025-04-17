@@ -312,6 +312,6 @@ class AgaveChemMapper():
                         mapped_outcomes.append('.'.join(reactants_list) +  '>>' + atom_mapped_product)
     
         possible_mappings = list(set(mapped_outcomes))
-        if len(possible_mappings) == 0:
+        if len(possible_mappings) == 1:
             return self._canonicalize_atom_mapping(mapped_outcomes[0])
         return ''
