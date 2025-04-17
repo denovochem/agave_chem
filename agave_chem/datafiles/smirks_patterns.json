@@ -118,9 +118,9 @@
 {"name": "N-alkylation of primary amines with alkyl halides", "smirks": "[#7;H2;D1;+0:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H1;D2;+0:2]-[C;+0:3]", "superclass_id": 1}
 {"name": "N-alkylation of secondary amines with alkyl halides", "smirks": "[#7;H1;D2;+0:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H0;D3;+0:2]-[C;+0:3]", "superclass_id": 1}
 {"name": "Reduction of nitro groups to amines", "smirks": "[N;H0;D3;+1:2](=[O;H0;D1;+0])-[O;H0;D1;-1]>>[N;H2;D1;+0:2]", "superclass_id": 6}
-{"name": "Acyl chlorides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl;H0;D1;+0]", "superclass_id": 5}
-{"name": "Acyl bromides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Br;H0;D1;+0]", "superclass_id": 5}
-{"name": "Acyl iodides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[I;H0;D1;+0]", "superclass_id": 5}
+{"name": "Acyl chlorides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[Cl:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl;H0;D1;+0:5]", "superclass_id": 5}
+{"name": "Acyl bromides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[Br:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Br;H0;D1;+0:5]", "superclass_id": 5}
+{"name": "Acyl iodides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[I:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[I;H0;D1;+0:5]", "superclass_id": 5}
 {"name": "Alkyl chlorides from alcohols", "smirks": "[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[O;H1;D1;+0]>>[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[Cl;H0;D1;+0]", "superclass_id": 5}
 {"name": "Alkyl bromides from alcohols", "smirks": "[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[O;H1;D1;+0]>>[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[Br;H0;D1;+0]", "superclass_id": 5}
 {"name": "Alkyl iodides from alcohols", "smirks": "[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[O;H1;D1;+0]>>[#6;!$([#6]-[C;H0;D3;+0](=[O;H0;D1;+0]));+0:2]-[I;H0;D1;+0]", "superclass_id": 5}
