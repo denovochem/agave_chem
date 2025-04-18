@@ -24,7 +24,7 @@
 {"name": "O-alkylation of amides with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:4].[C;+0:5]=[N;H0;D2;+1:6]=[N;H0;D1;-1:7]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H0;D3;+0:4]-[C;+0:5]", "superclass_id": 1}
 {"name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones", "smirks": "[C;H1;D3;+0:2]-[O;H1;D1;+0:3]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])", "superclass_id": 10}
 {"name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones", "smirks": "[C;+0:2]-[O;H1;D1;+0:3]>>[C;+0:2](=[O;H0;D1;+0:3])", "superclass_id": 10}
-{"name": "Williamson Ether Synthesis", "smirks": "[#6;+0:2]-[O;H1;D1;+0:3].[#6;+0:4]-[F,Br,I,Cl]>>[#6;+0:2]-[O;H0;D2;+0:3]-[#6;+0:4]", "superclass_id": 1}
+{"name": "Williamson Ether Synthesis", "smirks": "[#6;+0:1]-[O;H1;D1;+0:3].[#6;+0:2]-[F,Br,I,Cl]>>[C;+0!$(C=O):1]-[O;H0;D2;+0:3]-[C;+0!$(C=O):2]", "superclass_id": 1}
 {"name": "Williamson Ether Synthesis (intra to epoxy)", "smirks": "[F,Cl,Br,I]-[C;+0:1]-[C;+0:2]-[O;H1;D1;+0:3]>>[C;+0:1]1-[C;+0:2]-[O;H0;D2;+0:3]-1", "superclass_id": 1}
 {"name": "Aminolysis of esters", "smirks": "[#6:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4].[N;H1,H2;+0:5]>>[#6:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0:5]", "superclass_id": 2}
 {"name": "Formation of Sulfonic Esters", "smirks": "[*:8]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I;H0;D1;+0:5].[#6;+0:6]-[O;H1;D1;+0:7]>>[#6;+0:6]-[O;H0;D2;+0:7]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[*:8]", "superclass_id": 5}
