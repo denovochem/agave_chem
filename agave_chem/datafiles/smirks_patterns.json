@@ -182,12 +182,10 @@
 {"name": "Primary alkyl halide to alcohol", "smirks": "[O;H1;D0;-1:2].[C;H2;+0:1]-[Cl,Br,I]>>[C;H2;+0:1]-[O;H1;D1;+0:2]", "superclass_id": 5}
 {"name": "Secondary alkyl halide to alcohol", "smirks": "[O;H2;D0;+0:2].[C;H1;+0:1]-[Cl,Br,I]>>[C;H1;+0:1]-[O;H1;D1;+0:2]", "superclass_id": 5}
 {"name": "Secondary alkyl halide to alcohol", "smirks": "[O;H1;D0;-1:2].[C;H1;+0:1]-[Cl,Br,I]>>[C;H1;+0:1]-[O;H1;D1;+0:2]", "superclass_id": 5}
-
 {"name": "Primary alcohol to alkyl halide", "smirks": "[C;H2;+0:1]-[O;H1;D1;+0].[Cl,Br,I:2]>>[C;H2;+0:1]-[Cl,Br,I:2]", "superclass_id": 5}
 {"name": "Primary alcohol to alkyl halide", "smirks": "[C;H2;+0:1]-[O;H1;D1;+0].[Cl,Br,I:2]>>[C;H2;+0:1]-[Cl,Br,I:2]", "superclass_id": 5}
 {"name": "Secondary alcohol to alkyl halide", "smirks": "[C;H1;+0:1]-[O;H1;D1;+0].[Cl,Br,I:2]>>[C;H1;+0:1]-[Cl,Br,I:2]", "superclass_id": 5}
 {"name": "Secondary alcohol to alkyl halide", "smirks": "[C;H1;+0:1]-[O;H1;D1;+0].[Cl,Br,I:2]>>[C;H1;+0:1]-[Cl,Br,I:2]", "superclass_id": 5}
-
 {"name": "anti-Markovnikov alkene hydration to alcohol", "smirks": "[C;+0:1]=[C;H2;+0:2]>>[C;!$(CO);+0:1]-[C;!$(C=O);+0:2]-[O;H1;D1;+0]", "superclass_id": 7}
 {"name": "Markovnikov alkene hydration to alcohol", "smirks": "[C;H2;+0:1]=[C;H0,H1;+0:2]>>[C;!$(CO);+0:1]-[C;!$(C=O);+0:2]-[O;H1;D1;+0]", "superclass_id": 7}
 {"name": "Alkene oxidation to aldehyde", "smirks": "[C;!H2;+0:1]=[C;+0:2]>>[C;+0:1]=[O;H0;D1;+0]", "superclass_id": 10}
