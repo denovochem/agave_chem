@@ -87,7 +87,7 @@
 {"name": "Reaction of alkyl halides with organometallic coumpounds", "smirks": "[Li,Na]-[#6;+0:2].[#6;+0:3]-[Br,I]>>[#6;+0:2]-[#6;+0:3]", "superclass_id": 4}
 {"name": "Preparation of organolithium compounds", "smirks": "[Li:3].[#6;+0:2]-[Br,I]>>[#6;+0:2]-[Li:3]", "superclass_id": 5}
 {"name": "Intramolecular transesterification\\/Lactone formation", "smirks": "[O;H0;D2;+0]-[#6;H0;D3;+0:7](=[O;D1;H0:8])~[*:2]~[*:3]~[#6;+0:4]-[O;D1;H1;+0:5]>>[#6;H0;D3;+0:7]1(=[O;D1;H0:8])~[*:2]~[*:3]~[#6;+0:4]-[O;H0;D2;+0:5]1", "superclass_id": ""}
-{"name": "Transesterification", "smirks": '[CX4;D2]-[O;H0;D2;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[O;H1;D1;+0:3]-[C;D2;+0:2]>>[CX4:2]-[O;H0;D2;+0:3]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]', "superclass_id": 5}
+{"name": "Transesterification", "smirks": "[CX4;D2]-[O;H0;D2;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[O;H1;D1;+0:3]-[C;D2;+0:2]>>[CX4:2]-[O;H0;D2;+0:3]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]", "superclass_id": 5}
 {"name": "Suzuki coupling with boronic acids", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3][Cl,Br,I]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3]", "superclass_id": 4}
 {"name": "Suzuki coupling with boronic acids OTf", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3]", "superclass_id": 4}
 {"name": "Suzuki coupling with sulfonic esters", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[S;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[#6;$([#6]~[#6]:[#6]),$([#6]-[#9]);+0]>>[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]", "superclass_id": 4}
@@ -192,7 +192,7 @@
 {"name": "Alcohol to azide", "smirks": "[*]-[N;H0;D2;+0:2]=[N;H0;D2;+1:3]=[N;H0;D1;-1:4].[#6;+0:1]-[O;H1;D1;+0]>>[#6;+0:1]-[N;H0;D2;+0:2]=[N;H0;D2;+1:3]=[N;H0;D1;-1:4]", "superclass_id": 5}
 {"name": "Aldol condensation", "smirks": "[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5].[C;+0:6]=[O;H0;D1;+0]>>[C;+0:6]=[C;H0;D3;+0:2](-[*:1])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5]", "superclass_id": 4}
 {"name": "Aldol condensation", "smirks": "[*:1]-[C;H1;D3;+0:2](-[*:8])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5].[C;+0:6]=[O;H0;D1;+0:7]>>[C;+0:6](-[O;H1;D1;+0:7])-[C;H0;D4;+0:2](-[*:1])(-[*:8])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5]", "superclass_id": 4}
-{"name": "Aldol condensation", "smirks": '[C:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5].[C;+0:6]=[O;H0;D1;+0]>>[C;+0:6]=[C:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5]', "superclass_id": 4}
+{"name": "Aldol condensation", "smirks": "[C:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5].[C;+0:6]=[O;H0;D1;+0]>>[C;+0:6]=[C:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:5]", "superclass_id": 4}
 {"name": "Hydrogenation (double to single)", "smirks": "[C;+0:1]=[C;+0:2]>>[C;+0:1]-[C;+0:2]", "superclass_id": 5}
 {"name": "Hydrogenation (triple to double)", "smirks": "[C;+0:1]#[C;+0:2]>>[C;+0:1]=[C;+0:2]", "superclass_id": 5}
 {"name": "Oxidative esterification of primary alcohols", "smirks": "[C;H2,H3;+0:1]-[O;H1;D1;+0:2].[*:3]-[C;H2;D2;+0:4]-[O;H1;D1;+0:5]>>[#6:1]-[O;H0;D2;+0:2]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[*:3]", "superclass_id": 10}
@@ -574,4 +574,4 @@
 {"name": "Oxime formation", "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[OH;D1;+0:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[O;D1;H1:5])", "superclass_id": None}
 {"name": "Imine formation", "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[#6:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[#6:5])", "superclass_id": None}
 {"name": "Imine reduction", "smirks": "[C;+0:2](=[N;H0;D2;+0:4]-[#6:5])>>[C;+0:2](-[N;H1;D2;+0:4]-[#6:5])", "superclass_id": None}
-{'name': "Tert-butyl deprotection of alcohol', "smirks': "C-C(-C)(-C)-[O;D2;+0:2]>>[OH;D1;+0:2]', "superclass_id': 3}
+{"name": "Tert-butyl deprotection of alcohol", "smirks": "C-C(-C)(-C)-[O;D2;+0:2]>>[OH;D1;+0:2]", "superclass_id": 3}
