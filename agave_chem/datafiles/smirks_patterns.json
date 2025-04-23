@@ -48,7 +48,7 @@
 {"name": "Preparation of boronic acids without boronic ether", "smirks": "[#6;+0:6]-[Br]>>[O;H1;D0;+0:2]-[B;H0;D3;+0:3](-[#6;+0:6])-[O;H1;D0;+0:4]", "superclass_id": 5}
 {"name": "Preparation of boronic acids from trifluoroborates", "smirks": "[#6;+0:2]-[B;H0;D4;-1:3](-[F;H0;D1;+0])(-[F;H0;D1;+0])-[F;H0;D1;+0]>>[O;H1;+0]-[B;H0;D3;+0:3](-[#6;+0:2])-[O;H1;+0]", "superclass_id": 5}
 {"name": "Preparation of boronic acids", "smirks": "[#6;+0:2]-[B;H0;D3;+0:3](-[O;H0;D2;+0:4]-[*])-[O;H0;D2;+0:5]-[*]>>[O;H1;+0:5]-[B;H0;D3;+0:3](-[#6;+0:2])-[O;H1;+0:4]", "superclass_id": 5}
-{"name": "Preparation of boronic ethers", "smirks": "[Br]-[c;H0;D3;+0:2].[*]-[B;H0;D3;+0:5](-[O;H0;D2;+0:6]-[*])-[O;H0;D2;+0:7]-[*]>>[*]-[O;H0;D2;+0:6]-[B;H0;D3;+0:5](-[O;H0;D2;+0:7]-[*])-[c;H0;D3;+0:2]", "superclass_id": 5}
+{"name": "Preparation of boronic ethers", "smirks": "[Br]-[c;H0;D3;+0:2].[*]-[B;H0;D3;+0:5](-[O;H0;D2;+0:6]-[*:9])-[O;H0;D2;+0:7]-[*:10]>>[*:9]-[O;H0;D2;+0:6]-[B;H0;D3;+0:5](-[O;H0;D2;+0:7]-[*:10])-[c;H0;D3;+0:2]", "superclass_id": 5}
 {"name": "Azide to amine reduction (Staudinger)", "smirks": "[#6;+0:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[N;H2;D1;+0:3]-[#6;+0:2]", "superclass_id": 6}
 {"name": "P-cleavage", "smirks": "O-P(=O)(-O)-[NH;D2;+0:2]-[C:3]>>[Cl,Br,I,F].[C:3]-[NH2;D1;+0:2]", "superclass_id": 5}
 {"name": "P-cleavage", "smirks": "O-P(=O)(-O)-[NH;D2;+0:2]-[C:3]>>[C:3]-[NH2;D1;+0:2]", "superclass_id": 5}
