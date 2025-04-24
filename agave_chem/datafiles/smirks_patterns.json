@@ -78,7 +78,7 @@
 {"name": "Grignard with CO2 to carboxylic acid", "smirks": "[O;H0;D1;+0:1]=[C;H0;D2;+0:2]=[O;H0;D1;+0:3].[*:4]-[Mg]-[Br]>>[*:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:1])-[O;H1;D1;+0:3]", "superclass_id": 4}
 {"name": "Grignard from aldehyde to alcohol", "smirks": "[#6;+0:2]-[Mg]-[Br,I,Cl].[*:3]-[C;H1;D2;+0:4](=[O;H0;D1;+0:5])>>[*:3]-[C;H1;D3;+0:4](-[O;H1;D1;+0:5])-[#6;+0:2]", "superclass_id": 4}
 {"name": "Grignard from ketone to alcohol", "smirks": "[#6;+0:2]-[Mg]-[Br,I,Cl].[*:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[#6;+0:6]>>[*:3]-[C;H0;D4;+0:4](-[O;H1;D1;+0:5])(-[#6;+0:6])-[#6;+0:2]", "superclass_id": 4}
-{"name": "Grignard from nitrile to ketone", "smirks": "[#6;+0:2]-[C;H0;D2;+0:3]#[#7;D1;+0].[Cl,Br,I]-[Mg]-[#6;$([#6]~[#6]);!$([#6]([Cl,Br,I])[Cl,Br,I]);!$([#6]=O):4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0])-[#6;+0:4]", "superclass_id": 4}
+{"name": "Grignard from nitrile to ketone", "smirks": "[#6;+0:2]-[C;H0;D2;+0:3]#[#7;D1;+0].[Cl,Br,I]-[Mg]-[#6;$([#6]~[#6]);!$([#6]([Cl,Br,I])[Cl,Br,I]);!$([#6]=O):4].[O;D0;+0:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[#6;+0:4]", "superclass_id": 4}
 {"name": "Olefination of ketones with Grignard reagents", "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0])-[*:4].[#6;+0:5]-[Mg]-[Br,I,Cl]>>[*:2]-[C;H0;D3;+0:3](=[#6;+0:5])-[*:4]", "superclass_id": 4}
 {"name": "Olefination of aldehydes with Grignard reagents", "smirks": "[*:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0]).[#6;+0:4]-[C;H2;D2:5]-[Mg]-[Br,I,Cl]>>[*:2]-[C;H0;D3;+0:3](=[#6;+0:5])-[#6;+0:4]", "superclass_id": 4}
 {"name": "Preparation of trialkylsilanes with Grignard reagents", "smirks": "[#6;+0:2]-[Mg]-[Br].[#6;+0:3]-[Mg]-[Br].[#6;+0:4]-[Mg]-[Br].[#6;+0:5]-[Si;H0;D4;+0:6](-[Cl])(-[Cl])-[Cl]>>[#6;+0:5]-[Si;H0;D4;+0:6](-[#6;+0:2])(-[#6;+0:3])-[#6;+0:4]", "superclass_id": 1}
@@ -169,7 +169,8 @@
 {"name": "Ester saponification (alkyl deprotection)", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4]-[CX4;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 3}
 {"name": "Oxidation of ketone to carboxylic acid", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of alcohol to carboxylic acid", "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
-{"name": "Oxidation of nitrile to carboxylic acid", "smirks": "[C;H0;D2;+0:2]#[N;H0;D1;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0])-[O;H1;D1;+0]", "superclass_id": 10}
+{"name": "Oxidation of nitrile to carboxylic acid with water", "smirks": "[C;H0;D2;+0:2]#[N;H0;D1;+0].[O;D0;+0:3].[O;D0;+0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
+{"name": "Oxidation of nitrile to carboxylic acid with base", "smirks": "[C;H0;D2;+0:2]#[N;H0;D1;+0].[OH;D0;-1:3].[OH;D0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Aryl halide to carboxylic acid", "smirks": "[c:2]-[Br,Cl,I;H0;D1;+0]>>[c;H0;D3;+0:2]-[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H1;D1;+0]", "superclass_id": 7}
 {"name": "Oxidation of amide to carboxylic acid", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Reduction of ester to primary alcohol", "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0]-[*]>>[*:1]-[C;H2;D2;+0:2]-[O;H1;D1;+0:3]", "superclass_id": 6}
@@ -196,8 +197,9 @@
 {"name": "Hydrogenation (double to single)", "smirks": "[C;+0:1]=[C;+0:2]>>[C;+0:1]-[C;+0:2]", "superclass_id": 5}
 {"name": "Hydrogenation (triple to double)", "smirks": "[C;+0:1]#[C;+0:2]>>[C;+0:1]=[C;+0:2]", "superclass_id": 5}
 {"name": "Oxidative esterification of primary alcohols", "smirks": "[C;H2,H3;+0:1]-[O;H1;D1;+0:2].[*:3]-[C;H2;D2;+0:4]-[O;H1;D1;+0:5]>>[#6:1]-[O;H0;D2;+0:2]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[*:3]", "superclass_id": 10}
-{"name": "Nitrile to amide", "smirks": "[C;H0;D2;+0:1]#[N;H0;D1;+0:2]>>[C;H0;D3;+0:1](=[O;H0;D1;+0])-[N;H2;D1;+0:2]", "superclass_id": 5}
-{"name": "Alcohol to ether", "smirks": "[C;+0!$(C=O):1]-[O;H0;D2;+0:3]-[C;+0!$(C=O):2]>>[C;H2,H3;+0:1]-[O;H1;D1;+0].[C;+0:2]-[O;H1;D1;+0:3]", "superclass_id": 1}
+{"name": "Nitrile to amide water", "smirks": "[C;H0;D2;+0:1]#[N;H0;D1;+0:2].[O;D0;+0:3]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:3])-[N;H2;D1;+0:2]", "superclass_id": 5}
+{"name": "Nitrile to amide base", "smirks": "[C;H0;D2;+0:1]#[N;H0;D1;+0:2].[OH;D0;-1:3]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:3])-[N;H2;D1;+0:2]", "superclass_id": 5}
+{"name": "Alcohol to ether", "smirks": "[C;H2,H3;+0:1]-[O;H1;D1;+0].[C;+0:2]-[O;H1;D1;+0:3]>>[C;+0!$(C=O):1]-[O;H0;D2;+0:3]-[C;+0!$(C=O):2]", "superclass_id": 1}
 {"name": "Negishi coupling", "smirks": "[#6:2]-[Cl,Br,I].[Cl,Br,I]-[Zn]-[#6:3]>>[#6:3]-[#6:2]", "superclass_id": 4}
 {"name": "N-arylation (d-Hartwig\\/Ullmann-Goldberg)", "smirks": "[Cl,Br,I]-[c;$(c1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):2].[N;$([N]-[#6])&!$(N=*)&!$([N-])&!$(N#*)&!$([ND3])&!$([ND4])&!$(N[O])&!$(N[C,S]=[S,O,N]),H2&$(Nc1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):3]>>[c:2]-[N:3]", "superclass_id": ""}
 {"name": "Heck terminal vinyl", "smirks": "[#6;c,$([C;H0;D3](=[O;H0;D1])-[O,N]),$(C#N):4]-[#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5]-[Cl,Br,I]>>[#6:5]-[#6:2]=[#6:3]-[#6:4]", "superclass_id": 4}
@@ -209,11 +211,11 @@
 {"name": "Diels-Alder (ON bond)", "smirks": "[N:1]~[O:2].[C;+0:3]=[C;+0:4]-[C;+0:5]=[C;+0:6]>>[N:1]1-[O:2]-[C;+0:3]-[C;+0:4]=[C;+0:5]-[C;+0:6]-1", "superclass_id": 8}
 {"name": "Retro-Diels-Alder from oxazole", "smirks": "[#6;+0:1]-[c;H0;D3;+0:2]1:[n;+0:3]:[c;+0]:[o;+0]:[c;+0]:1>>[#6;+0:1]-[C;H0;D2;+0:2]#[N;H0;D1;+0:3]", "superclass_id": 5}
 {"name": "Oxidation of alcohol and aldehyde to ester", "smirks": "[#6;+0:1]-[O;H1;D1;+0:2].[C;H1;D2;+0:3](=[O;H0;D1;+0:4])-[#6;+0:5]>>[#6;+0:1]-[O;H0;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:5]", "superclass_id": 10}
-{"name": "Schmidt reaction nitrile", "smirks": "[C;H1;D2;+0:2]=[O;H0;D1;+0]>>[C;H0;D2;+0:2]#[N;H0;D1;+0]", "superclass_id": 5}
-{"name": "Schmidt reaction acid_amine", "smirks": "[#6;+0:1]-[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H1;D1;+0]>>[#6;+0:1]-[N;H2;D1;+0]", "superclass_id": 5}
-{"name": "Schmidt reaction alkene", "smirks": "[*:1]-[C;+0:2]=[C;+0:3]-[*:4]>>[*:1]-[C;+0:2]-[C;+0:3]=[N;+0]-[*:4]", "superclass_id": 5}
-{"name": "Schmidt ketone amide", "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0]-[*:4]", "superclass_id": 5}
-{"name": "Schmidt aldehyde amide", "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0:3])>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H2;D1;+0]", "superclass_id": 5}
+{"name": "Schmidt reaction nitrile", "smirks": "[C;H1;D2;+0:2]=[O;H0;D1;+0].[NH3;D0;+0:5]>>[C;H0;D2;+0:2]#[N;H0;D1;+0]", "superclass_id": 5}
+{"name": "Schmidt reaction acid_amine", "smirks": "[#6;+0:1]-[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H1;D1;+0].[NH3;D0;+0:5]>>[#6;+0:1]-[N;H2;D1;+0:5]", "superclass_id": 5}
+{"name": "Schmidt reaction alkene", "smirks": "[*:1]-[C;+0:2]=[C;+0:3]-[*:4].[NH3;D0;+0:5]>>[*:1]-[C;+0:2]-[C;+0:3]=[N;+0:5]-[*:4]", "superclass_id": 5}
+{"name": "Schmidt ketone amide", "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4].[NH3;D0;+0:5]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]-[*:4]", "superclass_id": 5}
+{"name": "Schmidt aldehyde amide", "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[NH3;D0;+0:5]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H2;D1;+0:5]", "superclass_id": 5}
 {"name": "Mignonac reaction", "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0])-[*:4]>>[*:1]-[C;H0;D3;+0:2](-[N;H2;D1;+0])-[*:4]", "superclass_id": 5}
 {"name": "Reductive amination with aldehyde", "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]-[C;H1;D2;+0:5](=[O;H0;D1;+0])>>[*:4]-[C;H2;D2;+0:5]-[N;H1;D2;+0:3]-[#6;+0:2]", "superclass_id": 5}
 {"name": "Reductive amination with ketone", "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]-[C;H0;D3;+0:5](=[O;H0;D1;+0])-[*:6]>>[*:4]-[C;H1;D3;+0:5](-[*:6])-[N;H1;D2;+0:3]-[#6;+0:2]", "superclass_id": 5}
@@ -221,7 +223,6 @@
 {"name": "Pauson-Khand reaction", "smirks": "[#6;+0:1]=[#6;+0:2].[#6;+0:3]#[#6;+0:4].[O;H0;D1;+1:5]#[C;H0;D1;-1:6]>>[#6;+0:3]1=[#6;+0:4]-[C;+0:6](=[O;H0;D1;+0:5])-[#6;+0:1]-[#6;+0:2]-1", "superclass_id": 8}
 {"name": "Huisgen alkyne-azide 1,3 dipolar cycloaddition", "smirks": "[#6:1]-[N;H0;D2;+0:8]=[N;H0;D2;+1:9]=[N;H0;D1;-1:10].[*:2]-[#6;H0;D2;+0:3]#[#6;H0;D2;+0:4]-[*:5]>>[*:2]-[c;+0:3]1:[c;H1;D2;+0:4](-[*:5]):[n;+0:8](-[#6:1]):[n;+0:9]:[n;+0:10]:1", "superclass_id": 8}
 {"name": "Huisgen alkyne-azide 1,3 dipolar cycloaddition", "smirks": "[#6:1]-[N;H0;D2;+0:8]=[N;H0;D2;+1:9]=[N;H0;D1;-1:10].[#6;+0:3]#[C;H1;D1;+0:4]>>[c;+0:3]1:[c;H1;D2;+0:4]:[n;+0:8](-[#6:1]):[n;+0:9]:[n;+0:10]:1", "superclass_id": 8}
-{"name": "Huisgen 1,3 dipolar cycloaddition", "smirks": "[#6:1]-[Cl,Br,I].[#6;+0:3]#[C;H1;D1;+0:4]>>[c;+0:3]1:[c;H1;D2;+0:4]:[n;+0](-[#6:1]):[n;+0]:[n;+0]:1", "superclass_id": 8}
 {"name": "Huisgen alkene-azide 1,3 dipolar cycloaddition", "smirks": "[*]-[C;D2;+0:2]=[C;D2;+0:3]-[*:4].[#6:7]-[N;H0;D2;+0:8]=[N;H0;D2;+1:9]=[N;H0;D1;-1:10]>>[*:4]-[c;+0:3]1:[c;H0;D2;+0:2]:[n;+0:8](-[#6:7]):[n;H0;D2;+0:9]:[n;H0;D2;+0:10]:1", "superclass_id": 8}
 {"name": "Pyrazole formation", "smirks": "[N;H2;D1;+0:1]-[N;H1;D2;+0:2]-[*:3].[#6;+0:4](=[O;H0;D1;+0])-[#6;+0:5]-[#6;+0:6](=[O;H0;D1;+0])>>[c;+0:4]1:[c;+0:5]:[c;+0:6]:[n:2](-[*:3]):[n:1]:1", "superclass_id": 8}
 {"name": "Thiol-ene reaction", "smirks": "[C;+0:1]=[C;+0:2].[#6;+0:3]-[S;H1;D0;+0:5]>>[#6;+0:3]-[S;H1;D0;+0:5]-[C;+0:1]-[C;+0:2]", "superclass_id": 1}
@@ -237,15 +238,15 @@
 {"name": "thia-Michael addition", "smirks": "[*:2]-[S;H1;D1;+0:3].[CX3;!H0;+0:4]=[CX3;H1;D2;+0:5]-[CX3;H0;+0:6]=[O;H0;D1;+0:7]>>[*:2]-[S;H0;D2;+0:3]-[CX4;+0:4]-[CX4;H2;+0:5]-[CX3;H0;+0:6]=[O;H0;D1;+0:7]", "superclass_id": 1}
 {"name": "oxa-Michael addition", "smirks": "[*:2]-[O;H1;D1;+0:3].[CX3;+0:4]=[CX3;!H2;+0:5]>>[*:2]-[O;H0;D2;+0:3]-[CX4;+0:4]-[CX4;+0:5]", "superclass_id": 1}
 {"name": "Arene hydrogenation", "smirks": "[c:1]1:[c:2]:[c:3]:[c:4]:[c:5]:[c:6]:1>>[C:1]1-[C:2]-[C:3]-[C:4]-[C:5]-[C:6]-1", "superclass_id": 6}
-{"name": "Hydration of alkyne to ketone", "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0])-[C;H3;D1;+0:3]", "superclass_id": 5}
-{"name": "Hydration of alkyne to aldehyde", "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3]>>[*:1]-[C;H2;D2;+0:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0])", "superclass_id": 5}
+{"name": "Hydration of alkyne to ketone", "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[O;D0;H2;+0:4]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:4])-[C;H3;D1;+0:3]", "superclass_id": 5}
+{"name": "Hydration of alkyne to aldehyde", "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[O;D0;H2;+0:4]>>[*:1]-[C;H2;D2;+0:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0:4])", "superclass_id": 5}
 {"name": "Ketone from Weinreb amide", "smirks": "[*:1]-[Mg]-[Br].[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H0;D3;+0]-[O;H0;D2;+0]>>[*:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:2]", "superclass_id": 4}
 {"name": "Aerobic oxidation of Grignard reagents", "smirks": "[c:1]-[Mg]-[Br]>>[c:1]-[O;H1;D1;+0]", "superclass_id": 10}
 {"name": "A3 coupling", "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0]).[*:3]-[N;H1;D2;+0:4]-[*:5].[*:6]-[C;H0;D2;+0:7]#[C;H1;D1;+0:8]>>[*:6]-[C;H0;D2;+0:7]#[C;H0;D2;+0:8]-[C;H1;D3;+0:2](-[*:1])-[N;H0;D3;+0:4](-[*:3])-[*:5]", "superclass_id": 1}
 {"name": "A3 coupling to imidazoles", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0]).[N;H2;D1;+0:4]-[#6;D3;H0;+0:5]~[#7;+0:6].[*:7]-[C;H0;D2;+0:8]#[C;H1;D1;+0:9]>>[*:7]-[C;H0;D2;+0:8]-[c;H0;D3;+0:9]1:[c;H0;D3;+0:2]:[n;H0;D2;+0:4]:[c;H0;D3;+0:5]:[n;H0;D3;+0:6]:1", "superclass_id": 8}
 {"name": "Alkyne-imine cycloaddition", "smirks": "[C;H1;D2;+0:1]=[N;H0;D2;+0:4]-[#6;D3;H0;+0:5]~[#7;+0:6].[*:7]-[C;H0;D2;+0:8]#[C;H1;D1;+0:9]>>[*:7]-[C;H0;D2;+0:8]-[c;H0;D3;+0:9]1:[c;H0;D3;+0:1]:[n;H0;D2;+0:4]:[c;H0;D3;+0:5]:[n;H0;D3;+0:6]:1", "superclass_id": 8}
-{"name": "Azide-nitrile click cycloaddition to tetrazole", "smirks": "[#6:1]-[C;H0;D2;+0:2]#[N;H0;D1;+0:3]>>[#6:1]-[c;H0;D3;+0:2]1:[n;H0;D2;+0:3]:[n;H0;D2;+0]:[n;H0;D2;+0]:[n;H1;D2;+0]:1", "superclass_id": 8}
-{"name": "Azide-nitrile click cycloaddition to triazole", "smirks": "[#6:2]-[N;H0;D2;+0:3]=[N+;H0;D2:4]=[N-;H0;D1:5].[C:7]-[CH2;D2;+0:9]-[C;H0;D2;+0:10]#[N;H0;D1;+0:11]>>[#6:2]-[n;H0;D3;+0:3]1:[n;H0;D2;+0:4]:[n;H0;D2;+0:5]:[c;H0;D3;+0:9](-[C:7]):[c;H0;D3;+0:10]:1-[N;H2;D1;+0:11]", "superclass_id": 8}
+{"name": "Azide-nitrile click cycloaddition to tetrazole", "smirks": "[#6:1]-[C;H0;D2;+0:2]#[N;H0;D1;+0:3].[*]-[N;H0;D2;+0:4]=[N+;H0;D2:5]=[N-;H0;D1:6]>>[#6:1]-[c;H0;D3;+0:2]1:[n;H0;D2;+0:3]:[n;H0;D2;+0:4]:[n;H0;D2;+0:5]:[n;H1;D2;+0:6]:1", "superclass_id": 8}
+{"name": "Azide-nitrile click cycloaddition to tetrazole", "smirks": "[#6:1]-[C;H0;D2;+0:2]#[N;H0;D1;+0:3].[N;H0;D1;-1:4]=[N+;H0;D2:5]=[N-;H0;D1:6]>>[#6:1]-[c;H0;D3;+0:2]1:[n;H0;D2;+0:3]:[n;H0;D2;+0:4]:[n;H0;D2;+0:5]:[n;H1;D2;+0:6]:1", "superclass_id": 8}
 {"name": "Azide-alkyne click cycloaddition to triazole", "smirks": "[#6:2]-[N;H0;D2;+0:3]=[N+;H0;D2:4]=[N-;H0;D1:5].[CH2;D2;+0:9]-[C;H0;D2;+0:10]#[C;H1;D1;+0:11]>>[#6:2]-[n;H0;D3;+0:3]1:[n;H0;D2;+0:4]:[n;H0;D2;+0:5]:[c;H0;D3;+0:10](-[C:9]):[c;H0;D3;+0:11]:1", "superclass_id": 8}
 {"name": "Azide-alkyne click cycloaddition to triazole", "smirks": "[N;H0;D1;-1:3]=[N+;H0;D2:4]=[N-;H0;D1:5].[CH2;D2;+0:9]-[C;H0;D2;+0:10]#[C;H1;D1;+0:11]>>[n;D2;+0:3]1:[n;D2;+0:4]:[n;D2;+0:5]:[c;D3;+0:10](-[C:9]):[c;D2;+0:11]:1", "superclass_id": 8}
 {"name": "Nef reaction (nitro to ketone)", "smirks": "[#6;H1;D3;+0:1]-[N;H0;D3;+1](=[O;H0;D1;+0:2])-[O;H0;D1;-1]>>[#6;H0;D3;+0:1]=[O;H0;D1;+0:2]", "superclass_id": 5}
@@ -265,7 +266,10 @@
 {"name": "Minisci (ortho-cyanide)", "smirks": "[N;H0;D1;+0]#[C;H0;D2;+0]-[c;H0;D3;+0:2]1:[#7;H0;a:3]:[c:4]:[c:5]:[c:6]:[c:7]:1.[*:8]-[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H1;D1;+0]>>[*:8]-[c;H0;D3;+0:2]1:[#7;H0;a:3]:[c:4]:[c:5]:[c:6]:[c:7]:1", "superclass_id": 4}
 {"name": "Minisci-like halide substitution", "smirks": "[#6;+0:1]-[C;H2;D2;+0:2]-[O;H0;D2;+0:3].[n;H0;D2;+0:4]:[c;H0;D3;+0:5]-[Cl,Br,I]>>[#6;+0:1]-[C;H1;D3;+0:2](-[O;H0;D2;+0:3])-[c;H0;D3;+0:5]:[n;H0;D2;+0:4]", "superclass_id": 4}
 {"name": "Hydrogenolysis of amides\\/imides\\/carbamates", "smirks": "[#6;+0:1]-[N;H1;D2;+0:2]-[C;H0;D3;+0](=[O;H0;D1;+0])-[*]>>[#6;+0:1]-[N;H2;D1;+0:2]", "superclass_id": ""}
-{"name": "Hydrolysis of amides\\/imides\\/carbamates", "smirks": "[#6;+0:1]-[N;H1;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0]", "superclass_id": ""}
+{"name": "Hydrolysis of primary amides\\/imides\\/carbamates with water", "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:1].[O;D0;+0:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]", "superclass_id": ""}
+{"name": "Hydrolysis of secondary amides\\/imides\\/carbamates with water", "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:1].[O;D0;+0:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]", "superclass_id": ""}
+{"name": "Hydrolysis of primary amides\\/imides\\/carbamates with base", "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]", "superclass_id": ""}
+{"name": "Hydrolysis of secondary amides\\/imides\\/carbamates with base", "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]", "superclass_id": ""}
 {"name": "Hydrogenolysis of tertiary amines", "smirks": "[#6;!$(CC(=O));+0:1]-[N;H0;D3;+0:2](-[*])-[*:3]>>[#6;+0:1]-[N;H1;D2;+0:2]-[*:3]", "superclass_id": 5}
 {"name": "Ketone\\/aldehyde to hydrazone", "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);H0,H1;+0:1]=[O;H0;D1;+0]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+0]-[N;H2;D1;+0]", "superclass_id": ""}
 {"name": "Hydrazone oxidation to diazoalkane", "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);H0,H1;+0:1]=[N;H0;D2;+0:2]-[N;H2;D1;+0:3]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+1:2]=[N;H0;D1;-1:3]", "superclass_id": 10}
@@ -302,7 +306,7 @@
 {"name": "Homologation of diazo compounds to aldehydes using formaldehyde ", "smirks": "[N;H2;D1;+0]-[N;H0;D2;+0]=[#6;+0:2].[C;H2;D1;+0:3]=[O;H0;D1:4]>>[O;D1;H0:4]=[C;H1;D2;+0:3]-[#6;+0:2]", "superclass_id": 4}
 {"name": "Homologation of diazo compounds to alcohols using formaldehyde ", "smirks": "[N;H2;D1;+0]-[N;H0;D2;+0]=[#6;+0:2].[C;H2;D1;+0:3]=[O;H0;D1:4]>>[O;D1;H1:4]-[C;H2;D2;+0:3]-[#6;+0:2]", "superclass_id": 4}
 {"name": "Newman-Kwart rearrangement", "smirks": "[#7:2]-[C;H0;D3;+0:3](=[S;H0;D1;+0:4])-[O;H0;D2;+0:5]-[c;H0;D3;+0:6]>>[#7:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[S;H0;D2;+0:4]-[c;H0;D3;+0:6]", "superclass_id": 5}
-{"name": "Sodiation", "smirks": "[#6;+0:1]-[Cl,Br,I]>>[#6;+0:1]-[Na]", "superclass_id": ""}
+{"name": "Sodiation", "smirks": "[Na:2].[#6;+0:1]-[Cl,Br,I]>>[#6;+0:1]-[Na:2]", "superclass_id": ""}
 {"name": "Catellani reaction ortho", "smirks": "[Br,I]-[c;H0;D3;+0:2]1:[c;D2,D3;+0:3]:[c;H1;D2;+0:4]:[c;H1;D2;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:1.[C;H2;D1;+0:8]=[C;D1,D2;+0:9].[Br,I]-[c;H0;D3;+0:11]1:[c;H0;D3;+0:12]:[c;D2,D3;+0:13]:[c;D2,D3;+0:14]:[c;H1;D2;+0:15]:[c;H1;D2;+0:16]:1>>[c;+0:3]1:[c;H1;D2;+0:4]:[c;H1;D2;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:[c;H0;D3;+0:2]:1-[c;H0;D3;+0:16]2:[c;H0;D3;+0:11](-[C;H1;D1;+0:8]=[C;D1,D2;+0:9]):[c;H0;D3;+0:12]:[c;+0:13]:[c;+0:14]:[c;H1;D2;+0:15]:2", "superclass_id": 4}
 {"name": "Catellani reaction para", "smirks": "[Br,I]-[c;H0;D3;+0:2]1:[c;H1;D2;+0:3]:[c;H1;D2;+0:4]:[c;D2,D3;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:1.[C;H2;D1;+0:8]=[C;D1,D2;+0:9].[Br,I]-[c;H0;D3;+0:11]1:[c;H0;D3;+0:12]:[c;H1;D2;+0:13]:[c;H1;D2;+0:14]:[c;H1;D2;+0:15]:[c;H1;D2;+0:16]:1>>[c;H1;D2;+0:3]1:[c;H1;D2;+0:4]:[c;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:[c;H0;D3;+0:2]:1-[c;H0;D3;+0:16]2:[c;H0;D3;+0:11](-[C;H1;D2;+0:8]=[C;D1,D2;+0:9]):[c;H0;D3;+0:12]:[c;H1;D2;+0:13]:[c;H1;D2;+0:14]:[c;H1;D2;+0:15]:2", "superclass_id": 4}
 {"name": "Catellani reaction ortho", "smirks": "[Br,I]-[c;H0;D3;+0:2]1:[c;D2,D3;+0:3]:[c;H1;D2;+0:4]:[c;H1;D2;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:1.[C;H2;D1;+0:8]=[C;D1,D2;+0:9]>>[c;+0:3]1:[c;H1;D2;+0:4]:[c;H1;D2;+0:5]:[c;H1;D2;+0:6]:[c;H1;D2;+0:7]:[c;H0;D3;+0:2]:1-[c;H0;D3;+0:7]2:[c;H0;D3;+0:2](-[C;H1;D1;+0:8]=[C;D1,D2;+0:9]):[c;H0;D3;+0:3]:[c;+0:4]:[c;+0:5]:[c;H1;D2;+0:6]:2", "superclass_id": 4}
@@ -387,7 +391,6 @@
 {"name": "Methylation with MeI_tertiary", "smirks": "[C;H3;D1;+0:1]-[I].[C;H1;D3;+0:2]>>[C;H3;D1;+0:1]-[C;H0;D4;+0:2]", "superclass_id": 4}
 {"name": "Methylation with MeI_aryl", "smirks": "[C;H3;D1;+0:1]-[I].[c;H1;D2;+0:2]>>[C;H3;D1;+0:1]-[c;H0;D3;+0:2]", "superclass_id": 4}
 {"name": "Methylation with MeI_SH", "smirks": "[C;H3;D1;+0:1]-[I].[S;H1;D1;+0:2]>>[C;H3;D1;+0:1]-[S;H0;D2;+0:2]", "superclass_id": 1}
-{"name": "Methylation", "smirks": "[#6;+0:2]>>[C;H3;D1;+0]-[#6;+0:2]", "superclass_id": 1}
 {"name": "Methylation of OH with DMS", "smirks": "[O;H1;D1;+0:1].[C;H3;D1;+0:2]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[O;H0;D2;+0]-[C;H3;D1;+0]>>[O;H0;D2;+0:1]-[C;H3;D1;+0:2]", "superclass_id": 1}
 {"name": "Methylation with DMS", "smirks": "[#6;+0:1].[C;H3;D1;+0:2]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[O;H0;D2;+0]-[C;H3;D1;+0]>>[#6;+0:1]-[C;H3;D1;+0:2]", "superclass_id": 4}
 {"name": "Methylation with DMC", "smirks": "[#6;+0:1].[C;H3;D1;+0:2]-[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H0;D2;+0]-[C;H3;D1;+0]>>[#6;+0:1]-[C;H3;D1;+0:2]", "superclass_id": 4}
@@ -405,8 +408,8 @@
 {"name": "Primary amine to chloride", "smirks": "[#6:2]-[N;H2;D1;+0].[Cl;H0;D1;+0:3]>>[#6:2]-[Cl;H0;D1;+0:3]", "superclass_id": 5}
 {"name": "Primary amine to bromide", "smirks": "[#6:2]-[N;H2;D1;+0].[Br;H0;D1;+0:3]>>[#6:2]-[Br;H0;D1;+0:3]", "superclass_id": 5}
 {"name": "Primary amine to iodide", "smirks": "[#6:2]-[N;H2;D1;+0].[I;H0;D1;+0:3]>>[#6:2]-[I;H0;D1;+0:3]", "superclass_id": 5}
-{"name": "Diazo addition", "smirks": "[C;H2;D2;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]>>[N;H0;D1;-1]=[N;H0;D2;+1]=[C;H0;D3;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]", "superclass_id": 7}
-{"name": "Diazo addition", "smirks": "[C;H2;D2;+0:2]>>[N;H0;D1;-1]=[N;H0;D2;+1]=[C;H0;D3;+0:2]", "superclass_id": 7}
+{"name": "Diazo addition with azide", "smirks": "[*]-[N;H0;D2;+0]=[N;H0;D2;+1:5]=[N;H0;D1;-1:6].[C;H2;D2;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]>>[N;H0;D1;-1:6]=[N;H0;D2;+1:5]=[C;H0;D3;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]", "superclass_id": 7}
+{"name": "Diazo addition with azide", "smirks": "[N;H0;D1;-1]=[N;H0;D2;+1:5]=[N;H0;D1;-1:6].[C;H2;D2;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]>>[N;H0;D1;-1:6]=[N;H0;D2;+1:5]=[C;H0;D3;+0:2]-[C;H0;D3;+0:3]=[O;H0;D1;+0:4]", "superclass_id": 7}
 {"name": "Henry Reaction", "smirks": "[CX4;+0:2]-[N;H0;D3;+1:3](=[O;H0;D1;+0:4])-[O;H0;D1;-1:5].[CX3;+0:6]=[O;H0;D1;+0:7]>>[O;H1;D1;+0:7]-[CX4;+0:6]-[CX4;+0:2]-[N;H0;D3;+1:3](=[O;H0;D1;+0:4])-[O;H0;D1;-1:5]", "superclass_id": 4}
 {"name": "Mitsunobu aryl ether", "smirks": "[O;H1;D1;+0:2]-[C;H1;D3;+0:3](-[#6;+0:4])-[#6;+0:5].[O;H1;D1;+0]-[c;H0;D3;+0:6]>>[#6;+0:6]-[O;H0;D2;+0:2]-[C;H1;D3;+0:3](-[#6;+0:4])-[c;H0;D3;+0:5]", "superclass_id": 5}
 {"name": "Mitsunobu aryl ether", "smirks": "[O;H1;D1;+0:2]-[CX4;+0:3].[O;H1;D1;+0]-[c;H0;D3;+0:6]>>[#6;+0:6]-[O;H0;D2;+0:2]-[CX4;+0:3]", "superclass_id": 5}
@@ -557,7 +560,7 @@
 {"name": "in-situ Grignard with CO2 to carboxylic acid", "smirks": "[Mg;H0].[O;H0;D1;+0:1]=[C;H0;D2;+0:2]=[O;H0;D1;+0:3].[*:4]-[Br]>>[*:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:1])-[O;H1;D1;+0:3]", "superclass_id": 4}
 {"name": "in-situ Grignard from aldehyde to alcohol", "smirks": "[Mg;H0].[#6;+0:2]-[Br,I,Cl].[*:3]-[C;H1;D2;+0:4](=[O;H0;D1;+0:5])>>[*:3]-[C;H1;D3;+0:4](-[O;H1;D1;+0:5])-[#6;+0:2]", "superclass_id": 4}
 {"name": "in-situ Grignard from ketone to alcohol", "smirks": "[Mg;H0].[#6;+0:2]-[Br,I,Cl].[*:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[#6;+0:6]>>[*:3]-[C;H0;D4;+0:4](-[O;H1;D1;+0:5])(-[#6;+0:6])-[#6;+0:2]", "superclass_id": 4}
-{"name": "in-situ Grignard from nitrile to ketone", "smirks": "[Mg;H0].[#6;+0:2]-[C;H0;D2;+0:3]#[#7;D1;+0].[Cl,Br,I]-[#6;$([#6]~[#6]);!$([#6]([Cl,Br,I])[Cl,Br,I]);!$([#6]=O):4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0])-[#6;+0:4]", "superclass_id": 4}
+{"name": "in-situ Grignard from nitrile to ketone", "smirks": "[Mg;H0].[#6;+0:2]-[C;H0;D2;+0:3]#[#7;D1;+0].[Cl,Br,I]-[#6;$([#6]~[#6]);!$([#6]([Cl,Br,I])[Cl,Br,I]);!$([#6]=O):4].[O;D0;+0:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[#6;+0:4]", "superclass_id": 4}
 {"name": "Olefination of ketones with in-situ Grignard reagents", "smirks": "[Mg;H0].[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0])-[*:4].[#6;+0:5]-[Br,I,Cl]>>[*:2]-[C;H0;D3;+0:3](=[#6;+0:5])-[*:4]", "superclass_id": 4}
 {"name": "Olefination of aldehydes with in-situ Grignard reagents", "smirks": "[Mg;H0].[*:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0]).[#6;+0:4]-[C;H2;D2:5]-[Br,I,Cl]>>[*:2]-[C;H0;D3;+0:3](=[#6;+0:5])-[#6;+0:4]", "superclass_id": 4}
 {"name": "Preparation of trialkylsilanes with in-situ Grignard reagents", "smirks": "[Mg;H0].[#6;+0:2]-[Br].[#6;+0:3]-[Br].[#6;+0:4]-[Br].[#6;+0:5]-[Si;H0;D4;+0:6](-[Cl])(-[Cl])-[Cl]>>[#6;+0:5]-[Si;H0;D4;+0:6](-[#6;+0:2])(-[#6;+0:3])-[#6;+0:4]", "superclass_id": 1}
