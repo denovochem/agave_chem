@@ -16,12 +16,14 @@
 {"name": "Bromination", "smirks": "[#6:2].[Br;H0;D1;+0:3]>>[#6:2]-[Br;H0;D1;+0:3]", "superclass_id": 7}
 {"name": "Oxidation of aldehydes to carboxylic acids", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3])>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Alcohol protection with silyl ethers", "smirks": "[*:2]-[O;H1;D1;+0:3].[Si;H0;D4;+0:4]-[Cl;H0;D1;+0]>>[*:2]-[O;H0;D2;+0:3]-[Si;H0;D4;+0:4]", "superclass_id": 9}
-{"name": "Alcohol deprotection from silyl ethers", "smirks": "[*:2]-[O;H0;D2;+0:3]-[Si;H0;D4;+0]>>[*:2]-[O;H1;D1;+0:3]", "superclass_id": 3}
-{"name": "Alcohol deprotection from silyl ethers (double)", "smirks": "[Si;H0;D4;+0]-[O;H0;D2;+0:3]-[*:4]-[O;H0;D2;+0:5]-[Si;H0;D4;+0]>>[O;H1;D1;+0:3]-[*:4]-[O;H1;D1;+0:5]", "superclass_id": 3}
-{"name": "Alcohol deprotection from silyl ethers (diol)", "smirks": "[Si;H0;D4;+0]-[O;H0;D2;+0:3]-[*:4]-[*:5]-[O;H0;D2;+0:6]-[Si;H0;D4;+0]>>[O;H1;D1;+0:3]-[*:4]-[*:5]-[O;H1;D1;+0:6]", "superclass_id": 3}
+{"name": "Alcohol deprotection from silyl ethers", "smirks": "[*:2]-[O;H0;D2;+0:3]-[Si;H0;D4;+0](-[*])(-[*])-[*]>>[*:2]-[O;H1;D1;+0:3]", "superclass_id": 3}
+{"name": "Alcohol deprotection from silyl ethers (double)", "smirks": "[*][Si;H0;D4;+0](-[*])(-[*])-[O;H0;D2;+0:3]-[*:4]-[O;H0;D2;+0:5]-[Si;H0;D4;+0](-[*])(-[*])-[*]>>[O;H1;D1;+0:3]-[*:4]-[O;H1;D1;+0:5]", "superclass_id": 3}
+{"name": "Alcohol deprotection from silyl ethers (diol)", "smirks": "[*][Si;H0;D4;+0](-[*])(-[*])-[O;H0;D2;+0:3]-[*:4]-[*:5]-[O;H0;D2;+0:6]-[Si;H0;D4;+0](-[*])(-[*])-[*]>>[O;H1;D1;+0:3]-[*:4]-[*:5]-[O;H1;D1;+0:6]", "superclass_id": 3}
 {"name": "O-alkylation of carboxylic acids with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4].[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4]-[C;+0:5]", "superclass_id": 1}
 {"name": "O-alkylation of carboxylic acids with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4].[*]-[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4]-[C;+0:5]", "superclass_id": 1}
-{"name": "O-alkylation of amides with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:4].[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H0;D3;+0:4]-[C;+0:5]", "superclass_id": 1}
+{"name": "N-alkylation of amides with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:4].[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H0;D3;+0:4]-[C;+0:5]", "superclass_id": 1}
+{"name": "O-alkylation of carboxylic acids with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D1;-1:4].[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4]-[C;+0:5]", "superclass_id": 1}
+{"name": "O-alkylation of carboxylic acids with diazo compounds", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D1;-1:4].[*]-[C;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H0;D2;+0:4]-[C;+0:5]", "superclass_id": 1}
 {"name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones", "smirks": "[C;H1;D3;+0:2]-[O;H1;D1;+0:3]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])", "superclass_id": 10}
 {"name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones", "smirks": "[C;+0:2]-[O;H1;D1;+0:3]>>[C;+0:2](=[O;H0;D1;+0:3])", "superclass_id": 10}
 {"name": "Williamson Ether Synthesis", "smirks": "[#6;+0:1]-[O;H1;D1;+0:3].[#6;+0:2]-[F,Br,I,Cl]>>[C;+0!$(C=O):1]-[O;H0;D2;+0:3]-[C;+0!$(C=O):2]", "superclass_id": 1}
@@ -34,14 +36,18 @@
 {"name": "Ketal hydrolysis to ketone", "smirks": "[O;H2;D0:3].[*]-[O;H0;D2;+0]-[#6;D4;H0;+0:4]-[O;H0;D2;+0]-[*]>>[#6;D3;H0;+0:4](=[O;H0;D1;+0:3])", "superclass_id": 5}
 {"name": "Aldehyde or ketone acetalization", "smirks": "[O;H1;D1;+0:3]-[#6;+0:1]-[#6;+0:6]-[O;H1;D1;+0:5].[*:2]-[C;+0:4](=[O;H0;D1;+0])>>[#6;+0:1]1-[O;H0;D2;+0:3]-[C;H0;D4;+0:4](-[*:2])-[O;H0;D2;+0:5]-[#6;+0:6]1", "superclass_id": 5}
 {"name": "Production of 2H,1-benzopyrans", "smirks": "[O;H0;D1;+0]=[C;H1;D2;+0:2]-[CH;D2;+0:3]=[C;+0:4](-[H,$(C),$(CC),$(CCC),$(CCCC):5])(-[H,$(C),$(CC),$(CCC),$(CCCC),$(CCCCC),$(CCCCCC):6]).[OH;D1;+0:7]-[c:8]:[cH;D2;+0:9]:[c:10]>>[H,$(C),$(CC),$(CCC),$(CCCC):5]-[C;H0;D4;+0:4]1(-[H,$(C),$(CC),$(CCC),$(CCCC),$(CCCCC),$(CCCCCC):6])-[CH;D2;+0:3]=[CH;D2;+0:2]-[c;H0;D3;+0:9](:[c:10]):[c:8]-[O;H0;D2;+0:7]-1", "superclass_id": 8}
-{"name": "Formation of Azides from halogens", "smirks": "[Na,Li]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I:3]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]", "superclass_id": 5}
-{"name": "Formation of Azides from halogens", "smirks": "[N;H0;D2;-1:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I:3]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]", "superclass_id": 5}
+{"name": "Formation of Azides from halogens", "smirks": "[Na,Li]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]", "superclass_id": 5}
+{"name": "Formation of Azides from halogens", "smirks": "[N;H0;D2;-1:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]", "superclass_id": 5}
 {"name": "Formation of Azides from boronic acids", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[Na,Li]-[N;+0:3]=[N;+1:4]=[N;-1:5]>>[N;-1:3]=[N;+1:4]=[N;+0:5]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]", "superclass_id": 5}
 {"name": "Formation of Azides from boronic acids", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[N;-1:3]=[N;+1:4]=[N;-1:5]>>[N;-1:3]=[N;+1:4]=[N;+0:5]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]", "superclass_id": 5}
-{"name": "S-alkylation of thiols ", "smirks": "[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[Cl,Br,F,I].[c:6]~[c;+0:5]-[S;H1;D1;+0:7]>>[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[c;+0:5]~[c:6]", "superclass_id": 1}
-{"name": "S-alkylation of thiols (ethyl)", "smirks": "[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[Cl,Br,F,I].[c;H0;D3;+0:6]-[C;H2;D2;+0:5]-[S;H1;D1;+0:7]>>[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[C;H2;D2;+0:5]-[c;H0;D3;+0:6]", "superclass_id": 1}
-{"name": "S-alkylation of thiols with alcohols", "smirks": "[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[O;H1;D1;+0].[c:6]~[c;+0:5]-[S;H1;D1;+0:7]>>[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[c;+0:5]~[c:6]", "superclass_id": 1}
-{"name": "S-alkylation of thiols with alcohols (ethyl)", "smirks": "[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[O;H1;D1;+0].[c;H0;D3;+0:6]-[C;H2;D2;+0:5]-[S;H1;D1;+0:7]>>[c;H0;D3;+0:2]-[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[C;H2;D2;+0:5]-[c;H0;D3;+0:6]", "superclass_id": 1}
+{"name": "S-alkylation of thiols ", "smirks": "[C;D2;H2;+0:3]-[Cl,Br,F,I].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols (ethyl)", "smirks": "[C;D2;H2;+0:3]-[Cl,Br,F,I].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols with alcohols", "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols with alcohols (ethyl)", "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;H2;D2;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols ", "smirks": "[C;D2;H2;+0:3]-[Cl,Br,F,I].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols (ethyl)", "smirks": "[C;D2;H2;+0:3]-[Cl,Br,F,I].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;H2;D2;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols with alcohols", "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
+{"name": "S-alkylation of thiols with alcohols (ethyl)", "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]", "superclass_id": 1}
 {"name": "Ketonization by decarboxylation of carbonic acids", "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;D1;H0:4])-[O;D1;H1;+0].[*:6]-[C;H0;D3;+0](=[O;D1;H0])-[O;D1;H1;+0]>>[*:2]-[C;H0;D3;+0:3](=[O;D1;H0:4])-[*:6]", "superclass_id": 4}
 {"name": "Ketonization by decarboxylation of acid halides", "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;D1;H0:4])-[Cl,F,Br,I].[*:6]-[C;H0;D3;+0](=[O;D1;H0])-[O;D1;H1;+0]>>[*:2]-[C;H0;D3;+0:3](=[O;D1;H0:4])-[*:6]", "superclass_id": 4}
 {"name": "Preparation of boronic acids", "smirks": "[*]-[O;H0;D2;+0:2]-[B;H0;D3;+0:3](-[O;H0;D2;+0:4]-[*])-[O;H0;D2;+0]-[*].[#6;+0:6]-[Br]>>[O;H1;+0:2]-[B;H0;D3;+0:3](-[#6;+0:6])-[O;H1;+0:4]", "superclass_id": 5}
@@ -114,6 +120,8 @@
 {"name": "Synthesis of boronic acids", "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[Cl,Br,I]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0]", "superclass_id": 5}
 {"name": "N-alkylation of primary amines with ides", "smirks": "[#7;H2;D1;+0:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H1;D2;+0:2]-[C;+0:3]", "superclass_id": 1}
 {"name": "N-alkylation of secondary amines with ides", "smirks": "[#7;H1;D2;+0:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H0;D3;+0:2]-[C;+0:3]", "superclass_id": 1}
+{"name": "N-alkylation of primary amines with ides", "smirks": "[#7;H1;D1;-1:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H1;D2;+0:2]-[C;+0:3]", "superclass_id": 1}
+{"name": "N-alkylation of secondary amines with ides", "smirks": "[#7;H0;D2;-1:2].[C;+0:3]-[F,Cl,Br,I]>>[#7;H0;D3;+0:2]-[C;+0:3]", "superclass_id": 1}
 {"name": "Reduction of nitro groups to amines", "smirks": "[N;H0;D3;+1:2](=[O;H0;D1;+0])-[O;H0;D1;-1]>>[N;H2;D1;+0:2]", "superclass_id": 6}
 {"name": "Acyl chlorides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[Cl:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl;H0;D1;+0:5]", "superclass_id": 5}
 {"name": "Acyl bromides from alcohols", "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[Br:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Br;H0;D1;+0:5]", "superclass_id": 5}
@@ -578,3 +586,5 @@
 {"name": "Imine formation", "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[#6:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[#6:5])", "superclass_id": None}
 {"name": "Imine reduction", "smirks": "[C;+0:2](=[N;H0;D2;+0:4]-[#6:5])>>[C;+0:2](-[N;H1;D2;+0:4]-[#6:5])", "superclass_id": None}
 {"name": "Tert-butyl deprotection of alcohol", "smirks": "C-C(-C)(-C)-[O;D2;+0:2]>>[OH;D1;+0:2]", "superclass_id": 3}
+{"name": "Oxime reduction", "smirks": "[C;+0:2](=[N;H0;D2;+0:4]-[O;D1;H1])>>[C;+0:2]-[N;H2;D1;+0:4]", "superclass_id": None}
+{"name": "Alkyne SN2", "smirks": "[C:1]-[Cl,Br,I].[C:4]-[C;H0;D2;+0:2]#[C;H1;D0;+0:3]>>[C:1]-[C;H0;D2;+0:2]#[C;H0;D2;+0:3]-[C:4]", "superclass_id": None}
