@@ -5,6 +5,7 @@ import json
 from ast import literal_eval
 import re
 from pathlib import Path
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 BASE_DIR = Path(__file__).resolve().parent
 SMIRKS_PATTERNS_FILE = BASE_DIR / 'datafiles' / 'smirks_patterns.json'
