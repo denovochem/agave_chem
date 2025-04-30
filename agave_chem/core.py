@@ -232,7 +232,7 @@ class AgaveChemMapper():
         mapped_smiles_output = Chem.MolToSmiles(mol)
         return mapped_smiles_output
 
-    def _canonicalize_smiles(self, smiles, isomeric=True, remove_mapping=True, canonicalize_tautomer=True):
+    def _canonicalize_smiles(self, smiles, isomeric=True, remove_mapping=True, canonicalize_tautomer=False):
         """
         Canonicalizes a SMILES string, handling multiple fragments, atom mapping, and tautomers.
 
@@ -273,7 +273,7 @@ class AgaveChemMapper():
         except:
             return smiles
     
-    def _canonicalize_reaction_smiles(self, rxn_smiles, isomeric=True):
+    def _canonicalize_reaction_smiles(self, rxn_smiles, isomeric=True, remove_mapping=True, canonicalize_tautomer=False):
         """
         Canonicalizes the SMILES representation of each molecule within a reaction SMILES.
 
@@ -303,7 +303,7 @@ class AgaveChemMapper():
                 if x != '':
                     y = x.split('.')
                     for z in y:
-                        canonical_smiles = self._canonicalize_smiles(z, isomeric)
+                        canonical_smiles = self._canonicalize_smiles(z, isomeric, remove_mapping=remove_mapping, canonicalize_tautomer=canonicalize_tautomer)
                         role_list.append(canonical_smiles)
         
                     role_list = sorted(role_list)
@@ -529,7 +529,7 @@ class AgaveChemMapper():
             rdc.rdchiralReactants(products)
         ]
     
-    def _process_templates(self, smirks_patterns, reaction_smiles_data, unmapped_reactants, unmapped_products):
+    def _process_templates(self, smirks_patterns, reaction_smiles_data, unmapped_reactants):
         mapped_outcomes = []
         successful_applied_smirks = []
         all_rdc_outcomes = []
@@ -550,7 +550,9 @@ class AgaveChemMapper():
 
     def _process_single_outcome(self, rdc_outcome, applied_smirk, unmapped_reactants, atom_mapped_product, 
                               mapped_outcomes, successful_applied_smirks, all_rdc_outcomes):
+
         reactants_list, atom_mapped_reactants_dict = rdc_outcome
+
         for reactant in reactants_list:
             if reactant not in atom_mapped_reactants_dict:
                 continue
@@ -590,13 +592,14 @@ class AgaveChemMapper():
     def _find_missing_fragments(self, unmapped_outcome, mapped_outcome, unmapped_reactants):
 
         missing_fragments = []
-        reactant_fragments = unmapped_reactants.split('.')
-        
+        reactant_fragments = [v for k,v in unmapped_reactants]
+        reactant_fragments = [item for sublist in reactant_fragments for item in sublist]
+
         for mapped_fragment in mapped_outcome.split('.'):
             unmapped_fragment = self._canonicalize_smiles(mapped_fragment)
             if unmapped_fragment not in reactant_fragments:
                 missing_fragments.append([unmapped_fragment, mapped_fragment])
-        
+
         return missing_fragments
     
     def _are_fragments_substructures(self, missing_fragments, unmapped_reactants):
@@ -604,15 +607,16 @@ class AgaveChemMapper():
             try:
                 is_substruct = False
                 fragment_smarts = Chem.MolFromSmarts(unmapped_fragment)
-                
-                for reactants_fragment in unmapped_reactants.split('.'):
-                    try:
-                        if '*' in unmapped_fragment:
-                            fragment_reactants = Chem.MolFromSmarts(reactants_fragment)
-                            if fragment_reactants.HasSubstructMatch(fragment_smarts):
-                                is_substruct = True
-                    except:
-                        pass
+
+                for k,v in unmapped_reactants:
+                    for reactants_fragment in v:
+                        try:
+                            if '*' in unmapped_fragment:
+                                fragment_reactants = Chem.MolFromSmarts(reactants_fragment)
+                                if fragment_reactants.HasSubstructMatch(fragment_smarts):
+                                    is_substruct = True
+                        except:
+                            pass
                         
                 if not is_substruct:
                     return False
@@ -661,9 +665,13 @@ class AgaveChemMapper():
     
     def _find_spectators(self, unmapped_reactants, unmapped_outcome):
         spectators = []
-        for fragment in unmapped_reactants.split('.'):
-            if fragment not in unmapped_outcome.split('.'):
-                spectators.append(fragment)
+        for k,v in unmapped_reactants:
+            is_spectator = True
+            for fragment in v:
+                if fragment in unmapped_outcome.split('.'):
+                    is_spectator = False
+            if is_spectator:        
+                spectators.append(k)
         return spectators
     
     def _identify_and_map_fragments(self, missing_fragments, unmapped_reactants, original_mapped_outcome, original_unmapped_outcome):
@@ -678,24 +686,25 @@ class AgaveChemMapper():
                 fragment_found = False
                 fragment_mapped_outcomes = []
                 fragment_unmapped_outcomes = []
-                for fragment in unmapped_reactants.split('.'):
-                    out = self._transfer_mapping(mapped_fragment, fragment)
-
-                    if out is not None:
-                        fragment_found = True
-                        fragment_mapped_outcome = mapped_outcome.replace(mapped_fragment, '')
-                        fragment_mapped_outcome = fragment_mapped_outcome.strip('.')
-                        fragment_unmapped_outcome = unmapped_outcome.replace(unmapped_fragment, '')
-                        fragment_unmapped_outcome = fragment_unmapped_outcome.strip('.')
-
-                        fragment_mapped_outcome += '.' + out
-                        fragment_unmapped_outcome += '.' + fragment
-                        
-                        fragment_mapped_outcome = fragment_mapped_outcome.strip('.')
-                        fragment_unmapped_outcome = fragment_unmapped_outcome.strip('.')
-
-                        fragment_mapped_outcomes.append(fragment_mapped_outcome)
-                        fragment_unmapped_outcomes.append(fragment_unmapped_outcome)
+                for k,v in unmapped_reactants:
+                    for fragment in v:
+                        out = self._transfer_mapping(mapped_fragment, fragment)
+    
+                        if out is not None:
+                            fragment_found = True
+                            fragment_mapped_outcome = mapped_outcome.replace(mapped_fragment, '')
+                            fragment_mapped_outcome = fragment_mapped_outcome.strip('.')
+                            fragment_unmapped_outcome = unmapped_outcome.replace(unmapped_fragment, '')
+                            fragment_unmapped_outcome = fragment_unmapped_outcome.strip('.')
+    
+                            fragment_mapped_outcome += '.' + out
+                            fragment_unmapped_outcome += '.' + fragment
+                            
+                            fragment_mapped_outcome = fragment_mapped_outcome.strip('.')
+                            fragment_unmapped_outcome = fragment_unmapped_outcome.strip('.')
+    
+                            fragment_mapped_outcomes.append(fragment_mapped_outcome)
+                            fragment_unmapped_outcomes.append(fragment_unmapped_outcome)
             
                 if not fragment_found:
                     all_missing_fragments_identified = False
@@ -736,24 +745,40 @@ class AgaveChemMapper():
         
         unmapped_reactants = self._canonicalize_smiles(reactants)
         unmapped_products = self._canonicalize_smiles(products)
+
+        enumerated_unmapped_reactants = []
+        for ele in unmapped_reactants.split('.'):
+            mol = Chem.MolFromSmiles(ele)
+            if mol is not None:
+                enumerated_unmapped_reactants.append(list(self.tautomer_enumerator.Enumerate(mol)))
+            else:
+                enumerated_unmapped_reactants.append([])
+
+        new_enumerated_unmapped_reactants = []
+        for sub_list, orig_smiles in zip(enumerated_unmapped_reactants, unmapped_reactants.split('.')):
+            new_sub_list = [orig_smiles]
+            for ele in sub_list:
+                new_sub_list.append(Chem.MolToSmiles(ele))
+            new_enumerated_unmapped_reactants.append(new_sub_list)
+
+        enumerated_unmapped_reactants = [[k,v] for k,v in zip(unmapped_reactants.split('.'), new_enumerated_unmapped_reactants)]
         
         mapped_outcomes, successful_applied_smirks = self._process_templates(
             self.smirks_patterns, 
             reaction_smiles_data, 
-            unmapped_reactants, 
-            unmapped_products
+            enumerated_unmapped_reactants
         )
 
-        mapped_outcomes = [self._canonicalize_atom_mapping(ele) for ele in list(set(mapped_outcomes))]
+        mapped_outcomes = [self._canonicalize_reaction_smiles(self._canonicalize_atom_mapping(ele), canonicalize_tautomer=True, remove_mapping=False) for ele in list(set(mapped_outcomes))]
         possible_mappings = list(set([ele for ele in mapped_outcomes if ele != '']))
-        possible_mappings = [ele for ele in possible_mappings if self._canonicalize_reaction_smiles(ele) == reaction_smiles]
-
+        canonicalized_reaction_smiles = self._canonicalize_reaction_smiles(reaction_smiles, canonicalize_tautomer=True)
+        possible_mappings = list(set([ele for ele in possible_mappings if self._canonicalize_reaction_smiles(ele, canonicalize_tautomer=True) == canonicalized_reaction_smiles]))
+        
         applied_smirks_names = []
         for applied_smirk_data in successful_applied_smirks:
             applied_smirk = applied_smirk_data[-2]
             applied_smirk_forward = applied_smirk.split('>>')[1] + '>>' + applied_smirk.split('>>')[0]
             applied_smirks_names.append(self.smirks_name_dictionary[applied_smirk_forward])
-            
         
         if len(possible_mappings) == 1:
             mapping_dict = {'mapping': possible_mappings[0], 'reaction_classification': applied_smirks_names}
