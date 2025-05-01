@@ -240,7 +240,7 @@
 {"name": "Huisgen alkyne-azide 1,3 dipolar cycloaddition", "smirks": "[#6:1]-[N;H0;D2;+0:8]=[N;H0;D2;+1:9]=[N;H0;D1;-1:10].[#6;+0:3]#[C;H1;D1;+0:4]>>[c;+0:3]1:[c;H1;D2;+0:4]:[n;+0:8](-[#6:1]):[n;+0:9]:[n;+0:10]:1", "superclass_id": 8}
 {"name": "Huisgen alkene-azide 1,3 dipolar cycloaddition", "smirks": "[*]-[C;D2;+0:2]=[C;D2;+0:3]-[*:4].[#6:7]-[N;H0;D2;+0:8]=[N;H0;D2;+1:9]=[N;H0;D1;-1:10]>>[*:4]-[c;+0:3]1:[c;H0;D2;+0:2]:[n;+0:8](-[#6:7]):[n;H0;D2;+0:9]:[n;H0;D2;+0:10]:1", "superclass_id": 8}
 {"name": "Pyrazole formation", "smirks": "[N;H2;D1;+0:1]-[N;H1;D2;+0:2]-[*:3].[#6;+0:4](=[O;H0;D1;+0])-[#6;+0:5]-[#6;+0:6](=[O;H0;D1;+0])>>[c;+0:4]1:[c;+0:5]:[c;+0:6]:[n:2](-[*:3]):[n:1]:1", "superclass_id": 8}
-{"name": "Thiol-ene reaction", "smirks": "[C;+0:1]=[C;+0:2].[#6;+0:3]-[S;H1;D0;+0:5]>>[#6;+0:3]-[S;H1;D0;+0:5]-[C;+0:1]-[C;+0:2]", "superclass_id": 1}
+{"name": "Thiol-ene reaction", "smirks": "[C;+0:1]=[C;+0:2].[#6;+0:3]-[S;H1;D1;+0:5]>>[#6;+0:3]-[S;H0;D2;+0:5]-[C;+0:1]-[C;+0:2]", "superclass_id": 1}
 {"name": "Hurtley reaction", "smirks": "[C;$(CC(=O)),$(CC#N);H2;D2;+0:1].[c:2]-[Cl,Br,I]>>[c:2]-[C;$(CC(=O)),$(CC#N);H1;D3;+0:1]", "superclass_id": 4}
 {"name": "Acylation of secondary amines with anhydrides", "smirks": "[*:1]-[N;H1;D2;+0:2]-[*:3].[C;H3;D1;+0:4]-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[C;H3;D1;+0]>>[*:1]-[N;H0;D3;+0:2](-[*:3])-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[C;H3;D1;+0:4]", "superclass_id": 2}
 {"name": "Quinone formation", "smirks": "[O;H1;D1;+0:7]-[c:1]1:[c:2]:[c:3]:[c:4](-[O;H1;D1;+0:8]):[c:5]:[c:6]:1>>[O;H0;D1;+0:7]=[C;H0;D3;+0:1]1-[C;H1;D2;+0:2]=[C;H1;D2;+0:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:8])-[C;H1;D2;+0:5]=[C;H1;D2;+0:6]-1", "superclass_id": 10}
@@ -551,6 +551,7 @@
 {"name": "Carboxylic acid to amide conversion", "smirks": "[O;H1;D1;+0]-[C;H0;D3;+0:2](=[O;D1;H0:3]).[NH4+;D0:7]>>[NH2;D1;+0:7]-[C;H0;D3;+0:2](=[O;D1;H0:3])", "superclass_id": 2}
 {"name": "Carboxylic acid to amide conversion", "smirks": "[O;H1;D1;+0]-[C;H0;D3;+0:2](=[O;D1;H0:3]).[N;H3;D0;+0:7]>>[NH2;D1;+0:7]-[C;H0;D3;+0:2](=[O;D1;H0:3])", "superclass_id": 2}
 {"name": "Carboxylic acid to amide conversion", "smirks": "[O;H1;D1;+0]-[C;H0;D3;+0:2](=[O;D1;H0:3]).[N;H2;D1;+0:7]>>[N;D2;H1;+0:7]-[C;H0;D3;+0:2](=[O;D1;H0:3])", "superclass_id": 2}
+{"name": "Carboxylic acid to amide conversion", "smirks": "[O;H1;D1;+0]-[C;H0;D3;+0:2](=[O;D1;H0:3]).[N;H1;D2;+0:7]>>[N;D3;H0;+0:7]-[C;H0;D3;+0:2](=[O;D1;H0:3])", "superclass_id": 2}
 {"name": "Carboxylate to carboxylic acid", "smirks": "[C;D3;H0;+0:3](-[O-;H0;D1:5])=[O;D1;H0:4]>>[C;D3;H0;+0:3](=[O;D1;H0:4])-[OH;D1;+0:5]", "superclass_id": ""}
 {"name": "Aldehyde and ketone to alpha,beta-unsaturated carbonyl", "smirks": "[O;H0;D1;+0]=[C;H1;D2;+0:2].[C;X4;!D3;+0:6]-[C;H0;D3;+0:7]=[O;D1;H0:8]>>[O;D1;H0:8]=[C;H0;D3;+0:7]-[C;X3;+0:6]=[CH;D2;+0:2]", "superclass_id": 2}
 {"name": "Bouveault aldehyde synthesis", "smirks": "[Cl,Br,I;D1;+0]-[*;+0:2].[N;D3;+0]-[C;H1;D2;+0:7]=[O;D1;H0;+0:8]>>[O;D1;H0:8]=[CH;D2;+0:7]-[*:2]", "superclass_id": 5}
@@ -595,7 +596,7 @@
 {"name": "sonogashira", "smirks": "[c:1]-[Cl,Br,I].[*]-[C;H0;D2;+0:2]#[C;H1;D0;+0:3]>>[c:1]-[C;H0;D2;+0:2]#[C;H0;D2;+0:3]-[*]", "superclass_id": None}
 {"name": "Oxidation of amine to nitro group with oxygen", "smirks": "[N;H2;D1;+0:2].[O;H0;D1;+0:1]=[O;H0;D1;+0:3]>>[N;H0;D3:2](=[O;H0;D1;+0:1])-[O;H0;D1;-1:3]", "superclass_id": 6}
 {"name": "Oxidation of amine to nitro group with metal oxidizer", "smirks": "[N;H2;D1;+0:2].[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg](~[O:3])~[O:1]>>[N;H0;D3:2](=[O;H0;D1;+0:1])-[O;H0;D1;-1:3]", "superclass_id": 6}
-{"name": "Oxidation of amine to nitro group with metal oxidizer", "smirks": "[N;H2;D1;+0:2].[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:3].[O;D0;H0;-1:1]>>[N;H0;D3:2](=[O;H0;D1;+0:1])-[O;H0;D1;-1:3]", "superclass_id": 6}
+{"name": "Oxidation of amine to nitro group with metal oxidizer", "smirks": "[N;H2;D1;+0:2].[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:3].[O;D0;H0;-1:1]>>[N;H0;D3:2](=[O;H0;D1;+0:1])-[O;H0;D1;-1:3]", "superclass_id": 6}
 {"name": "", "smirks": "[#6;H0;+0:4]#[#6;+0:3].[#6;$([#6]:[#6]);+0:2]-[Cl,Br,I]>>[#6:2]-[#6;H0;+0:4]#[#6;+0:3]", "superclass_id": None}
 {"name": "", "smirks": "[#6:2]-[N;D1;H2;+0].[S;H1;D0;-1:5]>>[#6:2]-[S;H1;D1;+0:5]", "superclass_id": None}
 {"name": "", "smirks": "[*:2]-[N;H0;D2;+0:3]=[C;H0;D2;+0:4]=[O;H0;D1;+0:5].[OH;D1;+0:9]>>[*:2]-[N;H1;D2;+0:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[O;D2;+0:9]", "superclass_id": None}
@@ -615,24 +616,24 @@
 {"name": "Dealkylation secondary amine", "smirks": "[#6;+0:2]-[N;H1;D2;+0:3]-[#6;+0](-[*])-[*]>>[#6;+0:2]-[N;H2;D1;+0:3]", "superclass_id": None}
 {"name": "Dealkylation tertiary amine", "smirks": "[#6;+0:2]-[#7;H0;D3;+0:3](-[#6;+0:4])-[#6;+0](-[*])-[*]>>[#6;+0:2]-[#7;H1;D2;+0:3](-[#6;+0:4])", "superclass_id": None}
 {"name": "Oxidation of ketone to carboxylic acid with metal oxidizer", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
-{"name": "Oxidation of ketone to carboxylic acid with metal oxidizer", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
+{"name": "Oxidation of ketone to carboxylic acid with metal oxidizer", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of ketone to carboxylic acid with chloro-oxidizer", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[C;+0].[*]~[Cl;H0]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
-{"name": "Oxidation of alkene to carboxylic acid with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:4].[O;D0;H0;-1:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:5]", "superclass_id": 10}
+{"name": "Oxidation of alkene to carboxylic acid with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:4].[O;D0;H0;-1:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:5]", "superclass_id": 10}
 {"name": "Oxidation of alkene to carboxylic acid with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg](~[O;H0:4])~[O;H0:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:5]", "superclass_id": 10}
 {"name": "Oxidation of alkene to carboxylic acid with chloro-oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Cl;H0](~[O;H0:4])~[O;H0:5]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:5]", "superclass_id": 10}
-{"name": "Oxidation of alcohol to carboxylic acid with metal oxidizer", "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
+{"name": "Oxidation of alcohol to carboxylic acid with metal oxidizer", "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of alcohol to carboxylic acid with metal oxidizer", "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of alcohol to carboxylic acid with chloro-oxidizer", "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Cl;H0]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of amide to carboxylic acid with water", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0].[O;D0;H2;+0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of amide to carboxylic acid with base", "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0].[OH;D0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Alkene to diol with metal oxidizer", "smirks": "[C;+0:1]=[C;+0:2].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg](~[O;H0:3])~[O;H0:4]>>[O;H1;D1;+0:3]-[C;+0:1]-[C;+0:2]-[O;H1;D1;+0:4]", "superclass_id": 10}
-{"name": "Alkene to diol with metal oxidizer", "smirks": "[C;+0:1]=[C;+0:2].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:3].[O;D0;H0;-1:4]>>[O;H1;D1;+0:3]-[C;+0:1]-[C;+0:2]-[O;H1;D1;+0:4]", "superclass_id": 10}
+{"name": "Alkene to diol with metal oxidizer", "smirks": "[C;+0:1]=[C;+0:2].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:3].[O;D0;H0;-1:4]>>[O;H1;D1;+0:3]-[C;+0:1]-[C;+0:2]-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Alkene to diol with chloro-oxidizer", "smirks": "[C;+0:1]=[C;+0:2].[*]~[Cl;H0](~[O;H0:4])~[O;H0:4]>>[O;H1;D1;+0:3]-[C;+0:1]-[C;+0:2]-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of alkene to ketone with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])", "superclass_id": 10}
-{"name": "Oxidation of alkene to ketone with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])", "superclass_id": 10}
+{"name": "Oxidation of alkene to ketone with metal oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])", "superclass_id": 10}
 {"name": "Oxidation of alkene to ketone with chloro-oxidizer", "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Cl;H0]~[O;H0:4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])", "superclass_id": 10}
 {"name": "Oxidation of aldehyde to carboxylic acid with metal oxidizer", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
-{"name": "Oxidation of aldehyde to carboxylic acid with metal oxidizer", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
+{"name": "Oxidation of aldehyde to carboxylic acid with metal oxidizer", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D0;H0].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "Oxidation of aldehydes to carboxylic acids with chloro-oxidizer", "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[*]~[Cl;H0]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]", "superclass_id": 10}
 {"name": "primary halogenoalkane to nitrile", "smirks": "[C;H2;D2;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D2;-1:3]>>[C;H2;D2;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]", "superclass_id": None}
 {"name": "secondary halogenoalkane to nitrile", "smirks": "[C;H1;D3;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D2;-1:3]>>[C;H1;D3;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]", "superclass_id": None}
