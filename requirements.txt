@@ -1,2 +1,3 @@
 rdkit
 rdchiral
+loguru

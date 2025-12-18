@@ -1,4 +1,8 @@
 # AgaveChem
+[![PyPI Version](https://img.shields.io/pypi/v/PubChemPy?logo=python&logoColor=%23ffffff)](https://pypi.python.org/pypi/PubChemPy)
+[![License](https://img.shields.io/pypi/l/PubChemPy)](https://github.com/denovochem/agave_chem/blob/main/LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/denovochem/agave_chem/tests.yml?logo=github&logoColor=%23ffffff&label=tests)](https://github.com/denovochem/agave_chem/actions/workflows/tests.yml)
+[![Docs](https://img.shields.io/readthedocs/pubchempy?logo=readthedocs&logoColor=%23ffffff)](https://denovochem.github.io/agave_chem/)
 
 Atom-mapping and reaction classification.
 

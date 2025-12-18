@@ -1,0 +1,39 @@
+site_name: AgaveChem
+site_description: Chemical Reaction SMILES Mapping
+repo_url: https://github.com/denovochem/agave_chem
+repo_name: denovochem/agave_chem
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google  # or numpy, sphinx
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Quick Start: index.md
+  - Installation: installation.md
+  - Getting Started: getting_started.md
+  - API Reference: reference.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - codehilite
+
+extra_css:
+  - stylesheets/extra.css
