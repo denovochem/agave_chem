@@ -100,6 +100,12 @@ ENV/
 # mypy
 .mypy_cache/
 
+# ruff cache
+.ruff_cache/
+
+# pytest cache
+.pytest_cache/
+
 # test file
 testing.py
 
@@ -107,4 +113,4 @@ testing.py
 todo.txt
 
 # name_correction.py for now
-/placeholder_name/name_manipulation/name_correction.py
+gold_reactions.txt

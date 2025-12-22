@@ -105,25 +105,23 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
     """ """
 
     reactant_mols = []
-    for reactant in reaction_smiles.split(">>")[0].split("."):
-        reactant_mols.append(Chem.MolFromSmiles(reactant))
+    for reactant_smarts in reaction_smiles.split(">>")[0].split("."):
+        reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
     product_mols = []
-    for product in reaction_smiles.split(">>")[1].split("."):
-        product_mols.append(Chem.MolFromSmiles(product))
+    for product_smarts in reaction_smiles.split(">>")[1].split("."):
+        product_mols.append(Chem.MolFromSmiles(product_smarts))
 
     atom_map_dict = {}
     next_map_num = 1
 
-    for product_smiles in reaction_smiles.split(">>")[1].split("."):
-        mol = Chem.MolFromSmiles(product_smiles)
+    for mol in product_mols:
         for atom in mol.GetAtoms():
             map_num = atom.GetAtomMapNum()
             if map_num > 0 and map_num not in atom_map_dict:
                 atom_map_dict[map_num] = next_map_num
                 next_map_num += 1
 
-    for reactant_smiles in reaction_smiles.split(">>")[0].split("."):
-        mol = Chem.MolFromSmiles(reactant_smiles)
+    for mol in reactant_mols:
         for atom in mol.GetAtoms():
             map_num = atom.GetAtomMapNum()
             if map_num > 0 and map_num not in atom_map_dict:
@@ -131,17 +129,16 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
                 next_map_num += 1
 
     for product_mol in product_mols:
-        product_mol_copy = Chem.MolFromSmiles(Chem.MolToSmiles(product_mol))
-        exact_match = False
+        # product_mol_copy = Chem.MolFromSmiles(Chem.MolToSmiles(product_mol))
+        product_mol_copy = Chem.Mol(product_mol)
         product_smiles = Chem.MolToSmiles(product_mol_copy)
         [atom.SetAtomMapNum(0) for atom in product_mol_copy.GetAtoms()]
         product_smiles_no_mapping = Chem.MolToSmiles(product_mol_copy)
         for i, reactant_mol in enumerate(reactant_mols):
-            if not exact_match:
-                reactant_smiles = Chem.MolToSmiles(reactant_mol)
-                if reactant_smiles == product_smiles_no_mapping:
-                    reactant_mols[i] = Chem.MolFromSmiles(product_smiles)
-                    exact_match = True
+            reactant_smiles = Chem.MolToSmiles(reactant_mol)
+            if reactant_smiles == product_smiles_no_mapping:
+                reactant_mols[i] = Chem.MolFromSmiles(product_smiles)
+                continue
 
     reactant_atom_symbol_freq_dict = {}
     for reactant_mol in reactant_mols:
@@ -159,7 +156,7 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
                     reactant_atom_symbol_freq_dict[reactant_atom.GetSymbol()] = freq
                     seen_canonical_ranks.append(canonical_ranking)
 
-    reactant_atom_single_occurance_dict = {
+    reactant_atom_single_occurrence_dict = {
         k: v for k, v in reactant_atom_symbol_freq_dict.items() if v == 1
     }
 
@@ -171,7 +168,7 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
                     if product_atom.GetSymbol() == reactant_atom.GetSymbol():
                         if (
                             product_atom.GetSymbol()
-                            in reactant_atom_single_occurance_dict
+                            in reactant_atom_single_occurrence_dict
                         ):
                             if (
                                 reactant_atom.GetAtomMapNum() == 0
@@ -197,8 +194,12 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
             if atom.GetAtomMapNum() != 0:
                 mapped_product_atoms.append(atom.GetAtomMapNum())
             else:
-                print("Error mapping: Unmapped product atoms")
+                logger.warning("Error mapping: Unmapped product atoms")
                 return ""
+
+    if len(mapped_product_atoms) != len(set(mapped_product_atoms)):
+        logger.warning("Error mapping: Duplicate product atoms")
+        return ""
 
     reactant_atoms = []
     mapped_reactant_atoms = []
@@ -208,11 +209,8 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
             if atom.GetAtomMapNum() != 0:
                 mapped_reactant_atoms.append(atom.GetAtomMapNum())
 
-    if len(mapped_product_atoms) != len(set(mapped_product_atoms)):
-        print("Error mapping: Duplicate product atoms")
-        return ""
     if len(mapped_reactant_atoms) != len(set(mapped_reactant_atoms)):
-        print("Error mapping: Duplicate reactant atoms")
+        logger.warning("Error mapping: Duplicate reactant atoms")
         return ""
 
     seen_reactant_atoms = []
@@ -222,12 +220,13 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
                 atom.SetAtomMapNum(0)
             else:
                 if atom.GetSymbol() != product_atoms[atom.GetAtomMapNum()]:
-                    print("Error mapping: Atomic transmutation!")
+                    logger.error("Error mapping: Atomic transmutation!")
                     return ""
                 seen_reactant_atoms.append(atom.GetAtomMapNum())
 
     if set(seen_reactant_atoms) != set(product_atoms):
-        print(
+        logger.warning(f"{reaction_smiles}")
+        logger.warning(
             "Error mapping: Mapped product atoms but not corresponding reactant atoms"
         )
         return ""

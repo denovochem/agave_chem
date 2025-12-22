@@ -1,6 +1,6 @@
-from ast import literal_eval
+import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple, Dict
 
 from rdchiral import main as rdc
 from rdkit import Chem
@@ -65,9 +65,8 @@ class AgaveChemMapper:
                             )
 
         default_smirks_patterns = []
-        with open(SMIRKS_PATTERNS_FILE, "rb") as f:
-            for line in f:
-                default_smirks_patterns.append(literal_eval(line.decode("utf-8")))
+        with open(SMIRKS_PATTERNS_FILE, "r") as f:
+            default_smirks_patterns = json.load(f)
 
         if use_default_smirks_patterns and custom_smirks_patterns is None:
             self._smirks_patterns = default_smirks_patterns
@@ -90,6 +89,7 @@ class AgaveChemMapper:
         self._initialized_smirks_patterns = initialize_template_data(
             self._smirks_patterns
         )
+
         self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
 
     def _reaction_smiles_valid(self, reaction_smiles: str) -> Dict:
@@ -258,13 +258,14 @@ class AgaveChemMapper:
                 atom_mapped_reactants_dict[reactant][0]
             )
 
-            missing_fragments = self._find_missing_fragments(
+            missing_fragments, found_fragments = self._find_missing_fragments(
                 mapped_outcome, unmapped_reactants_tautomers_dict
             )
 
             if len(missing_fragments) != 0:
                 fragment_mapped_dict = self._handle_missing_fragments(
                     missing_fragments,
+                    found_fragments,
                     unmapped_reactants_tautomers_dict,
                     mapped_outcomes_smirks_dict,
                 )
@@ -281,14 +282,19 @@ class AgaveChemMapper:
                 if fragment_not_found:
                     continue
 
-            unmapped_canonical_smiles_for_mapped_smiles = set(
-                [canonicalize_smiles(ele) for ele in mapped_outcome.split(".")]
-            )
+            unmapped_canonical_smiles_for_mapped_smiles = [
+                canonicalize_smiles(ele) for ele in mapped_outcome.split(".")
+            ]
+
             spectators = []
             for ele, ele_count in fragment_count_dict.items():
                 canonicalized_ele = canonicalize_smiles(ele)
-                if canonicalized_ele not in unmapped_canonical_smiles_for_mapped_smiles:
-                    spectators.extend([canonicalized_ele] * ele_count)
+                num_occurrences_mapped = (
+                    unmapped_canonical_smiles_for_mapped_smiles.count(canonicalized_ele)
+                )
+                dif_num_occurrences = ele_count - num_occurrences_mapped
+                if dif_num_occurrences > 0:
+                    spectators.extend([canonicalized_ele] * dif_num_occurrences)
 
             reactants = mapped_outcome.split(".")
             reactants_and_spectators = reactants + spectators
@@ -303,6 +309,7 @@ class AgaveChemMapper:
 
     def _find_missing_fragments(self, mapped_outcome, unmapped_reactants):
         missing_fragments = []
+        found_fragments = []
         reactant_fragments = list(unmapped_reactants.values())
         reactant_fragments = [
             item for sublist in reactant_fragments for item in sublist
@@ -312,26 +319,44 @@ class AgaveChemMapper:
             unmapped_fragment = canonicalize_smiles(mapped_fragment)
             if unmapped_fragment not in reactant_fragments:
                 missing_fragments.append([unmapped_fragment, mapped_fragment])
+            else:
+                found_fragments.append([unmapped_fragment, mapped_fragment])
 
-        return missing_fragments
+        return missing_fragments, found_fragments
 
     def _handle_missing_fragments(
-        self, missing_fragments, unmapped_reactants, mapped_outcomes_smirks_dict
+        self,
+        missing_fragments,
+        found_fragments,
+        unmapped_reactants,
+        mapped_outcomes_smirks_dict,
     ):
         all_fragments_substructs = self._are_fragments_substructures(
-            missing_fragments, unmapped_reactants
+            missing_fragments, found_fragments, unmapped_reactants
         )
         if not all_fragments_substructs:
             return mapped_outcomes_smirks_dict
 
         fragment_mapped_dict = self._identify_and_map_fragments(
             missing_fragments,
+            found_fragments,
             unmapped_reactants,
         )
 
+        for k, v in fragment_mapped_dict.items():
+            if len(v) > 1:
+                logger.warning(
+                    "Multiple possible fragments identified for reaction SMARTS substructure"
+                )
+                return mapped_outcomes_smirks_dict
+            fragment_mapped_dict[k] = v[0]
+
         return fragment_mapped_dict
 
-    def _are_fragments_substructures(self, missing_fragments, unmapped_reactants):
+    def _are_fragments_substructures(
+        self, missing_fragments, found_fragments, unmapped_reactants
+    ):
+        unmapped_found_fragments = [ele[0] for ele in found_fragments]
         for fragment_str, _ in missing_fragments:
             if "*" not in fragment_str:
                 continue
@@ -341,10 +366,12 @@ class AgaveChemMapper:
             if not query_mol:
                 return False
 
-            # Check if any reactant fragment matches this query
             found_match = False
+            found_matches = []
             for reactant_group in unmapped_reactants.values():
                 for reactant_fragment_str in reactant_group:
+                    if reactant_fragment_str in unmapped_found_fragments:
+                        continue
                     reactant_mol = Chem.MolFromSmarts(reactant_fragment_str)
                     if not reactant_mol:
                         return False
@@ -352,43 +379,50 @@ class AgaveChemMapper:
                         # getNumImplicitHs() called without preceding call to calcImplicitValence()
                         if reactant_mol.HasSubstructMatch(query_mol):
                             found_match = True
-                            break
+                            found_matches.append(reactant_fragment_str)
                     except Exception as e:
                         logger.warning(f"Error checking substruct matches: {e}")
                         pass
-                if found_match:
-                    break
 
             if not found_match:
                 return False
 
         return True
 
-    def _identify_and_map_fragments(self, missing_fragments, unmapped_reactants):
-        all_missing_fragments_identified = True
-
+    def _identify_and_map_fragments(
+        self, missing_fragments, found_fragments, unmapped_reactants
+    ):
+        unmapped_found_fragments = [ele[0] for ele in found_fragments]
+        fragment_mapped_dict = {}
         for _, mapped_reactant_fragment in missing_fragments:
             fragment_found = False
-            fragment_mapped_dict = {}
-            for original_reactant, tautomer_list in unmapped_reactants.items():
+            for _, tautomer_list in unmapped_reactants.items():
                 for tautomer in tautomer_list:
-                    # if tautomer not in original_unmapped_outcome_copy:
-                    #     continue
+                    if tautomer in unmapped_found_fragments:
+                        continue
+
                     out = self._transfer_mapping(mapped_reactant_fragment, tautomer)
+
                     if not out:
                         continue
 
                     fragment_found = True
-                    fragment_mapped_dict[mapped_reactant_fragment] = out
+
+                    if mapped_reactant_fragment not in fragment_mapped_dict:
+                        fragment_mapped_dict[mapped_reactant_fragment] = [out]
+                    else:
+                        existing_mapped_fragments = fragment_mapped_dict[
+                            mapped_reactant_fragment
+                        ]
+                        existing_mapped_fragments.append(out)
+                        fragment_mapped_dict[mapped_reactant_fragment] = sorted(
+                            list(set(existing_mapped_fragments))
+                        )
 
             if not fragment_found:
-                all_missing_fragments_identified = False
-                continue
+                return {}
 
-        if all_missing_fragments_identified:
-            return fragment_mapped_dict
-        else:
-            return {}
+        return fragment_mapped_dict
 
     def _transfer_mapping(self, mapped_substructure_smarts, full_molecule_smiles):
         """
@@ -453,6 +487,44 @@ class AgaveChemMapper:
         mapped_smiles_output = Chem.MolToSmiles(mol)
         return mapped_smiles_output
 
+    def _atom_map_identical_fragments(self, reactants_smiles, products_smiles):
+        reactants_smiles_list = reactants_smiles.split(".")
+        products_smiles_list = products_smiles.split(".")
+
+        atom_mapped_identical_reactants_products = []
+        atom_map_num = 500
+        for reactant in reactants_smiles_list:
+            if reactant in products_smiles_list:
+                reactants_smiles_list.remove(reactant)
+                products_smiles_list.remove(reactant)
+                reactant_mol = Chem.MolFromSmiles(reactant)
+                for atom in reactant_mol.GetAtoms():
+                    atom.SetAtomMapNum(atom_map_num)
+                    atom_map_num += 1
+                mapped_reactant = Chem.MolToSmiles(reactant_mol)
+                atom_mapped_identical_reactants_products.append(mapped_reactant)
+        return (
+            atom_mapped_identical_reactants_products,
+            ".".join(reactants_smiles_list),
+            ".".join(products_smiles_list),
+        )
+
+    def _add_identical_fragments_to_mapping(
+        self, mapped_reaction_smiles, atom_mapped_identical_reactants_products
+    ):
+        reactants, products = self._split_reaction_components(mapped_reaction_smiles)
+        reactants_smiles_list = reactants.split(".")
+        products_smiles_list = products.split(".")
+
+        for identical_fragment in atom_mapped_identical_reactants_products:
+            reactants_smiles_list.append(identical_fragment)
+            products_smiles_list.append(identical_fragment)
+
+        mapped_reactants = ".".join(reactants_smiles_list)
+        mapped_products = ".".join(products_smiles_list)
+
+        return mapped_reactants + ">>" + mapped_products
+
     def map_reaction(self, reaction_smiles):
         """
         Maps atoms between reactants and products in a chemical reaction.
@@ -479,8 +551,16 @@ class AgaveChemMapper:
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
 
-        reaction_smiles = canonicalize_reaction_smiles(reaction_smiles)
-        reactants, products = self._split_reaction_components(reaction_smiles)
+        canonicalized_reaction_smiles = canonicalize_reaction_smiles(
+            reaction_smiles, canonicalize_tautomer=True
+        )
+        reactants, products = self._split_reaction_components(
+            canonicalized_reaction_smiles
+        )
+
+        atom_mapped_identical_fragments, reactants, products = (
+            self._atom_map_identical_fragments(reactants, products)
+        )
 
         reaction_data = self._prepare_reaction_data(reactants, products)
 
@@ -489,28 +569,40 @@ class AgaveChemMapper:
         )
 
         mapped_outcomes = [
-            canonicalize_reaction_smiles(
-                canonicalize_atom_mapping(ele),
-                canonicalize_tautomer=True,
-                remove_mapping=False,
+            canonicalize_atom_mapping(
+                canonicalize_reaction_smiles(
+                    ele, canonicalize_tautomer=True, remove_mapping=False
+                )
             )
             for ele in list(set(list(mapped_outcomes_smirks_dict.keys())))
         ]
-        possible_mappings = list(set([ele for ele in mapped_outcomes if ele != ""]))
-        canonicalized_reaction_smiles = canonicalize_reaction_smiles(
-            reaction_smiles, canonicalize_tautomer=True
+
+        deduplicated_mapped_outcomes = list(
+            set([ele for ele in mapped_outcomes if ele != ""])
         )
+
+        deduplicated_mapped_outcomes = [
+            self._add_identical_fragments_to_mapping(
+                ele, atom_mapped_identical_fragments
+            )
+            for ele in deduplicated_mapped_outcomes
+        ]
+
         possible_mappings = list(
             set(
                 [
                     ele
-                    for ele in possible_mappings
+                    for ele in deduplicated_mapped_outcomes
                     if canonicalize_reaction_smiles(ele, canonicalize_tautomer=True)
                     == canonicalized_reaction_smiles
                 ]
             )
         )
-        if len(possible_mappings) != 1:
+
+        if len(possible_mappings) > 1:
+            logger.warning("Multiple possible mappings")
+            return default_mapping_dict
+        if len(possible_mappings) == 0:
             return default_mapping_dict
 
         applied_smirks_names = []

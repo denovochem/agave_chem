@@ -1,123 +1,186 @@
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 from rdkit import Chem
 from rdchiral import main as rdc
 
 from agave_chem.utils.logging_config import logger
 
 
+def has_top_level_comma(s: str) -> bool:
+    """Check if string has a comma at top level (not inside [] or ())."""
+    depth = 0
+    for char in s:
+        if char in "([":
+            depth += 1
+        elif char in ")]":
+            depth -= 1
+        elif char == "," and depth == 0:
+            return True
+    return False
+
+
+def split_top_level(s: str, delimiter: str) -> List[str]:
+    """Split string by delimiter only at top level (not inside [] or ())."""
+    result = []
+    current = []
+    depth = 0
+
+    for char in s:
+        if char in "([":
+            depth += 1
+            current.append(char)
+        elif char in ")]":
+            depth -= 1
+            current.append(char)
+        elif char == delimiter and depth == 0:
+            result.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+
+    result.append("".join(current))
+    return result
+
+
+def find_innermost_bracket_with_comma(s: str) -> Optional[Tuple[int, int]]:
+    """
+    Find the innermost (first-closing) bracket that contains a top-level comma.
+    Returns (start_index, end_index) or None if not found.
+    """
+    bracket_stack = []
+
+    for i, char in enumerate(s):
+        if char == "[":
+            bracket_stack.append(i)
+        elif char == "]":
+            if bracket_stack:
+                start = bracket_stack.pop()
+                content = s[start + 1 : i]
+                if has_top_level_comma(content):
+                    return (start, i + 1)
+
+    return None
+
+
 def expand_first_bracketed_list(input_string: str) -> List[str]:
     """
-    Finds the first bracketed section containing a field with commas
-    (e.g., [C;H1,H2;+0:6]) and expands that specific field.
-
-    It iterates through brackets until it finds one needing expansion, expands
-    only the *first* comma-separated field within that bracket, and returns
-    all possible strings resulting from that single expansion step.
-
-    Args:
-        input_string: The string to process.
-
-    Returns:
-        A list of strings, where each string represents one expansion
-        of the first found comma-separated field within a bracket.
-        If no such field is found in any bracket, returns a list containing
-        just the original string.
+    Finds the innermost bracket containing a comma and expands it.
+    Preserves other semicolon-separated fields in the bracket.
     """
+    match = find_innermost_bracket_with_comma(input_string)
 
-    bracket_matches = []
-    open_bracket_count, close_bracket_count = 0, 0
-    start_index, end_index = 0, 0
-    for i, char in enumerate(input_string):
-        if char == "[":
-            if open_bracket_count == 0:
-                start_index = i
-            open_bracket_count += 1
+    if match is None:
+        return [input_string]
 
-        if char == "]":
-            end_index = i + 1
-            close_bracket_count += 1
+    start, end = match
+    bracket_content = input_string[start + 1 : end - 1]
 
-        if open_bracket_count == close_bracket_count and open_bracket_count != 0:
-            bracket_matches.append(
-                [input_string[start_index:end_index], start_index, end_index]
-            )
-            open_bracket_count = 0
-            close_bracket_count = 0
+    # Handle atom map number (e.g., ":3" at the end)
+    map_suffix = ""
+    if ":" in bracket_content:
+        parts = bracket_content.rsplit(":", 1)
+        potential_map = parts[1]
+        if potential_map.lstrip("-").isdigit():
+            map_suffix = ":" + potential_map
+            bracket_content = parts[0]
 
-    for original_bracket_with_brackets, start_index, end_index in bracket_matches:
-        original_bracket_content = original_bracket_with_brackets[1:-1]
-        has_map = False
-        if len(original_bracket_content.split(":")) > 1:
-            sub_str = original_bracket_content.split(":")[-1]
-            if sub_str.isdigit() or (sub_str.startswith("-") and sub_str[1:].isdigit()):
-                has_map = True
-                map_num = original_bracket_content.split(":")[-1]
-        if has_map:
-            original_bracket_content_without_map = ":".join(
-                original_bracket_content.split(":")[:-1]
-            )
-        else:
-            original_bracket_content_without_map = original_bracket_content
+    # Split by top-level semicolons into fields
+    fields = split_top_level(bracket_content, ";")
 
-        fields = original_bracket_content_without_map.split(";")
+    # Find the first field with a top-level comma
+    field_to_expand_index = -1
+    for i, field in enumerate(fields):
+        if has_top_level_comma(field):
+            field_to_expand_index = i
+            break
 
-        field_to_expand_index = -1
-        alternatives = []
-        for i, field in enumerate(fields):
-            if "," in field:
-                field_to_expand_index = i
-                alternatives = field.split(",")
-                break
+    if field_to_expand_index == -1:
+        return [input_string]
 
-        if field_to_expand_index != -1:
-            results = []
-            for alt in alternatives:
-                new_fields = (
-                    fields[:field_to_expand_index]
-                    + [alt]
-                    + fields[field_to_expand_index + 1 :]
+    # Split the field by comma to get alternatives
+    alternatives = split_top_level(fields[field_to_expand_index], ",")
+
+    results = []
+    for alt in alternatives:
+        # Reconstruct fields with this alternative
+        new_fields = (
+            fields[:field_to_expand_index] + [alt] + fields[field_to_expand_index + 1 :]
+        )
+        new_bracket_content = ";".join(new_fields)
+        if map_suffix:
+            new_bracket_content += map_suffix
+        new_string = (
+            input_string[:start] + "[" + new_bracket_content + "]" + input_string[end:]
+        )
+        results.append(new_string)
+
+    return results
+
+
+def expand_all_brackets(input_string: str) -> List[str]:
+    """
+    Recursively expands all brackets with commas until none remain.
+    """
+    results = [input_string]
+
+    while True:
+        new_results = []
+        any_expanded = False
+
+        for s in results:
+            expanded = expand_first_bracketed_list(s)
+            if expanded != [s]:
+                any_expanded = True
+            new_results.extend(expanded)
+
+        results = new_results
+
+        if not any_expanded:
+            break
+
+    return results
+
+
+def verify_validity_of_template(template: str) -> bool:
+    reactant_smarts = template.split(">>")[0]
+    product_smarts = template.split(">>")[1]
+    reactant_mols = [
+        Chem.MolFromSmarts(smarts) for smarts in reactant_smarts.split(".")
+    ]
+    product_mols = [Chem.MolFromSmarts(smarts) for smarts in product_smarts.split(".")]
+
+    product_atom_maps_and_elements = {}
+    for mol in product_mols:
+        for atom in mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                continue
+            if atom.GetAtomMapNum() in product_atom_maps_and_elements:
+                logger.warning(f"Duplicate atom mapping in product: {template}")
+            product_atom_maps_and_elements[atom.GetAtomMapNum()] = atom.GetSymbol()
+
+    seen_product_atoms = list(product_atom_maps_and_elements.keys())
+    reactant_atom_maps_and_elements = {}
+    for mol in reactant_mols:
+        for atom in mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                continue
+            if atom.GetAtomMapNum() in reactant_atom_maps_and_elements:
+                logger.warning(f"Duplicate atom mapping in reactant: {template}")
+            if atom.GetAtomMapNum() not in product_atom_maps_and_elements:
+                logger.warning(
+                    f"Mapped reactant atom(s) not present in product: {template}"
                 )
-                new_bracket_content = ";".join(new_fields)
-                if has_map:
-                    new_bracket_content += ":" + map_num
-                new_string = (
-                    input_string[:start_index]
-                    + "["
-                    + new_bracket_content
-                    + "]"
-                    + input_string[end_index:]
-                )
-                results.append(new_string)
+                return False
+            if product_atom_maps_and_elements[atom.GetAtomMapNum()] != atom.GetSymbol():
+                logger.warning(f"Atomic transmutation in template: {template}")
+                return False
+            reactant_atom_maps_and_elements[atom.GetAtomMapNum()] = atom.GetSymbol()
+            seen_product_atoms.remove(atom.GetAtomMapNum())
 
-            return results
+    if len(seen_product_atoms) != 0:
+        logger.warning(f"Mapped product atom(s) not present in reactant: {template}")
+        return False
 
-    return [input_string]
-
-
-def expand_all_recursively(input_string: str) -> List[str]:
-    """
-    Recursively applies _expand_first_bracketed_list to a SMIRKS string until
-    no more expansions based on comma-separated fields within brackets are
-    possible. It collects all final, fully expanded combinations.
-
-    Args:
-        input_string: The SMIRKS string to start the expansion from.
-
-    Returns:
-        A list of all fully expanded SMIRKS strings.
-    """
-
-    expanded_list = expand_first_bracketed_list(input_string)
-
-    if len(expanded_list) == 1 and expanded_list[0] == input_string:
-        return expanded_list
-
-    else:
-        all_final_strings = []
-        for next_string in expanded_list:
-            all_final_strings.extend(expand_all_recursively(next_string))
-
-        return all_final_strings
+    return True
 
 
 def initialize_template_data(named_reactions: Dict) -> List:
@@ -146,25 +209,31 @@ def initialize_template_data(named_reactions: Dict) -> List:
             reaction["smirks"].split(">>")[1] + ">>" + reaction["smirks"].split(">>")[0]
         )
 
-        if len(expand_all_recursively(smirks)) < 100:
-            smirks_list.extend(expand_all_recursively(smirks))
+        if len(expand_all_brackets(smirks)) < 100:
+            smirks_list.extend(expand_all_brackets(smirks))
 
         if smirks in all_smirks:
-            existing_patters = all_smirks[smirks]
-            existing_patters.extend(smirks_list)
-            all_smirks[smirks] = sorted(list(set(existing_patters)))
+            existing_patterns = all_smirks[smirks]
+            existing_patterns.extend(smirks_list)
+            all_smirks[smirks] = sorted(list(set(existing_patterns)))
         else:
-            all_smirks[smirks] = smirks_list
+            all_smirks[smirks] = sorted(list(set(smirks_list)))
 
     rdc_info = []
-    for k, v in all_smirks.items():
-        for smirk in v:
+    for original_smirk, expanded_smirk_list in all_smirks.items():
+        for smirk in expanded_smirk_list:
             products_smarts = [
-                Chem.MolFromSmarts(ele) for ele in smirk.split(">>")[0].split(".")
+                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[0].split(".")
             ]
             reactants_smarts = [
-                Chem.MolFromSmarts(ele) for ele in smirk.split(">>")[1].split(".")
+                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[1].split(".")
             ]
+
+            if None in products_smarts:
+                continue
+
+            if None in reactants_smarts:
+                continue
 
             try:
                 rdc_rxn = rdc.rdchiralReaction(smirk)
@@ -172,6 +241,11 @@ def initialize_template_data(named_reactions: Dict) -> List:
                 logger.warning(f"Error converting smirks to rdchiral reaction: {e}")
                 continue
 
-            rdc_info.append([products_smarts, reactants_smarts, rdc_rxn, k, smirk])
+            if not verify_validity_of_template(smirk):
+                continue
+
+            rdc_info.append(
+                [products_smarts, reactants_smarts, rdc_rxn, original_smirk, smirk]
+            )
 
     return rdc_info
