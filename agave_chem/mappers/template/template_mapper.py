@@ -6,33 +6,35 @@ from rdchiral import main as rdc
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.template_initializiation import initialize_template_data
+from agave_chem.mappers.template.template_initialization import initialize_template_data
+from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.utils.chem_utils import (
     canonicalize_atom_mapping,
     canonicalize_reaction_smiles,
     canonicalize_smiles,
 )
-from agave_chem.utils.logging_config import configure_logging, logger
+from agave_chem.utils.logging_config import logger
 
-# Configure loguru logging
-configure_logging(level="WARNING")
-
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SMIRKS_PATTERNS_FILE = BASE_DIR / "datafiles" / "smirks_patterns.json"
 
 
-class AgaveChemMapper:
+class ExpertReactionMapper(ReactionMapper):
     """
-    AgaveChem reaction classification and atom-mapping
+    Expert template reaction classification and atom-mapping
     """
 
     def __init__(
         self,
+        mapper_name: str,
+        mapper_weight: float = 3,
         custom_smirks_patterns: List[Dict] = None,
         use_default_smirks_patterns: bool = True,
+        max_transforms: int = 1000,
+        max_tautomers: int = 1000,
     ):
         """
-        Initialize the AgaveChemMapper instance.
+        Initialize the TemplateMapper instance.
 
         Args:
             custom_smirks_patterns (List[Dict]): A list of dictionaries containing
@@ -41,6 +43,8 @@ class AgaveChemMapper:
             use_default_smirks_patterns (bool): Whether to use the default SMIRKS
                 patterns.
         """
+
+        super().__init__("expert", mapper_name, mapper_weight)
 
         if custom_smirks_patterns is not None:
             if not isinstance(custom_smirks_patterns, list):
@@ -76,7 +80,7 @@ class AgaveChemMapper:
             self._smirks_patterns = custom_smirks_patterns + default_smirks_patterns
         else:
             raise TypeError(
-                "Attempting to initialize AgaveChem with no SMIRKS patterns!"
+                "Attempting to initialize AgaveChem with no SMIRKS patterns"
             )
 
         self._smirks_name_dictionary = {
@@ -91,8 +95,19 @@ class AgaveChemMapper:
         )
 
         self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+        self._tautomer_enumerator.SetMaxTransforms(max_transforms)
+        self._tautomer_enumerator.SetMaxTautomers(max_tautomers)
 
     def _reaction_smiles_valid(self, reaction_smiles: str) -> Dict:
+        """
+        Checks if the reaction SMILES string is valid.
+
+        Args:
+            reaction_smiles (str): The reaction SMILES string to check
+
+        Returns:
+            bool: True if the reaction SMILES string is valid, False otherwise
+        """
         if reaction_smiles.count(">>") != 1:
             return False
         for ele in reaction_smiles.split(">>"):
@@ -101,12 +116,31 @@ class AgaveChemMapper:
         return True
 
     def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str]:
+        """
+        Splits a reaction SMILES string into reactants and products.
+
+        Args:
+            reaction_smiles (str): A reaction SMILES string in the format "reactants>>products"
+
+        Returns:
+            tuple: A tuple containing the reactants and products as strings
+        """
         parts = reaction_smiles.strip().split(">>")
         reactants = parts[0]
         products = parts[1]
         return reactants, products
 
     def _prepare_reaction_data(self, reactants: str, products: str) -> List:
+        """
+        Prepares reaction data for reaction mapping.
+
+        Args:
+            reactants (str): Reactants SMILES string
+            products (str): Products SMILES string
+
+        Returns:
+            List: A list containing the reactants and products as RDKit Mol objects, the RDChiral reaction object, a dictionary of enumerated tautomer SMILES strings, and a dictionary of fragment counts.
+        """
         return [
             [Chem.MolFromSmiles(product) for product in products.split(".")],
             [Chem.MolFromSmiles(reactant) for reactant in reactants.split(".")],
@@ -116,8 +150,17 @@ class AgaveChemMapper:
         ]
 
     def _enumerate_tautomer_smiles(self, smiles: str) -> Dict[str, List]:
-        """ """
+        """
 
+        Enumerate tautomer SMILES strings for a given SMILES string.
+
+        Args:
+            smiles (str): A SMILES string
+
+        Returns:
+            Dict[str, List]: A dictionary where the keys are the fragments of the input SMILES string and the values are lists of the enumerated tautomer SMILES strings.
+
+        """
         enumerated_smiles_dict = {}
         for fragment in smiles.split("."):
             mol = Chem.MolFromSmiles(fragment)
@@ -140,9 +183,18 @@ class AgaveChemMapper:
 
         return enumerated_smiles_dict
 
-    def _get_fragment_count_dict(self, smiles: str) -> Dict[str, List]:
-        """ """
+    def _get_fragment_count_dict(self, smiles: str) -> Dict[str, int]:
+        """
 
+        Returns a dictionary where the keys are the fragments of the input SMILES string and the values are the counts of each fragment.
+
+        Args:
+            smiles (str): A SMILES string
+
+        Returns:
+            Dict[str, int]: A dictionary where the keys are the fragments of the input SMILES string and the values are the counts of each fragment.
+
+        """
         fragment_count_dict = {}
         for fragment in smiles.split("."):
             if fragment not in fragment_count_dict:
@@ -152,7 +204,17 @@ class AgaveChemMapper:
 
         return fragment_count_dict
 
-    def _process_templates(self, reaction_smiles_data):
+    def _process_templates(self, reaction_smiles_data: List) -> Dict[str, List]:
+        """
+        Process templates for a given reaction.
+
+        Args:
+            reaction_smiles_data (List): A list containing the reactants and products as RDKit Mol objects, the RDChiral reaction object, a dictionary of enumerated tautomer SMILES strings, and a dictionary of fragment counts.
+
+        Returns:
+            dict: A dictionary where the keys are the outcomes of the reaction and the values are lists of the applied SMIRKS patterns.
+
+        """
         mapped_outcomes_smirks_dict = {}
 
         atom_mapped_product = self._get_mapped_product(reaction_smiles_data)
@@ -170,8 +232,16 @@ class AgaveChemMapper:
 
         return mapped_outcomes_smirks_dict
 
-    def _get_mapped_product(self, reaction_smiles_data):
-        """ """
+    def _get_mapped_product(self, reaction_smiles_data: List) -> str:
+        """Get the mapped product SMILES string for a given reaction.
+
+        Args:
+            reaction_smiles_data (List): A list containing the reactants and products as RDKit Mol objects, the RDChiral reaction object, a dictionary of enumerated tautomer SMILES strings, and a dictionary of fragment counts.
+
+        Returns:
+            str: The mapped product SMILES string.
+
+        """
         [_, _, rdc_reactants, _, _] = reaction_smiles_data
 
         rdc_mol = rdc_reactants.reactants
@@ -307,7 +377,9 @@ class AgaveChemMapper:
 
         return mapped_outcomes_smirks_dict
 
-    def _find_missing_fragments(self, mapped_outcome, unmapped_reactants):
+    def _find_missing_fragments(
+        self, mapped_outcome: str, unmapped_reactants: Dict[str, List[str]]
+    ) -> Tuple[List, List]:
         missing_fragments = []
         found_fragments = []
         reactant_fragments = list(unmapped_reactants.values())
@@ -361,7 +433,6 @@ class AgaveChemMapper:
             if "*" not in fragment_str:
                 continue
 
-            # Parse fragment SMARTS
             query_mol = Chem.MolFromSmarts(fragment_str)
             if not query_mol:
                 return False
@@ -375,14 +446,10 @@ class AgaveChemMapper:
                     reactant_mol = Chem.MolFromSmarts(reactant_fragment_str)
                     if not reactant_mol:
                         return False
-                    try:
-                        # getNumImplicitHs() called without preceding call to calcImplicitValence()
-                        if reactant_mol.HasSubstructMatch(query_mol):
-                            found_match = True
-                            found_matches.append(reactant_fragment_str)
-                    except Exception as e:
-                        logger.warning(f"Error checking substruct matches: {e}")
-                        pass
+                    reactant_mol.UpdatePropertyCache()
+                    if reactant_mol.HasSubstructMatch(query_mol):
+                        found_match = True
+                        found_matches.append(reactant_fragment_str)
 
             if not found_match:
                 return False
@@ -487,45 +554,7 @@ class AgaveChemMapper:
         mapped_smiles_output = Chem.MolToSmiles(mol)
         return mapped_smiles_output
 
-    def _atom_map_identical_fragments(self, reactants_smiles, products_smiles):
-        reactants_smiles_list = reactants_smiles.split(".")
-        products_smiles_list = products_smiles.split(".")
-
-        atom_mapped_identical_reactants_products = []
-        atom_map_num = 500
-        for reactant in reactants_smiles_list:
-            if reactant in products_smiles_list:
-                reactants_smiles_list.remove(reactant)
-                products_smiles_list.remove(reactant)
-                reactant_mol = Chem.MolFromSmiles(reactant)
-                for atom in reactant_mol.GetAtoms():
-                    atom.SetAtomMapNum(atom_map_num)
-                    atom_map_num += 1
-                mapped_reactant = Chem.MolToSmiles(reactant_mol)
-                atom_mapped_identical_reactants_products.append(mapped_reactant)
-        return (
-            atom_mapped_identical_reactants_products,
-            ".".join(reactants_smiles_list),
-            ".".join(products_smiles_list),
-        )
-
-    def _add_identical_fragments_to_mapping(
-        self, mapped_reaction_smiles, atom_mapped_identical_reactants_products
-    ):
-        reactants, products = self._split_reaction_components(mapped_reaction_smiles)
-        reactants_smiles_list = reactants.split(".")
-        products_smiles_list = products.split(".")
-
-        for identical_fragment in atom_mapped_identical_reactants_products:
-            reactants_smiles_list.append(identical_fragment)
-            products_smiles_list.append(identical_fragment)
-
-        mapped_reactants = ".".join(reactants_smiles_list)
-        mapped_products = ".".join(products_smiles_list)
-
-        return mapped_reactants + ">>" + mapped_products
-
-    def map_reaction(self, reaction_smiles):
+    def map_reaction(self, reaction_smiles: str) -> Dict[str, List[str]]:
         """
         Maps atoms between reactants and products in a chemical reaction.
 
@@ -546,7 +575,7 @@ class AgaveChemMapper:
             '[CH3:1][C:2](=[O:3])[OH:4].[NH2:5][CH3:6]>>[CH3:1][NH:2][C:3]([CH3:5])=[O:6]'
         """
 
-        default_mapping_dict = {"mapping": "", "reaction_classification": []}
+        default_mapping_dict = {"mapping": "", "additional_info": [{}]}
 
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
@@ -556,10 +585,6 @@ class AgaveChemMapper:
         )
         reactants, products = self._split_reaction_components(
             canonicalized_reaction_smiles
-        )
-
-        atom_mapped_identical_fragments, reactants, products = (
-            self._atom_map_identical_fragments(reactants, products)
         )
 
         reaction_data = self._prepare_reaction_data(reactants, products)
@@ -580,13 +605,6 @@ class AgaveChemMapper:
         deduplicated_mapped_outcomes = list(
             set([ele for ele in mapped_outcomes if ele != ""])
         )
-
-        deduplicated_mapped_outcomes = [
-            self._add_identical_fragments_to_mapping(
-                ele, atom_mapped_identical_fragments
-            )
-            for ele in deduplicated_mapped_outcomes
-        ]
 
         possible_mappings = list(
             set(
@@ -617,5 +635,13 @@ class AgaveChemMapper:
 
         return {
             "mapping": possible_mappings[0],
-            "reaction_classification": applied_smirks_names,
+            "additional_info": applied_smirks_names,
         }
+
+    def map_reactions(self, reaction_list: List[str]) -> List[Dict[str, List[str]]]:
+        """ """
+
+        mapped_reactions = []
+        for reaction in reaction_list:
+            mapped_reactions.append(self.map_reaction(reaction))
+        return mapped_reactions

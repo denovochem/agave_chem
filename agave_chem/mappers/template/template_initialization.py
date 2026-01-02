@@ -141,6 +141,20 @@ def expand_all_brackets(input_string: str) -> List[str]:
 
 
 def verify_validity_of_template(template: str) -> bool:
+    """
+    Verify the validity of a template by checking for:
+
+    - Duplicate atom mapping in reactants and products
+    - Mapped reactant atoms not present in products
+    - Mapped product atoms not present in reactants
+    - Atomic transmutation in the template
+
+    Args:
+        template (str): The template to verify, in the format "reactant_smarts>>product_smarts"
+
+    Returns:
+        bool: True if the template is valid, False otherwise
+    """
     reactant_smarts = template.split(">>")[0]
     product_smarts = template.split(">>")[1]
     reactant_mols = [
@@ -225,12 +239,13 @@ def initialize_template_data(named_reactions: Dict) -> List:
             products_smarts = [
                 Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[0].split(".")
             ]
-            reactants_smarts = [
-                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[1].split(".")
-            ]
 
             if None in products_smarts:
                 continue
+
+            reactants_smarts = [
+                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[1].split(".")
+            ]
 
             if None in reactants_smarts:
                 continue

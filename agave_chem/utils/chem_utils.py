@@ -1,7 +1,19 @@
+"""
+Utility functions for molecular operations.
+
+This module provides helper functions for working with RDKit molecules,
+including parsing, sanitization, and atom property access.
+"""
+
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.constants import BOND_ENERGIES
+
 
 tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
 
@@ -55,6 +67,7 @@ def canonicalize_reaction_smiles(
     isomeric: bool = True,
     remove_mapping: bool = True,
     canonicalize_tautomer: bool = False,
+    canonicalize_atom_mapping: bool = False,
 ) -> str:
     """
     Canonicalizes a reaction SMILES string using RDKit.
@@ -78,165 +91,346 @@ def canonicalize_reaction_smiles(
         reaction_list = []
         for x in split_roles:
             role_list = []
-            if x != "":
-                y = x.split(".")
-                for z in y:
-                    canonical_smiles = canonicalize_smiles(
-                        z,
-                        isomeric=isomeric,
-                        remove_mapping=remove_mapping,
-                        canonicalize_tautomer=canonicalize_tautomer,
-                    )
-                    role_list.append(canonical_smiles)
+            if x == "":
+                continue
+            y = x.split(".")
+            for z in y:
+                canonical_smiles = canonicalize_smiles(
+                    z,
+                    isomeric=isomeric,
+                    remove_mapping=remove_mapping,
+                    canonicalize_tautomer=canonicalize_tautomer,
+                )
+                role_list.append(canonical_smiles)
 
-                role_list = sorted(role_list)
-                role_list = [ele for ele in role_list if ele != ""]
-                reaction_list.append(role_list)
+            role_list = sorted(role_list)
+            role_list = [ele for ele in role_list if ele != ""]
+            reaction_list.append(role_list)
 
         canonical_rxn = [".".join(role_list) for role_list in reaction_list]
         canonical_rxn = ">>".join(canonical_rxn)
+        if canonicalize_atom_mapping:
+            canonical_rxn = canonicalize_atom_mapping(canonical_rxn)
         return canonical_rxn
     except Exception as e:
         logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
         return rxn_smiles
 
 
+def get_atom_map_to_canonical_idx(mapped_smiles: str) -> Dict[int, int]:
+    """
+    Given an atom-mapped SMILES, returns the canonical unmapped SMILES and a mapping
+    from original atom map numbers to atom indices in the canonical SMILES.
+
+    Args:
+        mapped_smiles: SMILES string with atom map numbers (e.g., "[CH3:1][OH:2]")
+
+    Returns:
+        dict: Dictionary mapping original atom map numbers to canonical atom indices
+    """
+    mol = Chem.MolFromSmiles(mapped_smiles)
+    if mol is None:
+        raise ValueError(f"Could not parse SMILES: {mapped_smiles}")
+
+    orig_idx_to_map_num = {}
+    for atom in mol.GetAtoms():
+        map_num = atom.GetAtomMapNum()
+        if map_num > 0:
+            orig_idx_to_map_num[atom.GetIdx()] = map_num
+        atom.SetAtomMapNum(0)
+
+    canonical_smiles = Chem.MolToSmiles(mol, canonical=True)
+
+    mol_canon = Chem.MolFromSmiles(canonical_smiles)
+
+    ranks_orig = Chem.CanonicalRankAtoms(mol, breakTies=True, includeChirality=True)
+    ranks_canon = Chem.CanonicalRankAtoms(
+        mol_canon, breakTies=True, includeChirality=True
+    )
+
+    rank_to_canon_idx = {rank: idx for idx, rank in enumerate(ranks_canon)}
+
+    map_num_to_canon_idx = {}
+    for orig_idx, map_num in orig_idx_to_map_num.items():
+        orig_rank = ranks_orig[orig_idx]
+        canon_idx = rank_to_canon_idx[orig_rank]
+        map_num_to_canon_idx[map_num] = canon_idx + 1
+
+    return map_num_to_canon_idx
+
+
 def canonicalize_atom_mapping(reaction_smiles: str) -> str:
-    """ """
+    """
+    Canonicalizes a reaction SMILES string with respect to atom mapping.
+
+    Takes a reaction SMILES string, splits it into reactant and product molecules,
+    and then reassigns the atom map numbers in the reactant molecules to match the
+    canonical atom order in the product molecules.
+
+    Args:
+        reaction_smiles (str): The input reaction SMILES string to canonicalize
+
+    Returns:
+        str: The canonicalized reaction SMILES string.
+    """
 
     reactant_mols = []
     for reactant_smarts in reaction_smiles.split(">>")[0].split("."):
         reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
     product_mols = []
+    product_mol_mapping_dicts = []
     for product_smarts in reaction_smiles.split(">>")[1].split("."):
         product_mols.append(Chem.MolFromSmiles(product_smarts))
+        product_mol_mapping_dicts.append(get_atom_map_to_canonical_idx(product_smarts))
 
-    atom_map_dict = {}
-    next_map_num = 1
+    reactant_mapping_dict = {}
+    mapping_offset = 0
+    for product_mol, product_mol_mapping_dict in zip(
+        product_mols, product_mol_mapping_dicts
+    ):
+        num_atoms_mapped = 0
+        for atom in product_mol.GetAtoms():
+            if atom.GetAtomMapNum() in product_mol_mapping_dict:
+                reactant_mapping_dict[atom.GetAtomMapNum()] = (
+                    product_mol_mapping_dict[atom.GetIdx() + 1] + mapping_offset
+                )
+                num_atoms_mapped += 1
+                atom.SetAtomMapNum(
+                    mapping_offset + product_mol_mapping_dict[atom.GetIdx() + 1]
+                )
+        mapping_offset += num_atoms_mapped
 
-    for mol in product_mols:
-        for atom in mol.GetAtoms():
-            map_num = atom.GetAtomMapNum()
-            if map_num > 0 and map_num not in atom_map_dict:
-                atom_map_dict[map_num] = next_map_num
-                next_map_num += 1
-
-    for mol in reactant_mols:
-        for atom in mol.GetAtoms():
-            map_num = atom.GetAtomMapNum()
-            if map_num > 0 and map_num not in atom_map_dict:
-                atom_map_dict[map_num] = next_map_num
-                next_map_num += 1
-
-    for product_mol in product_mols:
-        # product_mol_copy = Chem.MolFromSmiles(Chem.MolToSmiles(product_mol))
-        product_mol_copy = Chem.Mol(product_mol)
-        product_smiles = Chem.MolToSmiles(product_mol_copy)
-        [atom.SetAtomMapNum(0) for atom in product_mol_copy.GetAtoms()]
-        product_smiles_no_mapping = Chem.MolToSmiles(product_mol_copy)
-        for i, reactant_mol in enumerate(reactant_mols):
-            reactant_smiles = Chem.MolToSmiles(reactant_mol)
-            if reactant_smiles == product_smiles_no_mapping:
-                reactant_mols[i] = Chem.MolFromSmiles(product_smiles)
-                continue
-
-    reactant_atom_symbol_freq_dict = {}
     for reactant_mol in reactant_mols:
-        seen_canonical_ranks = []
-        for reactant_atom, canonical_ranking in zip(
-            reactant_mol.GetAtoms(),
-            Chem.CanonicalRankAtoms(reactant_mol, breakTies=False),
-        ):
-            if canonical_ranking not in seen_canonical_ranks:
-                if reactant_atom.GetSymbol() not in reactant_atom_symbol_freq_dict:
-                    reactant_atom_symbol_freq_dict[reactant_atom.GetSymbol()] = 1
-                    seen_canonical_ranks.append(canonical_ranking)
-                else:
-                    freq = reactant_atom_symbol_freq_dict[reactant_atom.GetSymbol()] + 1
-                    reactant_atom_symbol_freq_dict[reactant_atom.GetSymbol()] = freq
-                    seen_canonical_ranks.append(canonical_ranking)
+        for atom in reactant_mol.GetAtoms():
+            if atom.GetAtomMapNum() in reactant_mapping_dict:
+                atom.SetAtomMapNum(reactant_mapping_dict[atom.GetAtomMapNum()])
+            else:
+                if atom.GetAtomMapNum() > 0:
+                    logger.info(
+                        f"Reactant atom {atom.GetIdx()} is mapped but has no corresponding product atom"
+                    )
+                atom.SetAtomMapNum(0)
 
-    reactant_atom_single_occurrence_dict = {
-        k: v for k, v in reactant_atom_symbol_freq_dict.items() if v == 1
+    canonicalized_rxn = (
+        ".".join([Chem.MolToSmiles(mol, canonical=True) for mol in reactant_mols])
+        + ">>"
+        + ".".join([Chem.MolToSmiles(mol, canonical=True) for mol in product_mols])
+    )
+
+    return canonicalized_rxn
+
+
+def parse_reaction_smiles(
+    reaction_smiles: str,
+) -> Tuple[List[Chem.Mol], List[Chem.Mol], List[Chem.Mol]]:
+    """
+    Parse a reaction SMILES into reactants and products.
+
+    Args:
+        reaction_smiles: Reaction SMILES in format "reactants>>products"
+
+    Returns:
+        Tuple of (reactants, products) as lists of RDKit Mol objects
+
+    Raises:
+        ValueError: If the reaction SMILES cannot be parsed
+    """
+    parts = reaction_smiles.split(">>")
+
+    if len(parts) != 2:
+        raise ValueError(
+            f"Invalid reaction SMILES format: expected 2 parts separated by '>>', got {len(parts)}"
+        )
+
+    reactant_smiles, product_smiles = parts
+
+    def parse_molecules(smiles_str: str) -> List[Chem.Mol]:
+        """Parse dot-separated SMILES into list of molecules."""
+        if not smiles_str.strip():
+            return []
+
+        molecules = []
+        for smi in smiles_str.split("."):
+            mol = Chem.MolFromSmiles(smi.strip())
+            if mol is None:
+                logger.warning(f"Could not parse SMILES: {smi}")
+                continue
+            molecules.append(mol)
+        return molecules
+
+    reactants = parse_molecules(reactant_smiles)
+    products = parse_molecules(product_smiles)
+
+    if not reactants:
+        raise ValueError("No valid reactants found in reaction SMILES")
+    if not products:
+        raise ValueError("No valid products found in reaction SMILES")
+
+    return reactants, products
+
+
+def sanitize_molecule(mol: Chem.Mol, add_hs: bool = False) -> Optional[Chem.Mol]:
+    """
+    Sanitize a molecule and optionally add hydrogens.
+
+    Args:
+        mol: RDKit molecule object
+        add_hs: Whether to add explicit hydrogens
+
+    Returns:
+        Sanitized molecule or None if sanitization fails
+    """
+    try:
+        mol_copy = Chem.Mol(mol)
+        Chem.SanitizeMol(mol_copy)
+        if add_hs:
+            mol_copy = Chem.AddHs(mol_copy)
+        return mol_copy
+    except Exception as e:
+        logger.warning(f"Sanitization failed: {e}")
+        return None
+
+
+def get_atom_features(atom: Chem.Atom) -> Dict:
+    """
+    Extract features from an atom for comparison purposes.
+
+    Args:
+        atom: RDKit Atom object
+
+    Returns:
+        Dictionary of atom features
+    """
+    return {
+        "atomic_num": atom.GetAtomicNum(),
+        "symbol": atom.GetSymbol(),
+        "formal_charge": atom.GetFormalCharge(),
+        "num_hs": atom.GetTotalNumHs(),
+        "hybridization": str(atom.GetHybridization()),
+        "is_aromatic": atom.GetIsAromatic(),
+        "is_in_ring": atom.IsInRing(),
+        "degree": atom.GetDegree(),
+        "isotope": atom.GetIsotope(),
+        "chiral_tag": str(atom.GetChiralTag()),
     }
 
-    mapped_product_idx = []
-    for product_mol in product_mols:
-        for product_atom in product_mol.GetAtoms():
-            for reactant_mol in reactant_mols:
-                for reactant_atom in reactant_mol.GetAtoms():
-                    if product_atom.GetSymbol() == reactant_atom.GetSymbol():
-                        if (
-                            product_atom.GetSymbol()
-                            in reactant_atom_single_occurrence_dict
-                        ):
-                            if (
-                                reactant_atom.GetAtomMapNum() == 0
-                                or reactant_atom.GetAtomMapNum() >= 900
-                            ):
-                                if (
-                                    product_atom.GetAtomMapNum() != 0
-                                    and product_atom.GetAtomMapNum()
-                                    not in mapped_product_idx
-                                ):
-                                    reactant_atom.SetAtomMapNum(
-                                        product_atom.GetAtomMapNum()
-                                    )
-                                    mapped_product_idx.append(
-                                        product_atom.GetAtomMapNum()
-                                    )
 
-    product_atoms = {}
-    mapped_product_atoms = []
-    for product_mol in product_mols:
-        for atom in product_mol.GetAtoms():
-            product_atoms[atom.GetAtomMapNum()] = atom.GetSymbol()
-            if atom.GetAtomMapNum() != 0:
-                mapped_product_atoms.append(atom.GetAtomMapNum())
-            else:
-                logger.warning("Error mapping: Unmapped product atoms")
-                return ""
+def get_bond_energy(atom1_symbol: str, atom2_symbol: str, bond_order: float) -> float:
+    """
+    Get the bond dissociation energy for a bond.
 
-    if len(mapped_product_atoms) != len(set(mapped_product_atoms)):
-        logger.warning("Error mapping: Duplicate product atoms")
-        return ""
+    Args:
+        atom1_symbol: Symbol of first atom
+        atom2_symbol: Symbol of second atom
+        bond_order: Bond order (1.0, 1.5, 2.0, 3.0)
 
-    reactant_atoms = []
-    mapped_reactant_atoms = []
-    for reactant_mol in reactant_mols:
-        for atom in reactant_mol.GetAtoms():
-            reactant_atoms.append(atom.GetAtomMapNum())
-            if atom.GetAtomMapNum() != 0:
-                mapped_reactant_atoms.append(atom.GetAtomMapNum())
+    Returns:
+        Estimated bond energy in kcal/mol
+    """
+    # Normalize the order of atoms for lookup
+    key1 = (atom1_symbol, atom2_symbol, bond_order)
+    key2 = (atom2_symbol, atom1_symbol, bond_order)
 
-    if len(mapped_reactant_atoms) != len(set(mapped_reactant_atoms)):
-        logger.warning("Error mapping: Duplicate reactant atoms")
-        return ""
-
-    seen_reactant_atoms = []
-    for reactant_mol in reactant_mols:
-        for atom in reactant_mol.GetAtoms():
-            if atom.GetAtomMapNum() not in product_atoms:
-                atom.SetAtomMapNum(0)
-            else:
-                if atom.GetSymbol() != product_atoms[atom.GetAtomMapNum()]:
-                    logger.error("Error mapping: Atomic transmutation!")
-                    return ""
-                seen_reactant_atoms.append(atom.GetAtomMapNum())
-
-    if set(seen_reactant_atoms) != set(product_atoms):
-        logger.warning(f"{reaction_smiles}")
-        logger.warning(
-            "Error mapping: Mapped product atoms but not corresponding reactant atoms"
+    if key1 in BOND_ENERGIES:
+        return BOND_ENERGIES[key1]
+    elif key2 in BOND_ENERGIES:
+        return BOND_ENERGIES[key2]
+    else:
+        # Default estimate based on average single bond energy
+        logger.debug(
+            f"No bond energy data for {atom1_symbol}-{atom2_symbol} (order {bond_order}), using default"
         )
-        return ""
+        return 80.0 * bond_order
 
-    reactants_smiles = sorted(
-        [Chem.MolToSmiles(mol, canonical=True) for mol in reactant_mols if mol != ""]
-    )
-    products_smiles = sorted(
-        [Chem.MolToSmiles(mol, canonical=True) for mol in product_mols if mol != ""]
-    )
 
-    canonicalized_rxn = ".".join(reactants_smiles) + ">>" + ".".join(products_smiles)
-    return canonicalized_rxn
+def get_molecular_fingerprint(mol: Chem.Mol, fp_type: str = "morgan") -> Optional:
+    """
+    Generate a molecular fingerprint.
+
+    Args:
+        mol: RDKit molecule
+        fp_type: Type of fingerprint ('morgan', 'rdkit', 'atom_pair')
+
+    Returns:
+        Fingerprint object or None if generation fails
+    """
+    try:
+        if fp_type == "morgan":
+            return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+        elif fp_type == "rdkit":
+            return Chem.RDKFingerprint(mol)
+        elif fp_type == "atom_pair":
+            return AllChem.GetAtomPairFingerprint(mol)
+        else:
+            raise ValueError(f"Unknown fingerprint type: {fp_type}")
+    except Exception as e:
+        logger.warning(f"Fingerprint generation failed: {e}")
+        return None
+
+
+def remove_atom_mapping(mol: Chem.Mol) -> Chem.Mol:
+    """
+    Remove atom mapping numbers from a molecule.
+
+    Args:
+        mol: RDKit molecule with atom mapping
+
+    Returns:
+        New molecule without atom mapping numbers
+    """
+    mol_copy = Chem.Mol(mol)
+    for atom in mol_copy.GetAtoms():
+        atom.SetAtomMapNum(0)
+    return mol_copy
+
+
+def apply_atom_mapping(mol: Chem.Mol, mapping: Dict[int, int]) -> Chem.Mol:
+    """
+    Apply atom mapping numbers to a molecule.
+
+    Args:
+        mol: RDKit molecule
+        mapping: Dictionary mapping atom indices to map numbers
+
+    Returns:
+        New molecule with atom mapping numbers
+    """
+    mol_copy = Chem.Mol(mol)
+    for atom_idx, map_num in mapping.items():
+        if atom_idx < mol_copy.GetNumAtoms():
+            mol_copy.GetAtomWithIdx(atom_idx).SetAtomMapNum(map_num)
+    return mol_copy
+
+
+def get_bond_dict(mol: Chem.Mol) -> Dict[FrozenSet[int], Tuple[float, bool]]:
+    """
+    Get dictionary of bonds in a molecule.
+
+    Args:
+        mol: RDKit molecule
+
+    Returns:
+        Dictionary mapping frozenset of atom indices to (bond_order, is_aromatic)
+    """
+    bonds = {}
+    for bond in mol.GetBonds():
+        atom1_idx = bond.GetBeginAtomIdx()
+        atom2_idx = bond.GetEndAtomIdx()
+        bond_order = bond.GetBondTypeAsDouble()
+        is_aromatic = bond.GetIsAromatic()
+        bonds[frozenset([atom1_idx, atom2_idx])] = (bond_order, is_aromatic)
+    return bonds
+
+
+def get_ring_info(mol: Chem.Mol) -> List[Set[int]]:
+    """
+    Get information about rings in a molecule.
+
+    Args:
+        mol: RDKit molecule
+
+    Returns:
+        List of sets, each containing atom indices in a ring
+    """
+    ring_info = mol.GetRingInfo()
+    return [set(ring) for ring in ring_info.AtomRings()]
