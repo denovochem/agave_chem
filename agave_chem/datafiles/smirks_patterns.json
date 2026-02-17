@@ -2,10 +2,7 @@
     {
         "name": "Schotten-Baumann to ester",
         "smirks": "[Cl,F,Br,I]-[C;H0;D3;+0:2](=[O,S;D1;H0:3])-[*:4].[OH;D1;+0:5]-[*:6]>>[O,S;D1;H0:3]=[C;H0;D3;+0:2](-[*:4])-[O;H0;D2;+0:5]-[*:6]",
-        "superclass_id": 2,
-        "subclass_1_id": null,
-        "subclass_2_id": null,
-        "subclass_3_id": null
+        "superclass_id": 2
     },
     {
         "name": "Acylation of Nitrogen Nucleophiles by Acyl\\/Thioacyl\\/Carbamoyl Halides and Analogs_N",

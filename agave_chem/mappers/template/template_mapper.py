@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 from rdchiral import main as rdc
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.mappers.template.template_initialization import initialize_template_data
 from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.template.template_initialization import initialize_template_data
 from agave_chem.utils.chem_utils import (
     canonicalize_atom_mapping,
     canonicalize_reaction_smiles,
@@ -19,6 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SMIRKS_PATTERNS_FILE = BASE_DIR / "datafiles" / "smirks_patterns.json"
 
 
+class SmirksPattern(TypedDict):
+    name: str
+    smirks: str
+    superclass_id: Optional[int]
+
+
 class ExpertReactionMapper(ReactionMapper):
     """
     Expert template reaction classification and atom-mapping
@@ -28,7 +34,7 @@ class ExpertReactionMapper(ReactionMapper):
         self,
         mapper_name: str,
         mapper_weight: float = 3,
-        custom_smirks_patterns: List[Dict] = None,
+        custom_smirks_patterns: List[SmirksPattern] | None = None,
         use_default_smirks_patterns: bool = True,
         max_transforms: int = 1000,
         max_tautomers: int = 1000,
@@ -58,9 +64,9 @@ class ExpertReactionMapper(ReactionMapper):
                     )
                 for key, value in pattern.items():
                     if key == "superclass_id":
-                        if not isinstance(value, int):
+                        if value is not None and not isinstance(value, int):
                             raise TypeError(
-                                "Invalid input: 'superclass_id' value must be an integer."
+                                "Invalid input: 'superclass_id' value must be an integer or None."
                             )
                     else:
                         if not isinstance(value, str):
@@ -72,6 +78,7 @@ class ExpertReactionMapper(ReactionMapper):
         with open(SMIRKS_PATTERNS_FILE, "r") as f:
             default_smirks_patterns = json.load(f)
 
+        self._smirks_patterns: List[SmirksPattern] = []
         if use_default_smirks_patterns and custom_smirks_patterns is None:
             self._smirks_patterns = default_smirks_patterns
         elif custom_smirks_patterns and not use_default_smirks_patterns:
@@ -98,7 +105,7 @@ class ExpertReactionMapper(ReactionMapper):
         self._tautomer_enumerator.SetMaxTransforms(max_transforms)
         self._tautomer_enumerator.SetMaxTautomers(max_tautomers)
 
-    def _reaction_smiles_valid(self, reaction_smiles: str) -> Dict:
+    def _reaction_smiles_valid(self, reaction_smiles: str) -> bool:
         """
         Checks if the reaction SMILES string is valid.
 
@@ -115,7 +122,7 @@ class ExpertReactionMapper(ReactionMapper):
                 return False
         return True
 
-    def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str]:
+    def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str, str]:
         """
         Splits a reaction SMILES string into reactants and products.
 
@@ -130,7 +137,7 @@ class ExpertReactionMapper(ReactionMapper):
         products = parts[1]
         return reactants, products
 
-    def _prepare_reaction_data(self, reactants: str, products: str) -> List:
+    def _prepare_reaction_data(self, reactants: str, products: str):
         """
         Prepares reaction data for reaction mapping.
 
@@ -491,7 +498,9 @@ class ExpertReactionMapper(ReactionMapper):
 
         return fragment_mapped_dict
 
-    def _transfer_mapping(self, mapped_substructure_smarts, full_molecule_smiles):
+    def _transfer_mapping(
+        self, mapped_substructure_smarts: str, full_molecule_smiles: str
+    ) -> str | None:
         """
         Transfers atom map numbers from a mapped SMARTS substructure
         to a full molecule SMILES, leaving atoms corresponding to '*' unmapped.
@@ -554,7 +563,7 @@ class ExpertReactionMapper(ReactionMapper):
         mapped_smiles_output = Chem.MolToSmiles(mol)
         return mapped_smiles_output
 
-    def map_reaction(self, reaction_smiles: str) -> Dict[str, List[str]]:
+    def map_reaction(self, reaction_smiles: str):
         """
         Maps atoms between reactants and products in a chemical reaction.
 

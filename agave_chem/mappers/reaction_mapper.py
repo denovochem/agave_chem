@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 
 class ReactionMapper(ABC):
@@ -35,6 +35,38 @@ class ReactionMapper(ABC):
     def mapper_weight(self) -> float:
         """Return mapper_weight."""
         return self._mapper_weight
+
+    def _reaction_smiles_valid(self, reaction_smiles: str) -> bool:
+        """
+        Checks if the reaction SMILES string is valid.
+
+        Args:
+            reaction_smiles (str): The reaction SMILES string to check
+
+        Returns:
+            bool: True if the reaction SMILES string is valid, False otherwise
+        """
+        if reaction_smiles.count(">>") != 1:
+            return False
+        for ele in reaction_smiles.split(">>"):
+            if len(ele) <= 0:
+                return False
+        return True
+
+    def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str, str]:
+        """
+        Splits a reaction SMILES string into reactants and products.
+
+        Args:
+            reaction_smiles (str): A reaction SMILES string in the format "reactants>>products"
+
+        Returns:
+            tuple: A tuple containing the reactants and products as strings
+        """
+        parts = reaction_smiles.strip().split(">>")
+        reactants = parts[0]
+        products = parts[1]
+        return reactants, products
 
     @abstractmethod
     def map_reactions(

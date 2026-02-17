@@ -1,12 +1,13 @@
-from typing import Callable, List, Dict
-from agave_chem.utils.logging_config import configure_logging, logger
-from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.mcs.reaction import MCSReactionMapper
-from agave_chem.mappers.template.template_mapper import ExpertReactionMapper
+from typing import Callable, Dict, List
+
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     create_identical_fragments_mapping_list,
     resolve_identical_fragments_mapping_dict,
 )
+from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
+from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.template.template_mapper import ExpertReactionMapper
+from agave_chem.utils.logging_config import configure_logging, logger
 
 # Configure loguru logging
 configure_logging(level="WARNING")

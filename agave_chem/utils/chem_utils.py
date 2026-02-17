@@ -8,12 +8,10 @@ including parsing, sanitization, and atom property access.
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.utils.logging_config import logger
 from agave_chem.utils.constants import BOND_ENERGIES
-
+from agave_chem.utils.logging_config import logger
 
 tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
 
@@ -67,7 +65,7 @@ def canonicalize_reaction_smiles(
     isomeric: bool = True,
     remove_mapping: bool = True,
     canonicalize_tautomer: bool = False,
-    canonicalize_atom_mapping: bool = False,
+    return_canonicalized_atom_mapping: bool = False,
 ) -> str:
     """
     Canonicalizes a reaction SMILES string using RDKit.
@@ -107,9 +105,9 @@ def canonicalize_reaction_smiles(
             role_list = [ele for ele in role_list if ele != ""]
             reaction_list.append(role_list)
 
-        canonical_rxn = [".".join(role_list) for role_list in reaction_list]
-        canonical_rxn = ">>".join(canonical_rxn)
-        if canonicalize_atom_mapping:
+        canonical_rxn_components = [".".join(role_list) for role_list in reaction_list]
+        canonical_rxn = ">>".join(canonical_rxn_components)
+        if return_canonicalized_atom_mapping:
             canonical_rxn = canonicalize_atom_mapping(canonical_rxn)
         return canonical_rxn
     except Exception as e:
@@ -222,7 +220,7 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
 
 def parse_reaction_smiles(
     reaction_smiles: str,
-) -> Tuple[List[Chem.Mol], List[Chem.Mol], List[Chem.Mol]]:
+) -> Tuple[List[Chem.Mol], List[Chem.Mol]]:
     """
     Parse a reaction SMILES into reactants and products.
 
@@ -341,31 +339,6 @@ def get_bond_energy(atom1_symbol: str, atom2_symbol: str, bond_order: float) -> 
             f"No bond energy data for {atom1_symbol}-{atom2_symbol} (order {bond_order}), using default"
         )
         return 80.0 * bond_order
-
-
-def get_molecular_fingerprint(mol: Chem.Mol, fp_type: str = "morgan") -> Optional:
-    """
-    Generate a molecular fingerprint.
-
-    Args:
-        mol: RDKit molecule
-        fp_type: Type of fingerprint ('morgan', 'rdkit', 'atom_pair')
-
-    Returns:
-        Fingerprint object or None if generation fails
-    """
-    try:
-        if fp_type == "morgan":
-            return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
-        elif fp_type == "rdkit":
-            return Chem.RDKFingerprint(mol)
-        elif fp_type == "atom_pair":
-            return AllChem.GetAtomPairFingerprint(mol)
-        else:
-            raise ValueError(f"Unknown fingerprint type: {fp_type}")
-    except Exception as e:
-        logger.warning(f"Fingerprint generation failed: {e}")
-        return None
 
 
 def remove_atom_mapping(mol: Chem.Mol) -> Chem.Mol:

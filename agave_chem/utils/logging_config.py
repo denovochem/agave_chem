@@ -1,11 +1,10 @@
 import os
-from pathlib import Path
 import sys
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any
 
 from loguru import logger
 
-# Default log format with more detailed traceback
 DEFAULT_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
     "<level>{level: <8}</level> | "
@@ -13,7 +12,6 @@ DEFAULT_FORMAT = (
     "<level>{message}</level>"
 )
 
-# More detailed format for error logs
 ERROR_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
     "<level>{level: <8}</level> | "
@@ -24,53 +22,42 @@ ERROR_FORMAT = (
     "{exception}</red>"
 )
 
-# Log levels for different environments
 LOG_LEVELS = {
     "development": "DEBUG",
     "testing": "INFO",
     "production": "WARNING",
-    "default": "production",
+    "default": "WARNING",
 }
-
-# Default log directory - using absolute path to project root
-PROJECT_ROOT = Path(__file__).parent.parent  # Go up three dirs
-LOG_DIR = PROJECT_ROOT / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)  # Ensure log directory exists
-
-# Default log files
-LOG_FILE = LOG_DIR / "info.log"
-ERROR_LOG_FILE = LOG_DIR / "errors.log"
-
-LOG_FILE.touch()
-ERROR_LOG_FILE.touch()
 
 
 def configure_logging(
-    level: str = None,
-    log_file: Path = LOG_FILE,
-    error_log_file: Path = ERROR_LOG_FILE,
+    level: str | None = None,
+    log_dir: Path | None = None,
     rotation: str = "10 MB",
     retention: str = "30 days",
     serialize: bool = False,
-    **kwargs: Dict[str, Any],
+    **kwargs: Any,
 ) -> None:
     """
     Configure logging for the application with enhanced error reporting.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_file: Path to the main log file
-        error_log_file: Path to the error log file
+        log_dir: Directory to store log files
         rotation: Log rotation configuration (e.g., "10 MB", "1 week")
         retention: Log retention period (e.g., "30 days")
         serialize: Whether to serialize log records as JSON
         **kwargs: Additional arguments to pass to logger.add()
     """
-    # Ensure log directory exists
-    if log_file:
+    log_file: Path | None = None
+    error_log_file: Path | None = None
+    if log_dir:
+        log_file = log_dir / "cholla_chem.log"
+        error_log_file = log_dir / "cholla_chem_errors.log"
+
         log_file.parent.mkdir(parents=True, exist_ok=True)
         log_file.touch()
-    if error_log_file:
+
         error_log_file.parent.mkdir(parents=True, exist_ok=True)
         error_log_file.touch()
 
@@ -91,22 +78,19 @@ def configure_logging(
 
     sys.excepthook = handle_exception
 
-    # Remove default handler
     logger.remove()
 
-    # Add console handler with enhanced error formatting
     logger.add(
         sys.stderr,
         level=level,
         format=DEFAULT_FORMAT,
         colorize=True,
         backtrace=True,
-        diagnose=True,  # Enable variable values in traceback
-        enqueue=True,  # Make logging thread-safe
-        catch=True,  # Catch and log errors in logging system itself
+        diagnose=True,
+        enqueue=False,
+        catch=True,
     )
 
-    # Add file handler for all logs
     if log_file:
         logger.add(
             str(log_file),
@@ -114,22 +98,21 @@ def configure_logging(
             retention=retention,
             level=level,
             format=DEFAULT_FORMAT,
-            enqueue=True,
+            enqueue=False,
             backtrace=True,
             diagnose=True,
             catch=True,
             **kwargs,
         )
 
-    # Add file handler for error logs only with enhanced formatting
     if error_log_file:
         logger.add(
             str(error_log_file),
             rotation=rotation,
             retention=retention,
             level="WARNING",
-            format=ERROR_FORMAT,  # Use the more detailed format for errors
-            enqueue=True,
+            format=ERROR_FORMAT,
+            enqueue=False,
             backtrace=True,
             diagnose=True,
             catch=True,
@@ -137,18 +120,25 @@ def configure_logging(
         )
 
     # Add structured logging if enabled
-    if serialize:
+    if serialize and sys.__stdout__ is not None:
         logger.add(
-            sys.stdout,
+            sys.__stdout__,
             level=level,
             format=DEFAULT_FORMAT,
             serialize=True,
-            enqueue=True,
+            enqueue=False,
             backtrace=True,
             diagnose=True,
             **kwargs,
         )
 
 
-# Export logger for easy access
+def disable_library_logging() -> None:
+    logger.disable("cholla_chem")
+
+
+def enable_library_logging() -> None:
+    logger.enable("cholla_chem")
+
+
 __all__ = ["logger", "configure_logging"]

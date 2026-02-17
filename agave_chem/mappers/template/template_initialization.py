@@ -197,7 +197,7 @@ def verify_validity_of_template(template: str) -> bool:
     return True
 
 
-def initialize_template_data(named_reactions: Dict) -> List:
+def initialize_template_data(named_reactions: Dict[str, str]) -> List:
     """
     Initialize reaction template data by processing SMIRKS patterns from named reactions.
 
@@ -216,7 +216,7 @@ def initialize_template_data(named_reactions: Dict) -> List:
                 [3] - Parent SMIRKS
                 [4] - Child SMIRKS
     """
-    all_smirks = {}
+    all_smirks: Dict[str, List[str]] = {}
     for reaction in named_reactions:
         smirks_list = []
         smirks = (

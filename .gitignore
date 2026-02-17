@@ -1,116 +1,48 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Everything ignored by default - files must be explicitly NOT ignored
+*
 
-# C extensions
-*.so
+# Explicitly NOT ignored
+!.github/
+!.github/workflows/
+!.github/workflows/docs.yml
+!.github/workflows/tests.yml
+!.gitignore
+!LICENSE
+!MANIFEST.in
+!README.md
 
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# agave_chem/
+!agave_chem/
+!agave_chem/__init__.py
+!agave_chem/datafiles/reaction_classes.json
+!agave_chem/datafiles/smirks_patterns.json
+!agave_chem/main.py
+!agave_chem/mappers/
+!agave_chem/mappers/__init__.py
+!agave_chem/mappers/identical_fragments/
+!agave_chem/mappers/identical_fragments/__init__.py
+!agave_chem/mappers/identical_fragments/identical_fragment_mapper.py
+!agave_chem/mappers/mcs/
+!agave_chem/mappers/mcs/__init__.py
+!agave_chem/mappers/mcs/mcs_mapper.py
+!agave_chem/mappers/reaction_mapper.py
+!agave_chem/mappers/template/
+!agave_chem/mappers/template/__init__.py
+!agave_chem/mappers/template/template_initialization.py
+!agave_chem/mappers/template/template_mapper.py
+!agave_chem/scoring.py
+!agave_chem/utils/
+!agave_chem/utils/__init__.py
+!agave_chem/utils/chem_utils.py
+!agave_chem/utils/constants.py
+!agave_chem/utils/logging_config.py
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# dotenv
-.env
-
-# virtualenv
-.venv
-venv/
-ENV/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-
-# ruff cache
-.ruff_cache/
-
-# pytest cache
-.pytest_cache/
-
-# test file
-testing.py
-
-# todo list:
-todo.txt
-
-# name_correction.py for now
-gold_reactions.txt
+# docs/
+!docs/
+!docs/getting_started.md
+!docs/index.md
+!docs/installation.md
+!docs/stylesheets/extra.css
+!mkdocs.yml
+!requirements.txt
+!pyproject.toml
