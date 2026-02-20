@@ -16,12 +16,11 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils.constants import smiles_token_to_id_dict
-
-from agave_chem.utils.chem_utils import (
+from utils.chem_utils import (
     canonicalize_reaction_smiles,
     randomize_reaction_smiles,
 )
+from utils.constants import smiles_token_to_id_dict
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
