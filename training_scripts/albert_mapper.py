@@ -1,15 +1,12 @@
 import logging
 import random
 import re
+import time
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import torch
-from cholla_chem.utils.chem_utils import (
-    canonicalize_reaction_smiles,
-    randomize_reaction_smiles,
-)
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
@@ -19,8 +16,12 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
+from utils.constants import smiles_token_to_id_dict
 
-from training_scripts.utils.constants import smiles_token_to_id_dict
+from agave_chem.utils.chem_utils import (
+    canonicalize_reaction_smiles,
+    randomize_reaction_smiles,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -137,8 +138,14 @@ class CustomTokenizer(PreTrainedTokenizer):
             raise ValueError(
                 "use_canonical_smiles and use_random_smiles cannot both be True"
             )
+        if not use_canonical_smiles and not use_random_smiles:
+            raise ValueError(
+                "use_canonical_smiles and use_random_smiles cannot both be False"
+            )
+        self._use_canonical_smiles = False
         if use_canonical_smiles:
             self._use_canonical_smiles = True
+        self._use_random_smiles = False
         if use_random_smiles:
             self._use_random_smiles = True
 
@@ -529,7 +536,7 @@ def keep_original_tokens(
     return unchanged_input_ids, labels
 
 
-def _resolve_protected_token_ids(
+def resolve_protected_token_ids(
     tokenizer: PreTrainedTokenizer,
     protected_tokens: Set[str] | None,
 ) -> Set[int]:
@@ -590,7 +597,7 @@ class MLMDataset(Dataset):
         texts: List[str],
         tokenizer: PreTrainedTokenizer,
         mlm_config: MLMConfig,
-        max_length: int = 512,
+        max_length: int = 256,
         protected_tokens: Set[str] | None = None,
     ):
         self.texts = texts
@@ -600,7 +607,7 @@ class MLMDataset(Dataset):
 
         # Build the set of protected token IDs (see section 3)
         special_token_ids = set(tokenizer.all_special_ids)
-        protected_token_ids = _resolve_protected_token_ids(tokenizer, protected_tokens)
+        protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
         self.protected_token_ids = special_token_ids | protected_token_ids
 
     def __len__(self) -> int:
@@ -896,6 +903,7 @@ class AlbertTrainer:
         logger.info(f"Batch size: {self.training_config.batch_size}")
 
         for epoch in range(1, self.training_config.num_epochs + 1):
+            start_time = time.time()
             train_loss = self.train_epoch(epoch)
             val_loss = self.evaluate()
 
@@ -903,6 +911,7 @@ class AlbertTrainer:
                 f"Epoch {epoch} complete | "
                 f"Train Loss: {train_loss:.4f} | "
                 f"Val Loss: {val_loss:.4f}"
+                f"Time: {time.time() - start_time:.2f} seconds"
             )
 
             self.model.save_pretrained(
@@ -916,28 +925,25 @@ class AlbertTrainer:
 # ============================================================
 
 
-def main():
+def main(
+    train_texts: List[str],
+    val_texts: List[str],
+    model_config: Optional[ModelConfig] = None,
+    training_config: Optional[TrainingConfig] = None,
+    mlm_config: Optional[MLMConfig] = None,
+):
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
     # --- Configure everything ---
-    model_config = ModelConfig()
+    if not model_config:
+        model_config = ModelConfig()
 
-    training_config = TrainingConfig()
+    if not training_config:
+        training_config = TrainingConfig()
 
-    mlm_config = MLMConfig()
-
-    # --- Example data (replace with your own dataset) ---
-    train_texts = [
-        "The quick brown fox jumps over the lazy dog.",
-        "ALBERT is a lite version of BERT for self-supervised learning.",
-        "Masked language modeling is a key pre-training objective.",
-    ] * 100
-
-    val_texts = [
-        "Natural language processing enables computers to understand text.",
-        "Transformers have revolutionized the field of NLP.",
-    ] * 10
+    if not mlm_config:
+        mlm_config = MLMConfig()
 
     # --- Datasets and Dataloaders ---
     train_dataset = MLMDataset(
@@ -945,27 +951,27 @@ def main():
         tokenizer,
         mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=128,
+        max_length=256,
     )
     val_dataset = MLMDataset(
         val_texts,
         tokenizer,
         mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=128,
+        max_length=256,
     )
 
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=training_config.batch_size,
         shuffle=True,
-        num_workers=2,
+        num_workers=1,
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=training_config.batch_size,
         shuffle=False,
-        num_workers=2,
+        num_workers=1,
     )
 
     # --- Build model ---
