@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 
 class ReactionMapper(ABC):
@@ -69,18 +69,13 @@ class ReactionMapper(ABC):
         return reactants, products
 
     @abstractmethod
-    def map_reactions(
-        self, reaction_list: List[str]
-    ) -> Tuple[Dict[str, str], Dict[str, str]]:
-        """
-        Map chemical reaction SMILES.
+    def map_reaction(self, reaction_smiles: str):
+        pass
 
-        Args:
-            reaction_list: List of reaction SMILES.
+    @abstractmethod
+    def map_reactions(self, reaction_smiles_list: List[str]):
+        pass
 
-        Returns:
-            Tuple of:
-                - XXX
-                - XXX
-        """
+    @abstractmethod
+    def map_reactions_parallel(self, reaction_smiles_list: List[str]):
         pass

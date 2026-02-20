@@ -5,6 +5,7 @@ This module provides helper functions for working with RDKit molecules,
 including parsing, sanitization, and atom property access.
 """
 
+import random
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from rdkit import Chem
@@ -57,6 +58,35 @@ def canonicalize_smiles(
         return canonical_smiles_string
     except Exception as e:
         logger.warning(f"Could not canonicalize {smiles}: {e}")
+        return smiles
+
+
+def randomize_smiles(
+    smiles: str,
+    isomeric: bool = True,
+    shuffle_order: bool = True,
+    remove_mapping: bool = True,
+) -> str:
+    try:
+        x = smiles.split(".")
+        if shuffle_order:
+            random.shuffle(x)
+        frags = []
+        for i in x:
+            m = Chem.MolFromSmiles(i)
+            if remove_mapping:
+                [a.SetAtomMapNum(0) for a in m.GetAtoms()]
+            new_atom_order = list(range(m.GetNumAtoms()))
+            random.shuffle(new_atom_order)
+            random_mol = Chem.RenumberAtoms(m, newOrder=new_atom_order)
+            random_smiles_string = str(
+                Chem.MolToSmiles(random_mol, canonical=False, isomericSmiles=isomeric)
+            )
+            frags.append(random_smiles_string)
+        random_smiles_string = ".".join(i for i in frags)
+        return random_smiles_string
+    except Exception as e:
+        logger.warning(f"Could not randomize {smiles}: {e}")
         return smiles
 
 
@@ -113,6 +143,31 @@ def canonicalize_reaction_smiles(
     except Exception as e:
         logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
         return rxn_smiles
+
+
+def randomize_reaction_smiles(
+    smiles: str,
+    isomeric: bool = True,
+    shuffle_order: bool = True,
+) -> str:
+    try:
+        split_roles = smiles.split(">>")
+        if len(split_roles) != 2:
+            raise ValueError(f"Invalid reaction SMILES: {smiles}")
+        reactants_list = []
+        products_list = []
+        for reactant in split_roles[0].split("."):
+            reactants_list.append(randomize_smiles(reactant, isomeric=isomeric))
+        for product in split_roles[1].split("."):
+            products_list.append(randomize_smiles(product, isomeric=isomeric))
+        if shuffle_order:
+            random.shuffle(reactants_list)
+            random.shuffle(products_list)
+        randomized_rxn = ">>".join([".".join(reactants_list), ".".join(products_list)])
+        return randomized_rxn
+    except Exception as e:
+        logger.warning(f"Could not randomize {smiles}: {e}")
+        return smiles
 
 
 def get_atom_map_to_canonical_idx(mapped_smiles: str) -> Dict[int, int]:

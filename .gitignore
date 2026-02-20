@@ -46,3 +46,8 @@
 !mkdocs.yml
 !requirements.txt
 !pyproject.toml
+
+!training_scripts/
+!training_scripts/albert_mapper.py
+!training_scripts/utils
+!training_scripts/utils/constants.py

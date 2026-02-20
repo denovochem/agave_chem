@@ -1,9 +1,8 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from rdkit import Chem
 
 from agave_chem.utils.chem_utils import canonicalize_smiles
-from agave_chem.utils.logging_config import logger
 
 
 def atom_map_identical_fragments(reaction_smiles: str) -> Tuple[List[str], str]:
@@ -107,14 +106,14 @@ def create_identical_fragments_mapping_list(
 
 def resolve_identical_fragments_mapping_dict(
     mapped_reaction_smiles_list: List[str],
-    identical_fragments_mapping_list: List[Dict[str, str]],
+    identical_fragments_mapping_list: List[List[str]],
 ) -> List[str]:
     """
     Resolve a list of mapped reaction SMILES strings and a list of identical fragments mapping lists into a list of final reaction SMILES strings.
 
     Args:
         mapped_reaction_smiles_list (List[str]): A list of mapped reaction SMILES strings.
-        identical_fragments_mapping_list (List[Dict[str, str]]): A list of identical fragments mapping lists.
+        identical_fragments_mapping_list (List[List[str]]): A list of identical fragments mapping lists.
 
     Returns:
         List[str]: A list of final reaction SMILES strings.

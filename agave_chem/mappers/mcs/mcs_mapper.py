@@ -28,29 +28,22 @@ class MCSReactionMapper(ReactionMapper):
         if not bond_ids:
             return []
 
-        # Build fragment from the bond environment and get parent->sub atom mapping
-        amap: Dict[int, int] = {}  # parent_atom_idx -> submol_atom_idx
+        amap: Dict[int, int] = {}
         submol = Chem.PathToSubmol(mol, bond_ids, atomMap=amap)
 
         root_parent = atom.GetIdx()
         root_sub = amap[root_parent]
 
-        # Root the fragment canonicalization using atom-map numbers
-        # (do this on the submol only, so you don't mutate the parent mol)
         for a in submol.GetAtoms():
             a.SetAtomMapNum(0)
         submol.GetAtomWithIdx(root_sub).SetAtomMapNum(1)
 
-        # Canonical ranks WITHIN the fragment
-        # If your RDKit doesn't accept includeAtomMaps, tell me the exact signature error text.
         ranks = list(
             Chem.CanonicalRankAtoms(submol, breakTies=True, includeAtomMaps=True)
         )
 
-        # Invert mapping: submol_atom_idx -> parent_atom_idx
         inv_amap = {sub_i: parent_i for parent_i, sub_i in amap.items()}
 
-        # Canonical bond ordering inside the fragment
         bond_items = []
         for sb in submol.GetBonds():
             sa1, sa2 = sb.GetBeginAtomIdx(), sb.GetEndAtomIdx()
@@ -70,7 +63,6 @@ class MCSReactionMapper(ReactionMapper):
 
         encoded_environment = []
         for _, sa1, sa2 in bond_items:
-            # Choose a stable direction using fragment ranks
             if ranks[sa1] <= ranks[sa2]:
                 s_begin, s_end = sa1, sa2
             else:
@@ -324,3 +316,6 @@ class MCSReactionMapper(ReactionMapper):
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
+
+    def map_reactions_parallel(self, reaction_list: List[str]) -> List[Dict[str, Any]]:
+        return None

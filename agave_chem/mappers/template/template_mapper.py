@@ -222,7 +222,7 @@ class ExpertReactionMapper(ReactionMapper):
             dict: A dictionary where the keys are the outcomes of the reaction and the values are lists of the applied SMIRKS patterns.
 
         """
-        mapped_outcomes_smirks_dict = {}
+        mapped_outcomes_smirks_dict: Dict[str, List] = {}
 
         atom_mapped_product = self._get_mapped_product(reaction_smiles_data)
         outcomes_and_applied_smirks = self._apply_templates(reaction_smiles_data)
@@ -654,3 +654,8 @@ class ExpertReactionMapper(ReactionMapper):
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
+
+    def map_reactions_parallel(
+        self, reaction_list: List[str]
+    ) -> List[Dict[str, List[str]]]:
+        return None

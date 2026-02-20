@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Dict, List
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     create_identical_fragments_mapping_list,
@@ -7,10 +7,7 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_mapper import ExpertReactionMapper
-from agave_chem.utils.logging_config import configure_logging, logger
-
-# Configure loguru logging
-configure_logging(level="WARNING")
+from agave_chem.utils.logging_config import logger
 
 
 def map_reactions_using_mappers(
@@ -34,7 +31,7 @@ def map_reactions_using_mappers(
                     final_mapping = reaction["mapping"]
                 else:
                     final_mapping = resolve_identical_fragments_mapping_dict(
-                        reaction["mapping"], identical_fragments
+                        [reaction["mapping"]], [identical_fragments]
                     )
                 reaction["mapping"] = final_mapping
         mappers_out_dict[mapper.mapper_name] = {
@@ -48,7 +45,7 @@ def map_reactions(
     mappers_list: List[ReactionMapper] = [],
     mapping_selection_mode: str = "weighted",
     batch_size: int = 500,
-) -> Dict[str, str]:
+) -> Dict[str, Dict[str, Dict[str, str]]]:
     """ """
     if not mappers_list:
         mappers_list = [
@@ -92,7 +89,9 @@ def map_reactions(
             raise ValueError(f"Duplicate mapper name: {mapper.mapper_name}.")
         seen_mappers.append(mapper.mapper_name)
 
-    if not isinstance(mapping_selection_mode, (str, Callable)):
+    if not isinstance(mapping_selection_mode, str) and not callable(
+        mapping_selection_mode
+    ):
         raise ValueError(
             "Invalid input: mapping_selection_mode must be a string or function."
         )
