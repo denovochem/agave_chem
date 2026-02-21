@@ -49,6 +49,7 @@
 
 !training_scripts/
 !training_scripts/albert_mapper.py
+!training_scripts/albert_mapper_inference.py
 !training_scripts/utils
 !training_scripts/utils/constants.py
 !training_scripts/utils/chem_utils.py

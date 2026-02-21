@@ -3,8 +3,6 @@ import random
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.utils.logging_config import logger
-
 tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
 
 
@@ -47,8 +45,7 @@ def canonicalize_smiles(
             frags.append(canonical_smiles_string)
         canonical_smiles_string = ".".join(i for i in sorted(frags))
         return canonical_smiles_string
-    except Exception as e:
-        logger.warning(f"Could not canonicalize {smiles}: {e}")
+    except Exception:
         return smiles
 
 
@@ -76,8 +73,7 @@ def randomize_smiles(
             frags.append(random_smiles_string)
         random_smiles_string = ".".join(i for i in frags)
         return random_smiles_string
-    except Exception as e:
-        logger.warning(f"Could not randomize {smiles}: {e}")
+    except Exception:
         return smiles
 
 
@@ -128,8 +124,7 @@ def canonicalize_reaction_smiles(
         canonical_rxn_components = [".".join(role_list) for role_list in reaction_list]
         canonical_rxn = ">>".join(canonical_rxn_components)
         return canonical_rxn
-    except Exception as e:
-        logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
+    except Exception:
         return rxn_smiles
 
 
@@ -153,6 +148,5 @@ def randomize_reaction_smiles(
             random.shuffle(products_list)
         randomized_rxn = ">>".join([".".join(reactants_list), ".".join(products_list)])
         return randomized_rxn
-    except Exception as e:
-        logger.warning(f"Could not randomize {smiles}: {e}")
+    except Exception:
         return smiles

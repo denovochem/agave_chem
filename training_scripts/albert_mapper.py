@@ -3,7 +3,7 @@ import random
 import re
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import torch
@@ -16,10 +16,7 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils.chem_utils import (
-    canonicalize_reaction_smiles,
-    randomize_reaction_smiles,
-)
+from utils.chem_utils import canonicalize_reaction_smiles, randomize_reaction_smiles
 from utils.constants import smiles_token_to_id_dict
 
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +35,7 @@ class ModelConfig:
     embedding_size: int = 128
     hidden_size: int = 256
     num_hidden_layers: int = 12
-    num_attention_heads: int = 12
+    num_attention_heads: int = 8
     intermediate_size: int = 512
     hidden_act: str = "gelu_new"
     hidden_dropout_prob: float = 0.1
@@ -112,8 +109,6 @@ class CustomTokenizer(PreTrainedTokenizer):
         mask_token: str = "[MASK]",
         cls_token: str = "[CLS]",
         sep_token: str = "[SEP]",
-        use_random_smiles=True,
-        use_canonical_smiles=False,
         **kwargs,
     ):
         special_tokens = {
@@ -133,21 +128,6 @@ class CustomTokenizer(PreTrainedTokenizer):
         self._token_to_id = token_to_id
         self._id_to_token = id_to_token or {v: k for k, v in token_to_id.items()}
 
-        if use_canonical_smiles and use_random_smiles:
-            raise ValueError(
-                "use_canonical_smiles and use_random_smiles cannot both be True"
-            )
-        if not use_canonical_smiles and not use_random_smiles:
-            raise ValueError(
-                "use_canonical_smiles and use_random_smiles cannot both be False"
-            )
-        self._use_canonical_smiles = False
-        if use_canonical_smiles:
-            self._use_canonical_smiles = True
-        self._use_random_smiles = False
-        if use_random_smiles:
-            self._use_random_smiles = True
-
         super().__init__(
             unk_token=unk_token,
             pad_token=pad_token,
@@ -164,7 +144,7 @@ class CustomTokenizer(PreTrainedTokenizer):
     def get_vocab(self) -> Dict[str, int]:
         return self._token_to_id.copy()
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: Any, **kwargs) -> List[str]:
         """
         Tokenize a string.
 
@@ -177,12 +157,8 @@ class CustomTokenizer(PreTrainedTokenizer):
 
         Unknown tokens are replaced with unk_token.
         """
-
-        if self._use_random_smiles:
-            text = randomize_reaction_smiles(text)
-
-        if self._use_canonical_smiles:
-            text = canonicalize_reaction_smiles(text)
+        if not isinstance(text, str):
+            raise ValueError("Input must be a string.")
 
         text = self.preprocess_sentence_reaction_smiles(text)
 
@@ -241,10 +217,11 @@ class CustomTokenizer(PreTrainedTokenizer):
         REGEXPS_RXN = {
             "2_ring_nums": re.compile(r"(%\d{2})"),
             "rxn_symbol": re.compile(r"(>>)"),
+            "arrow": re.compile(r"(->)"),
             "brcl": re.compile(r"(Li|Na|Mg|Si|Ca|Cu|Ag|Pb|Br|Cl|>>)"),
         }
 
-        REGEXP_ORDER_RXN = ["2_ring_nums", "brcl", "rxn_symbol"]
+        REGEXP_ORDER_RXN = ["2_ring_nums", "arrow", "brcl", "rxn_symbol"]
 
         def split_by(template_smarts, regexps):
             if not regexps:
@@ -271,10 +248,11 @@ class CustomTokenizer(PreTrainedTokenizer):
             "brackets": re.compile(r"(\[[^\]]*\])"),
             "2_ring_nums": re.compile(r"(%\d{2})"),
             "rxn_symbol": re.compile(r"(>>)"),
+            "arrow": re.compile(r"(->)"),
             "brcl": re.compile(r"(Li|Na|Mg|Si|Ca|Cu|Ag|Pb|Br|Cl|>>)"),
         }
 
-        REGEXP_ORDER_RXN = ["brackets", "2_ring_nums", "brcl", "rxn_symbol"]
+        REGEXP_ORDER_RXN = ["brackets", "2_ring_nums", "arrow", "brcl", "rxn_symbol"]
 
         def split_by(reaction_smiles, regexps):
             if not regexps:
@@ -348,7 +326,7 @@ def preprocess_token(
 
 def apply_mlm_masking(
     input_ids: List[int],
-    tokenizer: AlbertTokenizer,
+    tokenizer: AlbertTokenizer | CustomTokenizer | PreTrainedTokenizer,
     mlm_config: MLMConfig,
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
@@ -597,12 +575,29 @@ class MLMDataset(Dataset):
         tokenizer: PreTrainedTokenizer,
         mlm_config: MLMConfig,
         max_length: int = 256,
+        use_random_smiles=True,
+        use_canonical_smiles=False,
         protected_tokens: Set[str] | None = None,
     ):
         self.texts = texts
         self.tokenizer = tokenizer
         self.mlm_config = mlm_config
         self.max_length = max_length
+
+        if use_canonical_smiles and use_random_smiles:
+            raise ValueError(
+                "use_canonical_smiles and use_random_smiles cannot both be True"
+            )
+        if not use_canonical_smiles and not use_random_smiles:
+            raise ValueError(
+                "use_canonical_smiles and use_random_smiles cannot both be False"
+            )
+        self._use_canonical_smiles = False
+        if use_canonical_smiles:
+            self._use_canonical_smiles = True
+        self._use_random_smiles = False
+        if use_random_smiles:
+            self._use_random_smiles = True
 
         # Build the set of protected token IDs (see section 3)
         special_token_ids = set(tokenizer.all_special_ids)
@@ -614,6 +609,12 @@ class MLMDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         text = self.texts[idx]
+
+        if self._use_random_smiles:
+            text = randomize_reaction_smiles(text)
+
+        if self._use_canonical_smiles:
+            text = canonicalize_reaction_smiles(text)
 
         encoding = self.tokenizer(
             text,
@@ -964,13 +965,19 @@ def main(
         train_dataset,
         batch_size=training_config.batch_size,
         shuffle=True,
-        num_workers=1,
+        num_workers=8,
+        persistent_workers=True,
+        prefetch_factor=4,
+        pin_memory=torch.cuda.is_available(),
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=training_config.batch_size,
         shuffle=False,
-        num_workers=1,
+        num_workers=8,
+        persistent_workers=True,
+        prefetch_factor=4,
+        pin_memory=torch.cuda.is_available(),
     )
 
     # --- Build model ---
