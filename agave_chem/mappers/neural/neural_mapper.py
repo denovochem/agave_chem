@@ -464,3 +464,13 @@ class NeuralReactionMapper(ReactionMapper):
 
         mapped_rxn_smiles = self.assign_atom_maps(rxn_smiles, attn)
         return mapped_rxn_smiles
+
+    def map_reactions(self, reaction_list: List[str]) -> List[str]:
+        """ """
+        mapped_reactions = []
+        for reaction in reaction_list:
+            mapped_reactions.append(self.map_reaction(reaction))
+        return mapped_reactions
+
+    def map_reactions_parallel(self, reaction_list: List[str]) -> List[str]:
+        return None
