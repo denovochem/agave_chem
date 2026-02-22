@@ -18,6 +18,8 @@
 !agave_chem/datafiles/__init__.py
 !agave_chem/datafiles/albert_model/
 !agave_chem/datafiles/albert_model/__init__.py
+!agave_chem/datafiles/albert_model/config.json
+!agave_chem/datafiles/albert_model/model.safetensors
 !agave_chem/datafiles/reaction_classes.json
 !agave_chem/datafiles/smirks_patterns.json
 !agave_chem/main.py
