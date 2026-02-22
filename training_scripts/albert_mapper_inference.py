@@ -27,10 +27,11 @@ def sanitize_input_rxn_string(rxn_smiles: str) -> str:
     Standardization:
     1. Ensuring each fragment can be rounded-tripped through RDKit
     2. Removing mapping numbers
-    2. Remove duplicate fragments
-    3. Removing isotopes
-    4. Canonicalizing SMILES strings
-    5. Isomerizing SMILES strings
+    3. Remove duplicate fragments
+    4. Make sure ">>" is in the string, only once
+    5. Removing isotopes
+    6. Canonicalizing SMILES strings
+    7. Isomerizing SMILES strings
 
     Args:
         rxn_smiles (str): Reaction SMILES string
@@ -141,17 +142,17 @@ def get_attention_matrix_for_head(
         attn = attn[:real_len, :real_len]
         tokens = tokens[:real_len]
 
-    return torch.log(attn)[1:-1, 1:-1], tokens
+    return torch.log(attn)[1:-1, 1:-1].numpy(), tokens
 
 
 def get_reactants_products_dict(
-    toks: List[str],
+    tokens: List[str],
 ) -> StringInfoDict:
     """
     Extracts reactants and products from a list of tokens in a reaction SMILES string.
 
     Args:
-        toks: A list of tokens in a reaction SMILES string.
+        tokens: A list of tokens in a reaction SMILES string.
 
     Returns:
         A tuple containing:
@@ -170,22 +171,22 @@ def get_reactants_products_dict(
     non_atom_tokens: List[int] = []
 
     found_reaction_symbol = False
-    for i, tok in enumerate(toks[1:-1]):
-        if tok == ">>":
+    for i, token in enumerate(tokens[1:-1]):
+        if token == ">>":
             found_reaction_symbol = True
             non_atom_tokens.append(i)
             continue
-        if token_atom_identity_dict.get(tok, 0) == 0:
+        if token_atom_identity_dict.get(token, 0) == 0:
             non_atom_tokens.append(i)
         else:
-            if token_atom_identity_dict.get(tok, 0) not in atom_tokens_dict:
-                atom_tokens_dict[token_atom_identity_dict.get(tok, 0)] = [i]
+            if token_atom_identity_dict.get(token, 0) not in atom_tokens_dict:
+                atom_tokens_dict[token_atom_identity_dict.get(token, 0)] = [i]
             else:
-                atom_tokens_dict[token_atom_identity_dict.get(tok, 0)].append(i)
+                atom_tokens_dict[token_atom_identity_dict.get(token, 0)].append(i)
         if found_reaction_symbol:
-            products_dict[i] = tok
+            products_dict[i] = token
         else:
-            reactants_dict[i] = tok
+            reactants_dict[i] = token
 
     string_info_dict: StringInfoDict = {
         "reactants_dict": reactants_dict,
@@ -295,7 +296,6 @@ def average_attn_scores(
     reactants_start_index: int,
     reactants_end_index: int,
     products_start_index: int,
-    products_end_index: int,
 ) -> np.ndarray:
     """
     Compute the average attention scores between reactants and products.
@@ -305,24 +305,23 @@ def average_attn_scores(
         reactants_start_index (int): The index of the first reactant token.
         reactants_end_index (int): The index of the last reactant token.
         products_start_index (int): The index of the first product token.
-        products_end_index (int): The index of the last product token.
 
     Returns:
         np.ndarray: The average attention scores between reactants and products.
     """
     reactants_to_products_attn = out[
-        products_start_index : products_end_index + 1,
-        reactants_start_index : products_start_index - 1,
+        products_start_index:,
+        reactants_start_index : reactants_end_index + 1,
     ]  # reactants to products attention
     products_to_reactants_attn = out[
-        reactants_start_index : products_start_index - 1, products_start_index:
-    ].T  # products to reactants attention
+        reactants_start_index : reactants_end_index + 1, products_start_index:
+    ].T  # products to reactants attention, transposed so the two have the same shape
     avg_attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
     return avg_attn
 
 
 def assign_atom_maps(
-    rxn_smiles: str, attn: np.ndarray, non_atom_tokens: List[int]
+    rxn_smiles: str, attn: np.ndarray, one_to_one_correspondence: bool = False
 ) -> str:
     """
     Assign atom maps to a reaction SMILES string based on the attention matrix.
@@ -330,7 +329,7 @@ def assign_atom_maps(
     Args:
         rxn_smiles (str): A reaction SMILES string.
         attn (np.ndarray): The attention matrix.
-        non_atom_tokens (List[int]): A list of token indices that are not atoms.
+        one_to_one_correspondence (bool): Whether to use one-to-one correspondence for atom mapping.
 
     Returns:
         str: The mapped reaction SMILES string.
@@ -356,20 +355,35 @@ def assign_atom_maps(
             products_atom_dict[product_atom_num] = atom
             product_atom_num += 1
 
-    map_num = 0
-    for row_num, row in enumerate(attn.T):
-        if row in non_atom_tokens:
-            continue
-        highest_attn_score = row.max()
-        highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
-        products_atom_dict[row_num].SetAtomMapNum(map_num)
-        reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num)
-        map_num += 1
+    # Remove rows and columns that are all 0 - non-atom tokens
+    nonzero_rows_mask = ~np.all(attn == 0, axis=1)
+    attn = attn[nonzero_rows_mask, :]
 
-    mapped_reactants_str = "".join(
+    nonzero_cols_mask = ~np.all(attn == 0, axis=0)
+    attn = attn[:, nonzero_cols_mask]
+
+    if one_to_one_correspondence:
+        for map_num in range(attn.shape[0]):
+            highest_attn_score = attn.max()
+            highest_attn_score_indices = np.where(attn == highest_attn_score)
+            row_highest_attn = highest_attn_score_indices[0][0]
+            col_highest_attn = highest_attn_score_indices[1][0]
+            products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+            reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+            attn[row_highest_attn] = 0
+            attn[:, col_highest_attn] = 0
+
+    else:
+        for map_num, row in enumerate(attn):
+            highest_attn_score = row.max()
+            highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
+            products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
+            reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
+
+    mapped_reactants_str = ".".join(
         [Chem.MolToSmiles(reactant) for reactant in reactants_mols]
     )
-    mapped_products_str = "".join(
+    mapped_products_str = ".".join(
         [Chem.MolToSmiles(product) for product in products_mols]
     )
     mapped_rxn_smiles = mapped_reactants_str + ">>" + mapped_products_str
@@ -405,9 +419,13 @@ def map_reaction(rxn_smiles: str, checkpoint_dir: str, layer: int, head: int) ->
         string_info_dict["reactants_start_index"],
         string_info_dict["reactants_end_index"],
         string_info_dict["products_start_index"],
-        string_info_dict["products_end_index"],
     )
-    mapped_rxn_smiles = assign_atom_maps(
-        rxn_smiles, attn, string_info_dict["non_atom_tokens"]
-    )
+
+    mapped_rxn_smiles = assign_atom_maps(rxn_smiles, attn)
     return mapped_rxn_smiles
+
+
+## things to check:
+# attention averaging works? Set as variable
+# run mapping on large number of reactions, make sure it's consistent (all product atoms mapped, atom map numbers unique, atoms map to reactant atoms of same atom number, etc.)
+# neighborhood multiplier?
