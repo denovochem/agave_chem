@@ -422,15 +422,12 @@ class NeuralReactionMapper(ReactionMapper):
 
         return mapped_rxn_smiles
 
-    def map_reaction(
-        self, rxn_smiles: str, checkpoint_dir: str, layer: int, head: int
-    ) -> Any:
+    def map_reaction(self, rxn_smiles: str, layer: int, head: int) -> Any:
         """
         Maps a reaction SMILES string using a pre-trained Albert model.
 
         Args:
             rxn_smiles (str): A reaction SMILES string.
-            checkpoint_dir (str): Path to the pre-trained Albert model checkpoint folder.
             layer (int): 0-based layer index to use for attention.
             head (int): 0-based head index to use for attention.
 
