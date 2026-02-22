@@ -14,6 +14,10 @@
 # agave_chem/
 !agave_chem/
 !agave_chem/__init__.py
+!agave_chem/datafiles/
+!agave_chem/datafiles/__init__.py
+!agave_chem/datafiles/albert_model/
+!agave_chem/datafiles/albert_model/__init__.py
 !agave_chem/datafiles/reaction_classes.json
 !agave_chem/datafiles/smirks_patterns.json
 !agave_chem/main.py
@@ -30,6 +34,12 @@
 !agave_chem/mappers/template/__init__.py
 !agave_chem/mappers/template/template_initialization.py
 !agave_chem/mappers/template/template_mapper.py
+!agave_chem/mappers/neural/
+!agave_chem/mappers/neural/__init__.py
+!agave_chem/mappers/neural/albert_mapper.py
+!agave_chem/mappers/neural/albert_mapper_inference.py
+!agave_chem/mappers/neural/constants.py
+!agave_chem/mappers/neural/tokenizer.py
 !agave_chem/scoring.py
 !agave_chem/utils/
 !agave_chem/utils/__init__.py

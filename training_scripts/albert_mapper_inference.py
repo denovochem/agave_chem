@@ -70,6 +70,71 @@ def sanitize_input_rxn_string(rxn_smiles: str) -> str:
     return standardized_rxn_smiles
 
 
+def validate_rxn_mapping(rxn_smiles: str):
+    reactant_mols = []
+    for reactant_smarts in rxn_smiles.split(">>")[0].split("."):
+        reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
+    product_mols = []
+    for product_smarts in rxn_smiles.split(">>")[1].split("."):
+        product_mols.append(Chem.MolFromSmiles(product_smarts))
+
+    num_product_atoms = sum([mol.GetNumAtoms() for mol in product_mols])
+    num_reactant_atoms = sum([mol.GetNumAtoms() for mol in reactant_mols])
+    if num_product_atoms > num_reactant_atoms:
+        print("Incorrect number of atoms")
+        return
+
+    num_atoms_of_each_type_product = {}
+    for product_mol in product_mols:
+        for atom in product_mol.GetAtoms():
+            if atom.GetAtomicNum() not in num_atoms_of_each_type_product:
+                num_atoms_of_each_type_product[atom.GetAtomicNum()] = 1
+            else:
+                num_atoms_of_each_type_product[atom.GetAtomicNum()] += 1
+
+    num_atoms_of_each_type_reactant = {}
+    for reactant_mol in reactant_mols:
+        for atom in reactant_mol.GetAtoms():
+            if atom.GetAtomicNum() not in num_atoms_of_each_type_reactant:
+                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] = 1
+            else:
+                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] += 1
+
+    for k, v in num_atoms_of_each_type_product.items():
+        if num_atoms_of_each_type_reactant[k] < v:
+            print(f"More atoms of atomic num {k} in products than reactants")
+            return
+
+    product_mol_atoms = {}
+    for product_mol in product_mols:
+        for atom in product_mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                raise ValueError("Unmapped product atom")
+            product_mol_atoms[atom.GetAtomMapNum()] = atom
+
+    reactant_atom_map_nums = []
+    for reactant_mol in reactant_mols:
+        for atom in reactant_mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                continue
+            if atom.GetAtomMapNum() not in product_mol_atoms:
+                raise ValueError(
+                    f"Mapped reactant atom {atom.GetAtomMapNum()} not found in products"
+                )
+            if (
+                atom.GetAtomicNum()
+                != product_mol_atoms[atom.GetAtomMapNum()].GetAtomicNum()
+            ):
+                raise ValueError(
+                    f"Mapped reactant atom {atom.GetAtomMapNum()} has different atomic number"
+                )
+            reactant_atom_map_nums.append(atom.GetAtomMapNum())
+
+    if set(reactant_atom_map_nums) != set(product_mol_atoms.keys()):
+        raise ValueError("Incorrect atom mapping nums")
+    return True
+
+
 def get_attention_matrix_for_head(
     checkpoint_dir: str,
     text: str,
@@ -254,9 +319,11 @@ def mask_attn_matrix(
         "atom_tokens_dict"
     ].values():  # Set attention probability for reactant and product tokens of different atom numbers to 0
         idx = np.asarray(token_indices, dtype=np.int64)
-        col_mask = np.ones(attn.shape[1], dtype=bool)
-        col_mask[idx] = False
-        attn[np.ix_(idx, col_mask)] = -1e6
+
+        diff_atom_mask = np.ones(attn.shape[1], dtype=bool)
+        diff_atom_mask[idx] = False
+        attn[np.ix_(idx, diff_atom_mask)] = -1e6
+        attn[np.ix_(diff_atom_mask, idx)] = -1e6
 
     row_max = np.max(attn, axis=1, keepdims=True)  # max per row
     exp_logits = np.exp(attn - row_max)
@@ -287,6 +354,16 @@ def mask_attn_matrix(
     ]:  # Set attention probability for reactant or product tokens to non-atom tokens to 0
         probs[i] = 0
         probs[:, i] = 0
+
+    for token_indices in string_info_dict[
+        "atom_tokens_dict"
+    ].values():  # Set attention probability for reactant and product tokens of different atom numbers to 0
+        idx = np.asarray(token_indices, dtype=np.int64)
+
+        diff_atom_mask = np.ones(probs.shape[1], dtype=bool)
+        diff_atom_mask[idx] = False
+        probs[np.ix_(idx, diff_atom_mask)] = 0
+        probs[np.ix_(diff_atom_mask, idx)] = 0
 
     return probs
 
@@ -320,6 +397,39 @@ def average_attn_scores(
     return avg_attn
 
 
+def remove_non_atom_rows_and_columns(
+    attn: np.ndarray, string_info_dict: StringInfoDict
+) -> np.ndarray:
+    """
+    Remove non-atom tokens from attention matrix.
+
+    Args:
+        attn (np.ndarray): The attention matrix.
+        string_info_dict (StringInfoDict): A dictionary containing information about the tokens in the reaction SMILES string.
+
+    Returns:
+        np.ndarray: The attention matrix with non-atom tokens removed.
+    """
+    reactants_non_atom_tokens = [
+        ele
+        for ele in string_info_dict["non_atom_tokens"]
+        if ele <= string_info_dict["reactants_end_index"]
+    ]  # Get non-atom tokens in reactants
+    products_non_atom_tokens = [
+        ele - string_info_dict["products_start_index"]
+        for ele in string_info_dict["non_atom_tokens"]
+        if ele >= string_info_dict["products_start_index"]
+    ]  # Get non-atom tokens in products with offset of products start index
+
+    idx = np.asarray(reactants_non_atom_tokens, dtype=int)
+    attn = np.delete(attn, idx, axis=1)
+
+    idx = np.asarray(products_non_atom_tokens, dtype=int)
+    attn = np.delete(attn, idx, axis=0)
+
+    return attn
+
+
 def assign_atom_maps(
     rxn_smiles: str, attn: np.ndarray, one_to_one_correspondence: bool = False
 ) -> str:
@@ -342,25 +452,26 @@ def assign_atom_maps(
     products_mols = [Chem.MolFromSmiles(product) for product in products_str.split(".")]
 
     reactants_atom_dict = {}
+    reactants_atom_dict_neighbors = {}
     reactant_atom_num = 0
     for mol in reactants_mols:
         for atom in mol.GetAtoms():
             reactants_atom_dict[reactant_atom_num] = atom
+            reactants_atom_dict_neighbors[reactant_atom_num] = [
+                neighbor.GetIdx() for neighbor in atom.GetNeighbors()
+            ]
             reactant_atom_num += 1
 
     products_atom_dict = {}
+    products_atom_dict_neighbors = {}
     product_atom_num = 0
     for mol in products_mols:
         for atom in mol.GetAtoms():
             products_atom_dict[product_atom_num] = atom
+            products_atom_dict_neighbors[product_atom_num] = [
+                neighbor.GetIdx() for neighbor in atom.GetNeighbors()
+            ]
             product_atom_num += 1
-
-    # Remove rows and columns that are all 0 - non-atom tokens
-    nonzero_rows_mask = ~np.all(attn == 0, axis=1)
-    attn = attn[nonzero_rows_mask, :]
-
-    nonzero_cols_mask = ~np.all(attn == 0, axis=0)
-    attn = attn[:, nonzero_cols_mask]
 
     if one_to_one_correspondence:
         for map_num in range(attn.shape[0]):
@@ -372,6 +483,13 @@ def assign_atom_maps(
             reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
             attn[row_highest_attn] = 0
             attn[:, col_highest_attn] = 0
+
+            # Update neighbors
+            for product_atom_idx in products_atom_dict_neighbors[row_highest_attn]:
+                for reactant_atom_idx in reactants_atom_dict_neighbors[
+                    col_highest_attn
+                ]:
+                    attn[product_atom_idx, reactant_atom_idx] *= 1
 
     else:
         for map_num, row in enumerate(attn):
@@ -404,7 +522,7 @@ def map_reaction(rxn_smiles: str, checkpoint_dir: str, layer: int, head: int) ->
     Returns:
         str: A mapped reaction SMILES string with atom map numbers assigned.
     """
-    attn, toks = get_attention_matrix_for_head(
+    attn, tokens = get_attention_matrix_for_head(
         checkpoint_dir=checkpoint_dir,
         text=rxn_smiles,
         layer=layer,
@@ -412,7 +530,17 @@ def map_reaction(rxn_smiles: str, checkpoint_dir: str, layer: int, head: int) ->
         max_length=256,
         trim_padding=True,
     )
-    string_info_dict = get_reactants_products_dict(toks)
+
+    if ">>" not in tokens:
+        print("Sequence too long")
+
+        return ""
+
+    if len(tokens) == 256:
+        print("Sequence too long")
+        return ""
+
+    string_info_dict = get_reactants_products_dict(tokens)
     attn = mask_attn_matrix(attn, string_info_dict)
     attn = average_attn_scores(
         attn,
@@ -421,6 +549,8 @@ def map_reaction(rxn_smiles: str, checkpoint_dir: str, layer: int, head: int) ->
         string_info_dict["products_start_index"],
     )
 
+    attn = remove_non_atom_rows_and_columns(attn, string_info_dict)
+
     mapped_rxn_smiles = assign_atom_maps(rxn_smiles, attn)
     return mapped_rxn_smiles
 
@@ -428,4 +558,4 @@ def map_reaction(rxn_smiles: str, checkpoint_dir: str, layer: int, head: int) ->
 ## things to check:
 # attention averaging works? Set as variable
 # run mapping on large number of reactions, make sure it's consistent (all product atoms mapped, atom map numbers unique, atoms map to reactant atoms of same atom number, etc.)
-# neighborhood multiplier?
+# neighborhood multiplier? More sophisticated neighborhood multiplier
