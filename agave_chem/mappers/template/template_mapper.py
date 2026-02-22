@@ -1,5 +1,5 @@
 import json
-from pathlib import Path
+from importlib.resources import files
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 from rdchiral import main as rdc
@@ -14,9 +14,6 @@ from agave_chem.utils.chem_utils import (
     canonicalize_smiles,
 )
 from agave_chem.utils.logging_config import logger
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-SMIRKS_PATTERNS_FILE = BASE_DIR / "datafiles" / "smirks_patterns.json"
 
 
 class SmirksPattern(TypedDict):
@@ -74,6 +71,9 @@ class ExpertReactionMapper(ReactionMapper):
                                 "Invalid input: 'name' and 'smirks' values must be strings."
                             )
 
+        SMIRKS_PATTERNS_FILE = files("agave_chem.datafiles").joinpath(
+            "smirks_patterns.json"
+        )
         default_smirks_patterns = []
         with open(SMIRKS_PATTERNS_FILE, "r") as f:
             default_smirks_patterns = json.load(f)

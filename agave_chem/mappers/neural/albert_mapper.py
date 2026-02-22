@@ -1,5 +1,5 @@
 from importlib.resources import files
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 import numpy as np
 import torch
@@ -424,7 +424,7 @@ class NeuralReactionMapper(ReactionMapper):
 
     def map_reaction(
         self, rxn_smiles: str, checkpoint_dir: str, layer: int, head: int
-    ) -> str:
+    ) -> Any:
         """
         Maps a reaction SMILES string using a pre-trained Albert model.
 
@@ -438,7 +438,6 @@ class NeuralReactionMapper(ReactionMapper):
             str: A mapped reaction SMILES string with atom map numbers assigned.
         """
         attn, tokens = self.get_attention_matrix_for_head(
-            checkpoint_dir=checkpoint_dir,
             text=rxn_smiles,
             layer=layer,
             head=head,
