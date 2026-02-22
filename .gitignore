@@ -38,8 +38,7 @@
 !agave_chem/mappers/template/template_mapper.py
 !agave_chem/mappers/neural/
 !agave_chem/mappers/neural/__init__.py
-!agave_chem/mappers/neural/albert_mapper.py
-!agave_chem/mappers/neural/albert_mapper_inference.py
+!agave_chem/mappers/neural/neural_mapper.py
 !agave_chem/mappers/neural/constants.py
 !agave_chem/mappers/neural/tokenizer.py
 !agave_chem/scoring.py
