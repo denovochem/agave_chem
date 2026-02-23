@@ -172,14 +172,14 @@ def randomize_reaction_smiles(
 
 def get_atom_map_to_canonical_idx(mapped_smiles: str) -> Dict[int, int]:
     """
-    Given an atom-mapped SMILES, returns the canonical unmapped SMILES and a mapping
-    from original atom map numbers to atom indices in the canonical SMILES.
+    Given an atom-mapped SMILES, returns a mapping from original atom map numbers
+    to atom indices in the canonical SMILES (1-indexed).
 
     Args:
         mapped_smiles: SMILES string with atom map numbers (e.g., "[CH3:1][OH:2]")
 
     Returns:
-        dict: Dictionary mapping original atom map numbers to canonical atom indices
+        dict: Dictionary mapping original atom map numbers to canonical atom indices (1-indexed)
     """
     mol = Chem.MolFromSmiles(mapped_smiles)
     if mol is None:
@@ -226,39 +226,51 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
     Returns:
         str: The canonicalized reaction SMILES string.
     """
-
     reactant_mols = []
     for reactant_smarts in reaction_smiles.split(">>")[0].split("."):
         reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
+
     product_mols = []
     product_mol_mapping_dicts = []
     for product_smarts in reaction_smiles.split(">>")[1].split("."):
         product_mols.append(Chem.MolFromSmiles(product_smarts))
         product_mol_mapping_dicts.append(get_atom_map_to_canonical_idx(product_smarts))
 
-    reactant_mapping_dict = {}
-    mapping_offset = 0
+    # Build mapping: old_map_num -> new_map_num (based on canonical product order)
+    old_to_new_map = {}
+    new_map_num = 1
+
     for product_mol, product_mol_mapping_dict in zip(
         product_mols, product_mol_mapping_dicts
     ):
-        num_atoms_mapped = 0
+        # Collect mapped atoms with their canonical indices
+        mapped_atoms = []
         for atom in product_mol.GetAtoms():
-            if atom.GetAtomMapNum() in product_mol_mapping_dict:
-                reactant_mapping_dict[atom.GetAtomMapNum()] = (
-                    product_mol_mapping_dict[atom.GetIdx() + 1] + mapping_offset
-                )
-                num_atoms_mapped += 1
-                atom.SetAtomMapNum(
-                    mapping_offset + product_mol_mapping_dict[atom.GetIdx() + 1]
-                )
-        mapping_offset += num_atoms_mapped
+            old_map = atom.GetAtomMapNum()
+            if old_map > 0 and old_map in product_mol_mapping_dict:
+                canon_idx = product_mol_mapping_dict[old_map]
+                mapped_atoms.append((canon_idx, atom, old_map))
 
+        # Sort by canonical index to assign new map numbers in canonical order
+        mapped_atoms.sort(key=lambda x: x[0])
+
+        for canon_idx, atom, old_map in mapped_atoms:
+            # Only assign new mapping if not already assigned (handles duplicate map nums)
+            if old_map not in old_to_new_map:
+                old_to_new_map[old_map] = new_map_num
+                new_map_num += 1
+            atom.SetAtomMapNum(old_to_new_map[old_map])
+
+        # Unmapped atoms keep map num 0 (already the case, no action needed)
+
+    # Update reactant mappings
     for reactant_mol in reactant_mols:
         for atom in reactant_mol.GetAtoms():
-            if atom.GetAtomMapNum() in reactant_mapping_dict:
-                atom.SetAtomMapNum(reactant_mapping_dict[atom.GetAtomMapNum()])
+            old_map = atom.GetAtomMapNum()
+            if old_map in old_to_new_map:
+                atom.SetAtomMapNum(old_to_new_map[old_map])
             else:
-                if atom.GetAtomMapNum() > 0:
+                if old_map > 0:
                     logger.info(
                         f"Reactant atom {atom.GetIdx()} is mapped but has no corresponding product atom"
                     )
@@ -462,3 +474,129 @@ def get_ring_info(mol: Chem.Mol) -> List[Set[int]]:
     """
     ring_info = mol.GetRingInfo()
     return [set(ring) for ring in ring_info.AtomRings()]
+
+
+def validate_rxn_mapping(rxn_smiles: str) -> bool:
+    reactant_mols = []
+    for reactant_smarts in rxn_smiles.split(">>")[0].split("."):
+        reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
+    product_mols = []
+    for product_smarts in rxn_smiles.split(">>")[1].split("."):
+        product_mols.append(Chem.MolFromSmiles(product_smarts))
+
+    num_product_atoms = sum([mol.GetNumAtoms() for mol in product_mols])
+    num_reactant_atoms = sum([mol.GetNumAtoms() for mol in reactant_mols])
+    if num_product_atoms > num_reactant_atoms:
+        print("Incorrect number of atoms")
+        return
+
+    num_atoms_of_each_type_product = {}
+    for product_mol in product_mols:
+        for atom in product_mol.GetAtoms():
+            if atom.GetAtomicNum() not in num_atoms_of_each_type_product:
+                num_atoms_of_each_type_product[atom.GetAtomicNum()] = 1
+            else:
+                num_atoms_of_each_type_product[atom.GetAtomicNum()] += 1
+
+    num_atoms_of_each_type_reactant = {}
+    for reactant_mol in reactant_mols:
+        for atom in reactant_mol.GetAtoms():
+            if atom.GetAtomicNum() not in num_atoms_of_each_type_reactant:
+                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] = 1
+            else:
+                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] += 1
+
+    for k, v in num_atoms_of_each_type_product.items():
+        if num_atoms_of_each_type_reactant[k] < v:
+            print(f"More atoms of atomic num {k} in products than reactants")
+            return
+
+    product_mol_atoms = {}
+    for product_mol in product_mols:
+        for atom in product_mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                raise ValueError("Unmapped product atom")
+            product_mol_atoms[atom.GetAtomMapNum()] = atom
+
+    reactant_atom_map_nums = []
+    for reactant_mol in reactant_mols:
+        for atom in reactant_mol.GetAtoms():
+            if atom.GetAtomMapNum() == 0:
+                continue
+            if atom.GetAtomMapNum() not in product_mol_atoms:
+                raise ValueError(
+                    f"Mapped reactant atom {atom.GetAtomMapNum()} not found in products"
+                )
+            if (
+                atom.GetAtomicNum()
+                != product_mol_atoms[atom.GetAtomMapNum()].GetAtomicNum()
+            ):
+                raise ValueError(
+                    f"Mapped reactant atom {atom.GetAtomMapNum()} has different atomic number"
+                )
+            reactant_atom_map_nums.append(atom.GetAtomMapNum())
+
+    if set(reactant_atom_map_nums) != set(product_mol_atoms.keys()):
+        raise ValueError("Incorrect atom mapping nums")
+
+    return True
+
+
+def sanitize_rxn_string(
+    rxn_smiles: str, canonicalize: bool = True, remove_duplicate_fragments: bool = False
+) -> str:
+    """
+    Sanitize the input reaction SMILES string by parsing it into reactants and products
+    and checking that the constituent molecules are standardized.
+
+    Standardization:
+    1. Ensuring each fragment can be rounded-tripped through RDKit
+    2. Removing mapping numbers
+    3. Remove duplicate fragments
+    4. Make sure ">>" is in the string, only once
+    5. Removing isotopes
+    6. Canonicalizing SMILES strings
+    7. Isomerizing SMILES strings
+
+    Args:
+        rxn_smiles (str): Reaction SMILES string
+
+    Returns:
+        str: Sanitized reaction SMILES string
+    """
+    if ">>" not in rxn_smiles:
+        raise ValueError("Invalid reaction SMILES string")
+
+    reactants_str = rxn_smiles.split(">>")[0]
+    products_str = rxn_smiles.split(">>")[1]
+
+    if remove_duplicate_fragments:
+        reactants_strs = list(set(reactants_str.split(".")))
+        products_strs = list(set(products_str.split(".")))
+    else:
+        reactants_strs = reactants_str.split(".")
+        products_strs = products_str.split(".")
+
+    reactants_mols = [Chem.MolFromSmiles(reactant) for reactant in reactants_strs]
+    products_mols = [Chem.MolFromSmiles(product) for product in products_strs]
+
+    if None in reactants_mols or None in products_mols:
+        raise ValueError("Invalid SMILES in reaction SMILES string")
+
+    standardized_reactants_str = "".join(
+        [
+            Chem.MolToSmiles(reactant, canonical=canonicalize, isomericSmiles=True)
+            for reactant in reactants_mols
+        ]
+    )
+    standardized_products_str = "".join(
+        [
+            Chem.MolToSmiles(product, canonical=canonicalize, isomericSmiles=True)
+            for product in products_mols
+        ]
+    )
+    standardized_rxn_smiles = (
+        standardized_reactants_str + ">>" + standardized_products_str
+    )
+
+    return standardized_rxn_smiles

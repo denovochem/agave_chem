@@ -1,5 +1,5 @@
 from importlib.resources import files
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 import numpy as np
 import torch
@@ -302,11 +302,9 @@ class NeuralReactionMapper(ReactionMapper):
             products_start_index:,
             reactants_start_index : reactants_end_index + 1,
         ]  # reactants to products attention
-        products_to_reactants_attn = (
-            out[
-                reactants_start_index : reactants_end_index + 1, products_start_index:
-            ].T
-        )  # products to reactants attention, transposed so the two have the same shape
+        products_to_reactants_attn = out[
+            reactants_start_index : reactants_end_index + 1, products_start_index:
+        ].T  # products to reactants attention, transposed so the two have the same shape, and indices align
         avg_attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
         return avg_attn
 
@@ -343,7 +341,13 @@ class NeuralReactionMapper(ReactionMapper):
         return attn
 
     def assign_atom_maps(
-        self, rxn_smiles: str, attn: np.ndarray, one_to_one_correspondence: bool = False
+        self,
+        rxn_smiles: str,
+        attn: np.ndarray,
+        one_to_one_correspondence: bool = False,
+        neighborhood_multiplier: float = 1,
+        reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
+        products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
     ) -> str:
         """
         Assign atom maps to a reaction SMILES string based on the attention matrix.
@@ -356,6 +360,11 @@ class NeuralReactionMapper(ReactionMapper):
         Returns:
             str: The mapped reaction SMILES string.
         """
+        if not reactants_atom_idx_to_orig_mapping:
+            reactants_atom_idx_to_orig_mapping = {}
+        if not products_atom_idx_to_orig_mapping:
+            products_atom_idx_to_orig_mapping = {}
+
         reactants_str = rxn_smiles.split(">>")[0]
         products_str = rxn_smiles.split(">>")[1]
         reactants_mols = [
@@ -369,60 +378,173 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_atom_dict_neighbors = {}
         reactant_atom_num = 0
         for mol in reactants_mols:
+            mol_reactants_atom_dict = {}
+            mol_idx_to_atom_num = {}
             for atom in mol.GetAtoms():
-                reactants_atom_dict[reactant_atom_num] = atom
-                reactants_atom_dict_neighbors[reactant_atom_num] = [
-                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
-                ]
+                mol_reactants_atom_dict[reactant_atom_num] = atom
+                mol_idx_to_atom_num[atom.GetIdx()] = reactant_atom_num
                 reactant_atom_num += 1
+            for atom_reactant_atom_num, atom in mol_reactants_atom_dict.items():
+                reactants_atom_dict_neighbors[atom_reactant_atom_num] = [
+                    mol_idx_to_atom_num[neighbor.GetIdx()]
+                    for neighbor in atom.GetNeighbors()
+                ]
+            reactants_atom_dict.update(mol_reactants_atom_dict)
 
         products_atom_dict = {}
         products_atom_dict_neighbors = {}
         product_atom_num = 0
         for mol in products_mols:
+            mol_products_atom_dict = {}
+            mol_idx_to_atom_num = {}
             for atom in mol.GetAtoms():
-                products_atom_dict[product_atom_num] = atom
-                products_atom_dict_neighbors[product_atom_num] = [
-                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
-                ]
+                mol_products_atom_dict[product_atom_num] = atom
+                mol_idx_to_atom_num[atom.GetIdx()] = product_atom_num
                 product_atom_num += 1
+            for atom_product_atom_num, atom in mol_products_atom_dict.items():
+                products_atom_dict_neighbors[atom_product_atom_num] = [
+                    mol_idx_to_atom_num[neighbor.GetIdx()]
+                    for neighbor in atom.GetNeighbors()
+                ]
+            products_atom_dict.update(mol_products_atom_dict)
+
+        products_orig_mapping_to_idx = {
+            value: key
+            for key, value in products_atom_idx_to_orig_mapping.items()
+            if value != 0
+        }
+        reactants_orig_mapping_to_idx = {
+            value: key
+            for key, value in reactants_atom_idx_to_orig_mapping.items()
+            if value != 0
+        }
 
         if one_to_one_correspondence:
             for map_num in range(attn.shape[0]):
-                highest_attn_score = attn.max()
-                highest_attn_score_indices = np.where(attn == highest_attn_score)
-                row_highest_attn = highest_attn_score_indices[0][0]
-                col_highest_attn = highest_attn_score_indices[1][0]
-                products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
-                reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
-                attn[row_highest_attn] = 0
-                attn[:, col_highest_attn] = 0
+                if products_orig_mapping_to_idx.get(map_num + 1, 0):
+                    row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
+                    col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
+                    products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                    reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+                    attn[row_highest_attn] = 0
+                    attn[:, col_highest_attn] = 0
+
+                else:
+                    highest_attn_score = attn.max()
+                    highest_attn_score_indices = np.where(attn == highest_attn_score)
+                    row_highest_attn = highest_attn_score_indices[0][0]
+                    col_highest_attn = highest_attn_score_indices[1][0]
+                    products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                    reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+                    attn[row_highest_attn] = 0
+                    attn[:, col_highest_attn] = 0
 
                 # Update neighbors
                 for product_atom_idx in products_atom_dict_neighbors[row_highest_attn]:
                     for reactant_atom_idx in reactants_atom_dict_neighbors[
                         col_highest_attn
                     ]:
-                        attn[product_atom_idx, reactant_atom_idx] *= 1
+                        attn[product_atom_idx, reactant_atom_idx] *= (
+                            neighborhood_multiplier
+                        )
 
         else:
             for map_num, row in enumerate(attn):
+                # get partial mapping working for now
+                # if products_orig_mapping_to_idx.get(map_num + 1, 0):
+                #     row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
+                #     col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
+                #     products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                #     reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+                #     print(map_num + 1, row_highest_attn, col_highest_attn)
+                # else:
                 highest_attn_score = row.max()
                 highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
                 products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
                 reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
 
         mapped_reactants_str = ".".join(
-            [Chem.MolToSmiles(reactant) for reactant in reactants_mols]
+            [Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols]
         )
         mapped_products_str = ".".join(
-            [Chem.MolToSmiles(product) for product in products_mols]
+            [Chem.MolToSmiles(product, canonical=False) for product in products_mols]
         )
         mapped_rxn_smiles = mapped_reactants_str + ">>" + mapped_products_str
 
         return mapped_rxn_smiles
 
-    def map_reaction(self, rxn_smiles: str, layer: int, head: int) -> Any:
+    def get_data_from_partially_mapped_smiles(self, rxn_smiles):
+        reactants_str = rxn_smiles.split(">>")[0]
+        products_str = rxn_smiles.split(">>")[1]
+        reactants_mols = [
+            Chem.MolFromSmiles(reactant) for reactant in reactants_str.split(".")
+        ]
+        products_mols = [
+            Chem.MolFromSmiles(product) for product in products_str.split(".")
+        ]
+
+        reactants_atom_idx_to_orig_mapping = {}
+        reactants_atom_dict = {}
+        reactants_atom_dict_neighbors = {}
+        reactant_atom_num = 0
+        for mol in reactants_mols:
+            for atom in mol.GetAtoms():
+                reactants_atom_dict[reactant_atom_num] = atom
+                reactants_atom_idx_to_orig_mapping[reactant_atom_num] = (
+                    atom.GetAtomMapNum()
+                )
+                reactants_atom_dict_neighbors[reactant_atom_num] = [
+                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
+                ]
+                atom.SetAtomMapNum(0)
+                reactant_atom_num += 1
+
+        products_atom_idx_to_orig_mapping = {}
+        products_atom_dict = {}
+        products_atom_dict_neighbors = {}
+        product_atom_num = 0
+        for mol in products_mols:
+            for atom in mol.GetAtoms():
+                products_atom_dict[product_atom_num] = atom
+                products_atom_idx_to_orig_mapping[product_atom_num] = (
+                    atom.GetAtomMapNum()
+                )
+                products_atom_dict_neighbors[product_atom_num] = [
+                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
+                ]
+                atom.SetAtomMapNum(0)
+                product_atom_num += 1
+
+        unmapped_reactants_strings = [
+            Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols
+        ]
+
+        unmapped_products_strings = [
+            Chem.MolToSmiles(product, canonical=False) for product in products_mols
+        ]
+
+        unmapped_rxn = (
+            ".".join(unmapped_reactants_strings)
+            + ">>"
+            + ".".join(unmapped_products_strings)
+        )
+
+        return (
+            unmapped_rxn,
+            reactants_atom_idx_to_orig_mapping,
+            products_atom_idx_to_orig_mapping,
+        )
+
+    def map_reaction(
+        self,
+        rxn_smiles: str,
+        layer: int = 9,
+        head: int = 0,
+        sequence_max_length: int = 256,
+        neighborhood_multiplier: float = 1,
+        one_to_one_correspondence: bool = False,
+        start_from_partial_map: bool = False,
+    ):
         """
         Maps a reaction SMILES string using a pre-trained Albert model.
 
@@ -434,20 +556,33 @@ class NeuralReactionMapper(ReactionMapper):
         Returns:
             str: A mapped reaction SMILES string with atom map numbers assigned.
         """
+        reactants_atom_idx_to_orig_mapping = None
+        products_atom_idx_to_orig_mapping = None
+        if start_from_partial_map:
+            (
+                rxn_smiles,
+                reactants_atom_idx_to_orig_mapping,
+                products_atom_idx_to_orig_mapping,
+            ) = self.get_data_from_partially_mapped_smiles(rxn_smiles)
+
         attn, tokens = self.get_attention_matrix_for_head(
             text=rxn_smiles,
             layer=layer,
             head=head,
-            max_length=256,
+            max_length=sequence_max_length,
             trim_padding=True,
         )
+
+        if "[UNK]" in tokens:
+            print("Unknown token in sequence")
+            return ""
 
         if ">>" not in tokens:
             print("Sequence too long")
 
             return ""
 
-        if len(tokens) == 256:
+        if len(tokens) >= sequence_max_length:
             print("Sequence too long")
             return ""
 
@@ -462,7 +597,14 @@ class NeuralReactionMapper(ReactionMapper):
 
         attn = self.remove_non_atom_rows_and_columns(attn, string_info_dict)
 
-        mapped_rxn_smiles = self.assign_atom_maps(rxn_smiles, attn)
+        mapped_rxn_smiles = self.assign_atom_maps(
+            rxn_smiles,
+            attn,
+            one_to_one_correspondence=one_to_one_correspondence,
+            neighborhood_multiplier=neighborhood_multiplier,
+            reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
+            products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
+        )
         return mapped_rxn_smiles
 
     def map_reactions(self, reaction_list: List[str]) -> List[str]:
@@ -472,5 +614,5 @@ class NeuralReactionMapper(ReactionMapper):
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
 
-    def map_reactions_parallel(self, reaction_list: List[str]) -> List[str]:
+    def map_reactions_parallel(self, reaction_list: List[str]) -> None:
         return None

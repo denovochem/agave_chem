@@ -1,13 +1,9 @@
-import logging
 import re
 from typing import Any, Dict, List
 
 from transformers import (
     PreTrainedTokenizer,
 )
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class CustomTokenizer(PreTrainedTokenizer):

@@ -75,7 +75,7 @@ class ExpertReactionMapper(ReactionMapper):
             "smirks_patterns.json"
         )
         default_smirks_patterns = []
-        with open(SMIRKS_PATTERNS_FILE, "r") as f:
+        with SMIRKS_PATTERNS_FILE.open("r") as f:
             default_smirks_patterns = json.load(f)
 
         self._smirks_patterns: List[SmirksPattern] = []

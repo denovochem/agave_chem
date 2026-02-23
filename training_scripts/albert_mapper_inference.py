@@ -19,7 +19,9 @@ class StringInfoDict(TypedDict):
     non_atom_tokens: List[int]
 
 
-def sanitize_input_rxn_string(rxn_smiles: str) -> str:
+def sanitize_input_rxn_string(
+    rxn_smiles: str, canonicalize: bool = True, remove_duplicate_fragments: bool = False
+) -> str:
     """
     Sanitize the input reaction SMILES string by parsing it into reactants and products
     and checking that the constituent molecules are standardized.
@@ -39,27 +41,34 @@ def sanitize_input_rxn_string(rxn_smiles: str) -> str:
     Returns:
         str: Sanitized reaction SMILES string
     """
+    if ">>" not in rxn_smiles:
+        raise ValueError("Invalid reaction SMILES string")
+
     reactants_str = rxn_smiles.split(">>")[0]
     products_str = rxn_smiles.split(">>")[1]
 
-    reactants_strs = list(set(reactants_str.split(".")))
-    products_strs = list(set(products_str.split(".")))
+    if remove_duplicate_fragments:
+        reactants_strs = list(set(reactants_str.split(".")))
+        products_strs = list(set(products_str.split(".")))
+    else:
+        reactants_strs = reactants_str.split(".")
+        products_strs = products_str.split(".")
 
     reactants_mols = [Chem.MolFromSmiles(reactant) for reactant in reactants_strs]
     products_mols = [Chem.MolFromSmiles(product) for product in products_strs]
 
-    reactants_mols = [ele for ele in reactants_mols if ele is not None]
-    products_mols = [ele for ele in products_mols if ele is not None]
+    if None in reactants_mols or None in products_mols:
+        raise ValueError("Invalid SMILES in reaction SMILES string")
 
     standardized_reactants_str = "".join(
         [
-            Chem.MolToSmiles(reactant, canonicalSmiles=True, isomericSmiles=True)
+            Chem.MolToSmiles(reactant, canonical=canonicalize, isomericSmiles=True)
             for reactant in reactants_mols
         ]
     )
     standardized_products_str = "".join(
         [
-            Chem.MolToSmiles(product, canonicalSmiles=True, isomericSmiles=True)
+            Chem.MolToSmiles(product, canonical=canonicalize, isomericSmiles=True)
             for product in products_mols
         ]
     )

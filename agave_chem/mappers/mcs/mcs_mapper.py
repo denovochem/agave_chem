@@ -19,6 +19,30 @@ class MCSReactionMapper(ReactionMapper):
     def _get_atoms_in_radius(
         self, mol: Chem.Mol, atom: Chem.Atom, radius: int
     ) -> List[list]:
+        """
+        Get the atoms in a radius around a given atom.
+
+        Args:
+        mol : Chem.Mol
+            RDKit molecule object
+        atom : Chem.Atom
+            RDKit atom object
+        radius : int
+            The radius around the atom to search
+
+        Returns:
+        List of lists containing the encoded atoms in the radius around the atom.
+        Each list contains the encoded atom, the encoded bond, and the encoded atom at the other end of the bond.
+
+        Note:
+        This function first finds the atoms in the radius around the given atom using
+        Chem.rdmolops.FindAtomEnvironmentOfRadiusN. It then creates a submolecule from these atoms and
+        assigns the atom map numbers such that the atom map number of the given atom is 1.
+        The function then iterates over the bonds in the submolecule, encoding each bond and its
+        associated atoms. The encoded bonds and atoms are then sorted based on the bond order
+        and the atom map numbers. Finally, the function returns the sorted list of encoded bonds and atoms.
+
+        """
         bond_ids = Chem.rdmolops.FindAtomEnvironmentOfRadiusN(
             mol,
             radius=radius,
@@ -85,6 +109,25 @@ class MCSReactionMapper(ReactionMapper):
         return encoded_environment
 
     def _encode_atom(self, mol: Chem.Mol, idx: int) -> List[int]:
+        """
+        Encode an RDKit Atom object into a list of integers.
+
+        The encoding is as follows:
+        - z: The atomic number of the atom.
+        - chg: The formal charge of the atom.
+        - arom: 1 if the atom is aromatic, 0 otherwise.
+        - ring: 1 if the atom is in a ring, 0 otherwise.
+        - h: The total number of hydrogen atoms bonded to the atom.
+        - atom_map_num: The atom map number of the atom.
+        - idx: The index of the atom in the molecule.
+
+        Args:
+            mol (Chem.Mol): The RDKit Molecule object containing the atom.
+            idx (int): The index of the atom in the molecule.
+
+        Returns:
+            List[int]: A list of integers encoding the atom.
+        """
         a = mol.GetAtomWithIdx(idx)
         z = a.GetAtomicNum()
         chg = a.GetFormalCharge()
@@ -95,11 +138,35 @@ class MCSReactionMapper(ReactionMapper):
         return [z, chg, arom, ring, h, atom_map_num, idx]
 
     def _encode_bond(self, mol: Chem.Mol, idx: int) -> List[int]:
+        """
+        Encode an RDKit Bond object into a list of integers.
+
+        The encoding is as follows:
+        - bond_order: The bond order of the bond multiplied by 10.
+
+        Args:
+            mol (Chem.Mol): The RDKit Molecule object containing the bond.
+            idx (int): The index of the bond in the molecule.
+
+        Returns:
+            List[int]: A list of integers encoding the bond.
+        """
         b = mol.GetBondWithIdx(idx)
         # getBondDir??
         return [int(b.GetBondTypeAsDouble() * 10)]
 
     def _assign_mapping(self, mol: Chem.Mol, atom_idx: int, atom_map_num: int) -> None:
+        """
+        Assign the given atom map number to the atom at the given index in the molecule.
+
+        Args:
+            mol (Chem.Mol): The RDKit Molecule object containing the atom.
+            atom_idx (int): The index of the atom in the molecule.
+            atom_map_num (int): The atom map number to assign to the atom.
+
+        Returns:
+            None
+        """
         atom = mol.GetAtomWithIdx(atom_idx)
         atom.SetAtomMapNum(atom_map_num)
         return None
@@ -107,6 +174,15 @@ class MCSReactionMapper(ReactionMapper):
     def _remove_atom_idx_for_comparison(
         self, atom_map_list: List[List[List[int]]]
     ) -> List[List[List[int]]]:
+        """
+        Remove the atom index from each atom environment in the given list.
+
+        Args:
+            atom_map_list (List[List[List[int]]]): A list of lists of atom environments.
+
+        Returns:
+            List[List[List[int]]]: A list of lists of atom environments with atom indices removed.
+        """
         new_list = []
         for init_list in atom_map_list:
             atom_bond_list = []
@@ -125,6 +201,17 @@ class MCSReactionMapper(ReactionMapper):
         product_encoding_dict: Dict[str, List[List[List[int]]]],
         radius: int,
     ) -> List[List[str]]:
+        """
+        Compute the number of matching atom environments between reactants and products.
+
+        Args:
+            reactant_encoding_dict: A dictionary where the keys are strings of the form "mol_idx_atom_idx_radius" and the values are lists of lists of integers encoding the atom environments.
+            product_encoding_dict: A dictionary where the keys are strings of the form "mol_idx_atom_idx_radius" and the values are lists of lists of integers encoding the atom environments.
+            radius: The radius of the atom environments to consider.
+
+        Returns:
+            A list of lists of strings, where each inner list contains two strings of the form "mol_idx_atom_idx_radius" corresponding to matching atom environments in the reactants and products.
+        """
         matches = []
 
         reactant_encoding_dict_no_idx = {}
@@ -159,6 +246,20 @@ class MCSReactionMapper(ReactionMapper):
         product_encoding_dict: Dict[str, List[List[List[int]]]],
         atom_map_num: int,
     ) -> Tuple[int, Dict[str, List[List[List[int]]]], Dict[str, List[List[List[int]]]]]:
+        """
+        Assign an atom map number to a pair of matching atoms in the reactants and products.
+
+        Args:
+            matches: A list of lists of strings, where each inner list contains two strings of the form "mol_idx_atom_idx_radius" corresponding to matching atom environments in the reactants and products.
+            reactants_mols: A list of RDKit molecules corresponding to the reactants.
+            products_mols: A list of RDKit molecules corresponding to the products.
+            reactant_encoding_dict: A dictionary where the keys are strings of the form "mol_idx_atom_idx_radius" and the values are lists of lists of integers encoding the atom environments.
+            product_encoding_dict: A dictionary where the keys are strings of the form "mol_idx_atom_idx_radius" and the values are lists of lists of integers encoding the atom environments.
+            atom_map_num: The current atom map number to assign.
+
+        Returns:
+            A tuple containing the updated atom map number, the updated reactant encoding dictionary, and the updated product encoding dictionary.
+        """
         reactant_mol_idx = int(matches[0][0].split("_")[0])
         reactant_atom_idx = int(matches[0][0].split("_")[1])
         if (
@@ -216,6 +317,18 @@ class MCSReactionMapper(ReactionMapper):
         return atom_map_num + 1, reactant_encoding_dict, product_encoding_dict
 
     def map_reaction(self, reaction_smiles: str, min_radius: int = 1) -> Dict[str, Any]:
+        """
+        Maps a reaction SMILES string using a mcs-like approach.
+
+        Parameters:
+        reaction_smiles (str): A reaction SMILES string.
+        min_radius (int): The minimum radius to consider when mapping atoms.
+
+        Returns:
+        dict: A dictionary containing the mapped reaction SMILES string and additional information.
+        The dictionary will have the following keys: "mapping" and "additional_info". The value for "mapping" will be the mapped reaction SMILES string. The value for "additional_info" will be a list containing a single empty dictionary.
+
+        """
         default_mapping_dict = {"mapping": "", "additional_info": [{}]}
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
@@ -317,5 +430,5 @@ class MCSReactionMapper(ReactionMapper):
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
 
-    def map_reactions_parallel(self, reaction_list: List[str]) -> List[Dict[str, Any]]:
+    def map_reactions_parallel(self, reaction_list: List[str]) -> None:
         return None

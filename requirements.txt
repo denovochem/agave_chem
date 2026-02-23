@@ -1,3 +1,5 @@
 rdkit >=2025.9.3
 rdchiral ~=1.1.0
 loguru ~=0.7.0
+torch ~=2.10.0
+transformers ~=5.2.0
