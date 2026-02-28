@@ -5,17 +5,17 @@ This module provides comprehensive scoring metrics for atom-to-atom
 mappings based on the criteria used in RDTool.
 """
 
-from typing import Dict, List, Optional, Set, Tuple, FrozenSet
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+
 from rdkit import Chem
 
 from agave_chem.mappers.data_classes import (
     AtomMapping,
-    MappingScore,
     BondChange,
     BondChangeType,
+    MappingScore,
 )
 from agave_chem.utils.chem_utils import get_bond_energy, get_ring_info
-from agave_chem.utils.logging_config import logger
 
 
 class MappingScorer:

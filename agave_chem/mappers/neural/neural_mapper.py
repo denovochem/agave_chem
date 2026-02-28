@@ -26,7 +26,9 @@ class StringInfoDict(TypedDict):
 
 
 class NeuralReactionMapper(ReactionMapper):
-    """ """
+    """
+    Neural network-based reaction atom-mapping
+    """
 
     def __init__(
         self,
@@ -34,7 +36,14 @@ class NeuralReactionMapper(ReactionMapper):
         mapper_weight: float = 3,
         checkpoint_path: Optional[str] = None,
     ):
-        """ """
+        """
+        Initialize the NeuralReactionMapper instance.
+
+        Args:
+            mapper_name (str): The name of the mapper.
+            mapper_weight (float): The weight of the mapper.
+            checkpoint_path (Optional[str]): The path to the checkpoint file.
+        """
 
         super().__init__("neural", mapper_name, mapper_weight)
 
@@ -48,11 +57,38 @@ class NeuralReactionMapper(ReactionMapper):
         model = AlbertForMaskedLM.from_pretrained(
             checkpoint_path,
             attn_implementation="eager",
-        ).to(self._device)
+        )
+        model = model.to(self._device)
 
         self._model = model
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
+
+    def _encode_atom(self, atom: Chem.Atom) -> List[int]:
+        """
+        Encode an RDKit Atom object into a list of integers.
+
+        The encoding is as follows:
+        - z: The atomic number of the atom.
+        - chg: The formal charge of the atom.
+        - arom: 1 if the atom is aromatic, 0 otherwise.
+        - ring: 1 if the atom is in a ring, 0 otherwise.
+        - h: The total number of hydrogen atoms bonded to the atom.
+        - d: The degree of the atom.
+
+        Args:
+            atom (Chem.Atom): The RDKit Atom object to encode.
+
+        Returns:
+            List[int]: A list of integers encoding the atom.
+        """
+        z = atom.GetAtomicNum()
+        chg = atom.GetFormalCharge()
+        arom = 1 if atom.GetIsAromatic() else 0
+        ring = 1 if atom.IsInRing() else 0
+        h = atom.GetTotalNumHs()
+        d = atom.GetDegree()
+        return [z, chg, arom, ring, h, d]
 
     def get_attention_matrix_for_head(
         self,
@@ -61,7 +97,7 @@ class NeuralReactionMapper(ReactionMapper):
         head: int,
         max_length: int = 256,
         trim_padding: bool = True,
-    ) -> Tuple[torch.Tensor, List[str]]:
+    ) -> Tuple[np.ndarray, List[str]]:
         """
         Returns the attention matrix for a given layer/head for a single input string.
 
@@ -304,7 +340,7 @@ class NeuralReactionMapper(ReactionMapper):
         ]  # reactants to products attention
         products_to_reactants_attn = out[
             reactants_start_index : reactants_end_index + 1, products_start_index:
-        ].T  # products to reactants attention, transposed so the two have the same shape, and indices align
+        ].T  # products to reactants attention, transposed so indices align
         avg_attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
         return avg_attn
 
@@ -345,7 +381,8 @@ class NeuralReactionMapper(ReactionMapper):
         rxn_smiles: str,
         attn: np.ndarray,
         one_to_one_correspondence: bool = False,
-        neighborhood_multiplier: float = 1,
+        adjacent_atom_multiplier: float = 30,
+        identical_adjacent_atom_multiplier: float = 10,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
     ) -> str:
@@ -386,7 +423,10 @@ class NeuralReactionMapper(ReactionMapper):
                 reactant_atom_num += 1
             for atom_reactant_atom_num, atom in mol_reactants_atom_dict.items():
                 reactants_atom_dict_neighbors[atom_reactant_atom_num] = [
-                    mol_idx_to_atom_num[neighbor.GetIdx()]
+                    (
+                        mol_idx_to_atom_num[neighbor.GetIdx()],
+                        self._encode_atom(neighbor),
+                    )
                     for neighbor in atom.GetNeighbors()
                 ]
             reactants_atom_dict.update(mol_reactants_atom_dict)
@@ -403,7 +443,10 @@ class NeuralReactionMapper(ReactionMapper):
                 product_atom_num += 1
             for atom_product_atom_num, atom in mol_products_atom_dict.items():
                 products_atom_dict_neighbors[atom_product_atom_num] = [
-                    mol_idx_to_atom_num[neighbor.GetIdx()]
+                    (
+                        mol_idx_to_atom_num[neighbor.GetIdx()],
+                        self._encode_atom(neighbor),
+                    )
                     for neighbor in atom.GetNeighbors()
                 ]
             products_atom_dict.update(mol_products_atom_dict)
@@ -440,13 +483,23 @@ class NeuralReactionMapper(ReactionMapper):
                     attn[:, col_highest_attn] = 0
 
                 # Update neighbors
-                for product_atom_idx in products_atom_dict_neighbors[row_highest_attn]:
-                    for reactant_atom_idx in reactants_atom_dict_neighbors[
-                        col_highest_attn
-                    ]:
-                        attn[product_atom_idx, reactant_atom_idx] *= (
-                            neighborhood_multiplier
-                        )
+                for (
+                    product_atom_idx,
+                    product_atom_env,
+                ) in products_atom_dict_neighbors[row_highest_attn]:
+                    for (
+                        reactant_atom_idx,
+                        reactant_atom_env,
+                    ) in reactants_atom_dict_neighbors[col_highest_attn]:
+                        if product_atom_env == reactant_atom_env:
+                            attn[product_atom_idx, reactant_atom_idx] *= (
+                                adjacent_atom_multiplier
+                                * identical_adjacent_atom_multiplier
+                            )
+                        else:
+                            attn[product_atom_idx, reactant_atom_idx] *= (
+                                adjacent_atom_multiplier
+                            )
 
         else:
             for map_num, row in enumerate(attn):
@@ -541,7 +594,8 @@ class NeuralReactionMapper(ReactionMapper):
         layer: int = 9,
         head: int = 0,
         sequence_max_length: int = 256,
-        neighborhood_multiplier: float = 1,
+        adjacent_atom_multiplier: float = 10,
+        identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = False,
         start_from_partial_map: bool = False,
     ):
@@ -601,7 +655,8 @@ class NeuralReactionMapper(ReactionMapper):
             rxn_smiles,
             attn,
             one_to_one_correspondence=one_to_one_correspondence,
-            neighborhood_multiplier=neighborhood_multiplier,
+            adjacent_atom_multiplier=adjacent_atom_multiplier,
+            identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
             reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
         )
@@ -614,5 +669,8 @@ class NeuralReactionMapper(ReactionMapper):
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
 
-    def map_reactions_parallel(self, reaction_list: List[str]) -> None:
-        return None
+
+## things to check:
+# attention averaging works? Set as variable
+# run mapping on large number of reactions, make sure it's consistent (all product atoms mapped, atom map numbers unique, atoms map to reactant atoms of same atom number, etc.)
+# neighborhood multiplier? More sophisticated neighborhood multiplier

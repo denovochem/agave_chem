@@ -75,7 +75,3 @@ class ReactionMapper(ABC):
     @abstractmethod
     def map_reactions(self, reaction_smiles_list: List[str]):
         pass
-
-    @abstractmethod
-    def map_reactions_parallel(self, reaction_smiles_list: List[str]):
-        pass

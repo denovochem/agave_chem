@@ -1,8 +1,9 @@
-import logging
 import random
 import re
+import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
@@ -16,11 +17,19 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils.chem_utils import canonicalize_reaction_smiles, randomize_reaction_smiles
-from utils.constants import smiles_token_to_id_dict
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+PARENT_DIR = BASE_DIR.parent
+
+sys.path.append(str(PARENT_DIR))
+
+from agave_chem.mappers.neural.constants import (  # noqa: E402
+    smiles_token_to_id_dict,
+)
+from agave_chem.utils.chem_utils import (  # noqa: E402
+    canonicalize_reaction_smiles,
+    randomize_reaction_smiles,
+)
 
 # ============================================================
 # Configuration
@@ -193,7 +202,7 @@ class CustomTokenizer(PreTrainedTokenizer):
     ) -> List[int]:
         """
         Do not add any special tokens (CLS, SEP) around the sequence.
-        Overrides the default BERT-style behaviour of prepending [CLS]
+        Overrides the default BERT-style behavior of prepending [CLS]
         and appending [SEP].
         """
         if token_ids_1 is None:
@@ -546,14 +555,12 @@ def resolve_protected_token_ids(
             sub_ids = tokenizer.encode(token, add_special_tokens=False)
             if sub_ids:
                 resolved_ids.update(sub_ids)
-                logger.warning(
+                print(
                     f"Protected token '{token}' was not found directly in vocab. "
                     f"Protecting its sub-token IDs instead: {sub_ids}"
                 )
             else:
-                logger.warning(
-                    f"Protected token '{token}' could not be resolved. Skipping."
-                )
+                print(f"Protected token '{token}' could not be resolved. Skipping.")
 
     return resolved_ids
 
@@ -761,7 +768,7 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
 
     model = AlbertForMaskedLM(config)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info(f"Model built with {total_params:,} trainable parameters.")
+    print(f"Model built with {total_params:,} trainable parameters.")
     return model
 
 
@@ -867,7 +874,7 @@ class AlbertTrainer:
             if (step + 1) % self.training_config.logging_steps == 0:
                 avg_loss = total_loss / (step + 1)
                 lr = self.scheduler.get_last_lr()[0]
-                logger.info(
+                print(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
                     f"| Loss: {avg_loss:.4f} | LR: {lr:.2e}"
                 )
@@ -898,16 +905,16 @@ class AlbertTrainer:
 
     def train(self) -> None:
         """Run the full training loop."""
-        logger.info(f"Starting training on device: {self.device}")
-        logger.info(f"Epochs: {self.training_config.num_epochs}")
-        logger.info(f"Batch size: {self.training_config.batch_size}")
+        print(f"Starting training on device: {self.device}")
+        print(f"Epochs: {self.training_config.num_epochs}")
+        print(f"Batch size: {self.training_config.batch_size}")
 
         for epoch in range(1, self.training_config.num_epochs + 1):
             start_time = time.time()
             train_loss = self.train_epoch(epoch)
             val_loss = self.evaluate()
 
-            logger.info(
+            print(
                 f"Epoch {epoch} complete | "
                 f"Train Loss: {train_loss:.4f} | "
                 f"Val Loss: {val_loss:.4f}"
@@ -917,7 +924,7 @@ class AlbertTrainer:
             self.model.save_pretrained(
                 f"{self.training_config.output_dir}/checkpoint-epoch-{epoch}"
             )
-            logger.info(f"Model saved to {self.training_config.output_dir}")
+            print(f"Model saved to {self.training_config.output_dir}")
 
 
 # ============================================================

@@ -1,6 +1,6 @@
 import json
 from importlib.resources import files
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 from rdchiral import main as rdc
 from rdkit import Chem
@@ -20,6 +20,14 @@ class SmirksPattern(TypedDict):
     name: str
     smirks: str
     superclass_id: Optional[int]
+
+
+class ReactionData(TypedDict):
+    products: List[Chem.Mol]
+    reactants: List[Chem.Mol]
+    rdchiral_reaction: Any
+    tautomer_smiles_dict: Dict[str, List[str]]
+    fragment_count_dict: Dict[str, int]
 
 
 class ExpertReactionMapper(ReactionMapper):
@@ -137,7 +145,7 @@ class ExpertReactionMapper(ReactionMapper):
         products = parts[1]
         return reactants, products
 
-    def _prepare_reaction_data(self, reactants: str, products: str):
+    def _prepare_reaction_data(self, reactants: str, products: str) -> ReactionData:
         """
         Prepares reaction data for reaction mapping.
 
@@ -148,6 +156,15 @@ class ExpertReactionMapper(ReactionMapper):
         Returns:
             List: A list containing the reactants and products as RDKit Mol objects, the RDChiral reaction object, a dictionary of enumerated tautomer SMILES strings, and a dictionary of fragment counts.
         """
+
+        # return {
+        #     "products": [Chem.MolFromSmiles(product) for product in products.split(".")],
+        #     "reactants": [Chem.MolFromSmiles(reactant) for reactant in reactants.split(".")],
+        #     "rdchiral_reaction": rdc.rdchiralReactants(products),
+        #     "tautomer_smiles_dict": self._enumerate_tautomer_smiles(reactants),
+        #     "fragment_count_dict": self._get_fragment_count_dict(reactants),
+        # }
+
         return [
             [Chem.MolFromSmiles(product) for product in products.split(".")],
             [Chem.MolFromSmiles(reactant) for reactant in reactants.split(".")],
@@ -654,8 +671,3 @@ class ExpertReactionMapper(ReactionMapper):
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
-
-    def map_reactions_parallel(
-        self, reaction_list: List[str]
-    ) -> List[Dict[str, List[str]]]:
-        return None

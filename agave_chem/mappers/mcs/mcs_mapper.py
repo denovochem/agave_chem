@@ -118,6 +118,7 @@ class MCSReactionMapper(ReactionMapper):
         - arom: 1 if the atom is aromatic, 0 otherwise.
         - ring: 1 if the atom is in a ring, 0 otherwise.
         - h: The total number of hydrogen atoms bonded to the atom.
+        - d: The degree of the atom.
         - atom_map_num: The atom map number of the atom.
         - idx: The index of the atom in the molecule.
 
@@ -134,8 +135,9 @@ class MCSReactionMapper(ReactionMapper):
         arom = 1 if a.GetIsAromatic() else 0
         ring = 1 if a.IsInRing() else 0
         h = a.GetTotalNumHs()
+        d = a.GetDegree()
         atom_map_num = a.GetAtomMapNum()
-        return [z, chg, arom, ring, h, atom_map_num, idx]
+        return [z, chg, arom, ring, h, d, atom_map_num, idx]
 
     def _encode_bond(self, mol: Chem.Mol, idx: int) -> List[int]:
         """
@@ -152,8 +154,8 @@ class MCSReactionMapper(ReactionMapper):
             List[int]: A list of integers encoding the bond.
         """
         b = mol.GetBondWithIdx(idx)
-        # getBondDir??
-        return [int(b.GetBondTypeAsDouble() * 10)]
+        stereo = b.GetStereo()
+        return [int(b.GetBondTypeAsDouble() * 10), int(stereo)]
 
     def _assign_mapping(self, mol: Chem.Mol, atom_idx: int, atom_map_num: int) -> None:
         """
@@ -187,7 +189,7 @@ class MCSReactionMapper(ReactionMapper):
         for init_list in atom_map_list:
             atom_bond_list = []
             for sub_list in init_list:
-                if len(sub_list) == 7:
+                if len(sub_list) == 8:
                     atom_bond_list.append(sub_list[:-1])
                 else:
                     atom_bond_list.append(sub_list)
@@ -200,6 +202,7 @@ class MCSReactionMapper(ReactionMapper):
         reactant_encoding_dict: Dict[str, List[List[List[int]]]],
         product_encoding_dict: Dict[str, List[List[List[int]]]],
         radius: int,
+        min_radius_to_anchor_new_mapping: int = 2,
     ) -> List[List[str]]:
         """
         Compute the number of matching atom environments between reactants and products.
@@ -213,13 +216,18 @@ class MCSReactionMapper(ReactionMapper):
             A list of lists of strings, where each inner list contains two strings of the form "mol_idx_atom_idx_radius" corresponding to matching atom environments in the reactants and products.
         """
         matches = []
-
         reactant_encoding_dict_no_idx = {}
         for k, v in reactant_encoding_dict.items():
             if str(radius) != k.split("_")[-1]:
                 continue
             if not v:
                 continue
+            if radius < min_radius_to_anchor_new_mapping:
+                mapping_nums = [
+                    subsub[-2] for sub in v for subsub in sub if len(subsub) == 8
+                ]
+                if list(set(mapping_nums)) == [0]:
+                    continue
             reactant_encoding_dict_no_idx[k] = self._remove_atom_idx_for_comparison(v)
 
         product_encoding_dict_no_idx = {}
@@ -228,6 +236,12 @@ class MCSReactionMapper(ReactionMapper):
                 continue
             if not v:
                 continue
+            if radius < min_radius_to_anchor_new_mapping:
+                mapping_nums = [
+                    subsub[-2] for sub in v for subsub in sub if len(subsub) == 8
+                ]
+                if list(set(mapping_nums)) == [0]:
+                    continue
             product_encoding_dict_no_idx[k] = self._remove_atom_idx_for_comparison(v)
 
         for k1, v1 in reactant_encoding_dict_no_idx.items():
@@ -294,9 +308,9 @@ class MCSReactionMapper(ReactionMapper):
                 keys_to_delete.append(k1)
             for sub_v1 in v1:
                 for sub_sub_v1 in sub_v1:
-                    if len(sub_sub_v1) == 7:
+                    if len(sub_sub_v1) == 8:
                         if sub_sub_v1[-1] == reactant_atom_idx:
-                            sub_sub_v1[-2] = 1
+                            sub_sub_v1[-2] = atom_map_num
         for key in keys_to_delete:
             del reactant_encoding_dict[key]
 
@@ -308,21 +322,27 @@ class MCSReactionMapper(ReactionMapper):
                 keys_to_delete.append(k1)
             for sub_v1 in v1:
                 for sub_sub_v1 in sub_v1:
-                    if len(sub_sub_v1) == 7:
+                    if len(sub_sub_v1) == 8:
                         if sub_sub_v1[-1] == product_atom_idx:
-                            sub_sub_v1[-2] = 1
+                            sub_sub_v1[-2] = atom_map_num
         for key in keys_to_delete:
             del product_encoding_dict[key]
 
         return atom_map_num + 1, reactant_encoding_dict, product_encoding_dict
 
-    def map_reaction(self, reaction_smiles: str, min_radius: int = 1) -> Dict[str, Any]:
+    def map_reaction(
+        self,
+        reaction_smiles: str,
+        min_radius: int = 1,
+        min_radius_to_anchor_new_mapping: int = 2,
+    ) -> Dict[str, Any]:
         """
         Maps a reaction SMILES string using a mcs-like approach.
 
         Parameters:
         reaction_smiles (str): A reaction SMILES string.
         min_radius (int): The minimum radius to consider when mapping atoms.
+        min_radius_to_anchor_new_mapping (int): The minimum radius to anchor new mappings.
 
         Returns:
         dict: A dictionary containing the mapped reaction SMILES string and additional information.
@@ -334,7 +354,7 @@ class MCSReactionMapper(ReactionMapper):
             return default_mapping_dict
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
-            reaction_smiles, canonicalize_tautomer=True
+            reaction_smiles, canonicalize_tautomer=False
         )
         reactants, products = self._split_reaction_components(
             canonicalized_reaction_smiles
@@ -371,6 +391,7 @@ class MCSReactionMapper(ReactionMapper):
                 reactant_encoding_dict,
                 product_encoding_dict,
                 radius,
+                min_radius_to_anchor_new_mapping=0,  # For the purpose of finding final radius and populating encoding dictionaries, we don't care if radius < min_radius_to_anchor_new_mapping
             )
             if len(matches) == 1:
                 final_radius = radius
@@ -414,12 +435,6 @@ class MCSReactionMapper(ReactionMapper):
         )
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
 
-        # mapped_reaction_smiles = canonicalize_atom_mapping(
-        #     canonicalize_reaction_smiles(
-        #         mapped_reaction_smiles, canonicalize_tautomer=True, remove_mapping=False
-        #     )
-        # )
-
         return {"mapping": mapped_reaction_smiles, "additional_info": [{}]}
 
     def map_reactions(self, reaction_list: List[str]) -> List[Dict[str, Any]]:
@@ -429,6 +444,3 @@ class MCSReactionMapper(ReactionMapper):
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
-
-    def map_reactions_parallel(self, reaction_list: List[str]) -> None:
-        return None

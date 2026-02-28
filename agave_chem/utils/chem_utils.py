@@ -277,9 +277,13 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
                 atom.SetAtomMapNum(0)
 
     canonicalized_rxn = (
-        ".".join([Chem.MolToSmiles(mol, canonical=True) for mol in reactant_mols])
+        ".".join(
+            sorted([Chem.MolToSmiles(mol, canonical=True) for mol in reactant_mols])
+        )
         + ">>"
-        + ".".join([Chem.MolToSmiles(mol, canonical=True) for mol in product_mols])
+        + ".".join(
+            sorted([Chem.MolToSmiles(mol, canonical=True) for mol in product_mols])
+        )
     )
 
     return canonicalized_rxn
@@ -487,8 +491,8 @@ def validate_rxn_mapping(rxn_smiles: str) -> bool:
     num_product_atoms = sum([mol.GetNumAtoms() for mol in product_mols])
     num_reactant_atoms = sum([mol.GetNumAtoms() for mol in reactant_mols])
     if num_product_atoms > num_reactant_atoms:
-        print("Incorrect number of atoms")
-        return
+        logger.warning("Incorrect number of atoms")
+        return False
 
     num_atoms_of_each_type_product = {}
     for product_mol in product_mols:
@@ -508,14 +512,15 @@ def validate_rxn_mapping(rxn_smiles: str) -> bool:
 
     for k, v in num_atoms_of_each_type_product.items():
         if num_atoms_of_each_type_reactant[k] < v:
-            print(f"More atoms of atomic num {k} in products than reactants")
-            return
+            logger.warning(f"More atoms of atomic num {k} in products than reactants")
+            return False
 
     product_mol_atoms = {}
     for product_mol in product_mols:
         for atom in product_mol.GetAtoms():
             if atom.GetAtomMapNum() == 0:
-                raise ValueError("Unmapped product atom")
+                logger.warning("Unmapped product atom")
+                return False
             product_mol_atoms[atom.GetAtomMapNum()] = atom
 
     reactant_atom_map_nums = []
@@ -524,26 +529,32 @@ def validate_rxn_mapping(rxn_smiles: str) -> bool:
             if atom.GetAtomMapNum() == 0:
                 continue
             if atom.GetAtomMapNum() not in product_mol_atoms:
-                raise ValueError(
+                logger.warning(
                     f"Mapped reactant atom {atom.GetAtomMapNum()} not found in products"
                 )
+                return False
             if (
                 atom.GetAtomicNum()
                 != product_mol_atoms[atom.GetAtomMapNum()].GetAtomicNum()
             ):
-                raise ValueError(
+                logger.warning(
                     f"Mapped reactant atom {atom.GetAtomMapNum()} has different atomic number"
                 )
+                return False
             reactant_atom_map_nums.append(atom.GetAtomMapNum())
 
     if set(reactant_atom_map_nums) != set(product_mol_atoms.keys()):
-        raise ValueError("Incorrect atom mapping nums")
+        logger.warning("Incorrect atom mapping nums")
+        return False
 
     return True
 
 
 def sanitize_rxn_string(
-    rxn_smiles: str, canonicalize: bool = True, remove_duplicate_fragments: bool = False
+    rxn_smiles: str,
+    canonicalize: bool = True,
+    remove_duplicate_fragments: bool = False,
+    remove_mapping: bool = False,
 ) -> str:
     """
     Sanitize the input reaction SMILES string by parsing it into reactants and products
@@ -583,13 +594,17 @@ def sanitize_rxn_string(
     if None in reactants_mols or None in products_mols:
         raise ValueError("Invalid SMILES in reaction SMILES string")
 
-    standardized_reactants_str = "".join(
+    if remove_mapping:
+        reactants_mols = [remove_atom_mapping(mol) for mol in reactants_mols]
+        products_mols = [remove_atom_mapping(mol) for mol in products_mols]
+
+    standardized_reactants_str = ".".join(
         [
             Chem.MolToSmiles(reactant, canonical=canonicalize, isomericSmiles=True)
             for reactant in reactants_mols
         ]
     )
-    standardized_products_str = "".join(
+    standardized_products_str = ".".join(
         [
             Chem.MolToSmiles(product, canonical=canonicalize, isomericSmiles=True)
             for product in products_mols
