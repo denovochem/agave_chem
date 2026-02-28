@@ -1,0 +1,14 @@
+/* Make code blocks smaller */
+.highlight code {
+    font-size: 0.85em;  /* Adjust this value (default is usually 1em) */
+}
+
+/* Also make inline code smaller */
+code {
+    font-size: 0.85em;
+}
+
+/* Optional: Reduce line height for more compact code */
+.highlight pre {
+    line-height: 1.3;
+}
