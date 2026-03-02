@@ -1,4 +1,5 @@
 import random
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-from training_scripts.albert_mapper import (
+from training_scripts.albert_mapper_training import (
     CustomTokenizer,
     MLMConfig,
     ModelConfig,
@@ -32,9 +33,47 @@ sys.path.append(str(PARENT_DIR))
 
 from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
 from agave_chem.utils.chem_utils import (  # noqa: E402
-    canonicalize_reaction_smiles,
-    randomize_reaction_smiles,
+    remove_reaction_smiles_atom_mapping,
 )
+
+
+def build_attention_target_from_mapped_rxn_smiles(
+    tokenizer: PreTrainedTokenizer,
+    mapped_rxn_smiles: str,
+) -> tuple[np.ndarray, str]:
+    tokens = tokenizer.preprocess_sentence_reaction_smiles(mapped_rxn_smiles).split()
+    unmapped_rxn_smiles = remove_reaction_smiles_atom_mapping(mapped_rxn_smiles)
+
+    pattern = r":(\d+)\]$"
+    matching_tokens_dict: dict[str, list[int]] = {}
+
+    for i, token in enumerate(tokens):
+        m = re.search(pattern, token)
+        if not m:
+            continue
+        key = m.group()  # e.g. ":12]"
+        matching_tokens_dict.setdefault(key, []).append(i)
+
+    # keep only map nums that appear exactly twice (once reactant, once product)
+    matching_tokens_dict = {
+        k: v for k, v in matching_tokens_dict.items() if len(v) == 2
+    }
+
+    index_attn_dict: dict[int, int] = {}
+    for _, (a, b) in matching_tokens_dict.items():
+        # if duplicates occur, skip them (mirrors your neural_mapper behavior)
+        if a in index_attn_dict or b in index_attn_dict:
+            continue
+        index_attn_dict[a] = b
+        index_attn_dict[b] = a
+
+    n = len(tokens)
+    attn_target = np.zeros((n, n), dtype=np.float32)
+    for src, dst in index_attn_dict.items():
+        attn_target[src, dst] = 1.0
+
+    return attn_target, unmapped_rxn_smiles
+
 
 # ============================================================
 # Supervised Attention Alignment Configuration
@@ -66,48 +105,18 @@ class SupervisedConfig:
 
 
 class SupervisedAtomMappingDataset(Dataset):
-    """
-    Dataset for supervised attention alignment training.
-
-    Each sample includes:
-        - Standard MLM inputs (input_ids, attention_mask, etc.)
-        - attention_target: N x N matrix where row i has a 1 at column j
-          if token i should attend to token j
-        - attention_mask_target: 1D mask where 0 means ignore that row's loss
-    """
-
     def __init__(
         self,
-        texts: List[str],
-        attention_targets: List[np.ndarray],  # List of N x N matrices
+        texts: List[str],  # mapped reaction SMILES
         tokenizer: PreTrainedTokenizer,
         mlm_config: MLMConfig,
         max_length: int = 256,
-        use_random_smiles: bool = True,
-        use_canonical_smiles: bool = False,
         protected_tokens: Set[str] | None = None,
     ):
-        assert len(texts) == len(attention_targets), (
-            "texts and attention_targets must have same length"
-        )
-
-        self.texts = texts
-        self.attention_targets = attention_targets
+        self.texts = list(texts)
         self.tokenizer = tokenizer
         self.mlm_config = mlm_config
         self.max_length = max_length
-
-        if use_canonical_smiles and use_random_smiles:
-            raise ValueError(
-                "use_canonical_smiles and use_random_smiles cannot both be True"
-            )
-        if not use_canonical_smiles and not use_random_smiles:
-            raise ValueError(
-                "use_canonical_smiles and use_random_smiles cannot both be False"
-            )
-
-        self._use_canonical_smiles = use_canonical_smiles
-        self._use_random_smiles = use_random_smiles
 
         special_token_ids = set(tokenizer.all_special_ids)
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
@@ -117,17 +126,15 @@ class SupervisedAtomMappingDataset(Dataset):
         return len(self.texts)
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        text = self.texts[idx]
-        attention_target = self.attention_targets[idx]
+        mapped_text = self.texts[idx]
 
-        if self._use_random_smiles:
-            text = randomize_reaction_smiles(text)
-
-        if self._use_canonical_smiles:
-            text = canonicalize_reaction_smiles(text)
+        attention_target, unmapped_text = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=self.tokenizer,
+            mapped_rxn_smiles=mapped_text,
+        )
 
         encoding = self.tokenizer(
-            text,
+            unmapped_text,
             max_length=self.max_length,
             padding="max_length",
             truncation=True,
@@ -145,7 +152,6 @@ class SupervisedAtomMappingDataset(Dataset):
             special_token_ids=self.protected_token_ids,
         )
 
-        # Pad/truncate attention target to max_length x max_length
         padded_attention_target = np.zeros(
             (self.max_length, self.max_length), dtype=np.float32
         )
@@ -156,7 +162,6 @@ class SupervisedAtomMappingDataset(Dataset):
             :orig_len, :orig_width
         ]
 
-        # Create mask for which rows have valid targets (row sum > 0)
         attention_loss_mask = (padded_attention_target.sum(axis=1) > 0).astype(
             np.float32
         )
@@ -234,6 +239,9 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         super().__init__()
         self.base_model = base_model
         self.supervised_config = supervised_config
+
+        if getattr(self.base_model.config, "_attn_implementation", None) != "eager":
+            self.base_model.config._attn_implementation = "eager"
 
         # Enable attention output
         self.base_model.config.output_attentions = True
@@ -468,11 +476,14 @@ class SupervisedAlbertTrainer:
             loss = outputs["loss"]
             loss.backward()
             total_loss += loss.item()
+            step_loss = loss.item()
 
             if "mlm_loss" in outputs:
                 total_mlm_loss += outputs["mlm_loss"].item()
+                step_mlm_loss = outputs["mlm_loss"].item()
             if "attention_loss" in outputs:
                 total_attention_loss += outputs["attention_loss"].item()
+                step_attention_loss = outputs["attention_loss"].item()
 
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(), self.training_config.max_grad_norm
@@ -483,14 +494,11 @@ class SupervisedAlbertTrainer:
             self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                avg_loss = total_loss / (step + 1)
-                avg_mlm = total_mlm_loss / (step + 1)
-                avg_attn = total_attention_loss / (step + 1)
                 lr = self.scheduler.get_last_lr()[0]
                 print(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
-                    f"| Loss: {avg_loss:.4f} | MLM: {avg_mlm:.4f} "
-                    f"| Attn: {avg_attn:.4f} | LR: {lr:.2e}"
+                    f"| Loss: {step_loss:.4f} | MLM: {step_mlm_loss:.4f} "
+                    f"| Attn: {step_attention_loss:.4f} | LR: {lr:.2e}"
                 )
 
         return {
@@ -612,10 +620,8 @@ class SupervisedAlbertTrainer:
 
 
 def main_supervised(
-    train_texts: List[str],
-    train_attention_targets: List[np.ndarray],
-    val_texts: List[str],
-    val_attention_targets: List[np.ndarray],
+    train_texts: List[str],  # mapped reaction SMILES
+    val_texts: List[str],  # mapped reaction SMILES
     pretrained_model_path: str | None = None,
     model_config: Optional[ModelConfig] = None,
     training_config: Optional[TrainingConfig] = None,
@@ -667,7 +673,6 @@ def main_supervised(
     # --- Datasets ---
     train_dataset = SupervisedAtomMappingDataset(
         texts=train_texts,
-        attention_targets=train_attention_targets,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
@@ -675,7 +680,6 @@ def main_supervised(
     )
     val_dataset = SupervisedAtomMappingDataset(
         texts=val_texts,
-        attention_targets=val_attention_targets,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens={"^", "$", ".", ">>"},

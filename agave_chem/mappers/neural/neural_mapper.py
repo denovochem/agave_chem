@@ -12,6 +12,7 @@ from agave_chem.mappers.neural.constants import (
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
 from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.utils.logging_config import logger
 
 
 class StringInfoDict(TypedDict):
@@ -628,16 +629,16 @@ class NeuralReactionMapper(ReactionMapper):
         )
 
         if "[UNK]" in tokens:
-            print("Unknown token in sequence")
+            logger.warning("Unknown token in sequence")
             return ""
 
         if ">>" not in tokens:
-            print("Sequence too long")
+            logger.warning("Sequence too long")
 
             return ""
 
         if len(tokens) >= sequence_max_length:
-            print("Sequence too long")
+            logger.warning("Sequence too long")
             return ""
 
         string_info_dict = self.get_reactants_products_dict(tokens)

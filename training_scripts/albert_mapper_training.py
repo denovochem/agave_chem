@@ -69,7 +69,7 @@ class TrainingConfig:
     num_epochs: int = 3
     batch_size: int = 32
     warmup_steps: int = 10000
-    save_steps: int = 1000
+    save_steps: int = 1000  # This currently does nothing
     logging_steps: int = 100
     output_dir: str = "./albert_output"
     seed: int = 42
@@ -872,11 +872,11 @@ class AlbertTrainer:
             self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                avg_loss = total_loss / (step + 1)
+                step_loss = loss.item()
                 lr = self.scheduler.get_last_lr()[0]
                 print(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
-                    f"| Loss: {avg_loss:.4f} | LR: {lr:.2e}"
+                    f"| Loss: {step_loss:.4f} | LR: {lr:.2e}"
                 )
 
         return total_loss / num_batches

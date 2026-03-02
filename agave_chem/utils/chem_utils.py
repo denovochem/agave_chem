@@ -170,6 +170,29 @@ def randomize_reaction_smiles(
         return smiles
 
 
+def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:
+    split_roles = rxn_smiles.split(">>")
+    reactants = split_roles[0].split(".")
+    products = split_roles[1].split(".")
+    unmapped_reactants = []
+    for reactant in reactants:
+        reactant_mol = Chem.MolFromSmiles(reactant)
+        [a.SetAtomMapNum(0) for a in reactant_mol.GetAtoms()]
+        reactant = Chem.MolToSmiles(
+            reactant_mol, canonical=False, doRandom=False, isomericSmiles=True
+        )
+        unmapped_reactants.append(reactant)
+    unmapped_products = []
+    for product in products:
+        product_mol = Chem.MolFromSmiles(product)
+        [a.SetAtomMapNum(0) for a in product_mol.GetAtoms()]
+        product = Chem.MolToSmiles(
+            product_mol, canonical=False, doRandom=False, isomericSmiles=True
+        )
+        unmapped_products.append(product)
+    return ">>".join([".".join(unmapped_reactants), ".".join(unmapped_products)])
+
+
 def get_atom_map_to_canonical_idx(mapped_smiles: str) -> Dict[int, int]:
     """
     Given an atom-mapped SMILES, returns a mapping from original atom map numbers
