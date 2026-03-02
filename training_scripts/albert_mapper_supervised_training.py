@@ -2,7 +2,6 @@ import random
 import re
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
@@ -32,9 +31,17 @@ PARENT_DIR = BASE_DIR.parent
 sys.path.append(str(PARENT_DIR))
 
 from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
+from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
+    AlbertWithAttentionAlignment,
+    SupervisedConfig,
+)
 from agave_chem.utils.chem_utils import (  # noqa: E402
     remove_reaction_smiles_atom_mapping,
 )
+
+# ============================================================
+# Supervised Utils
+# ============================================================
 
 
 def build_attention_target_from_mapped_rxn_smiles(
@@ -73,30 +80,6 @@ def build_attention_target_from_mapped_rxn_smiles(
         attn_target[src, dst] = 1.0
 
     return attn_target, unmapped_rxn_smiles
-
-
-# ============================================================
-# Supervised Attention Alignment Configuration
-# ============================================================
-
-
-@dataclass
-class SupervisedConfig:
-    """Configuration for supervised attention alignment training."""
-
-    target_layer: int = 5  # Which layer's attention to supervise
-    target_head: int = 3  # Which head's attention to supervise
-
-    # Loss weighting for multitask learning
-    mlm_loss_weight: float = 1.0
-    attention_loss_weight: float = 1.0
-
-    # Training mode
-    multitask: bool = True  # If False, only attention alignment loss
-    freeze_base_model: bool = False  # If True, only train the attention head
-
-    # Dense layer config
-    use_residual: bool = True  # Initialize with identity for residual learning
 
 
 # ============================================================
@@ -178,205 +161,6 @@ class SupervisedAtomMappingDataset(Dataset):
                 attention_loss_mask, dtype=torch.float32
             ),
         }
-
-
-# ============================================================
-# Model with Supervised Attention Head
-# ============================================================
-
-
-class AttentionAlignmentHead(torch.nn.Module):
-    """
-    A learnable layer that refines attention scores for atom mapping.
-
-    Initialized as identity (with optional residual connection) so that
-    initial behavior matches the pre-trained attention patterns.
-    """
-
-    def __init__(self, seq_length: int, use_residual: bool = True):
-        super().__init__()
-        self.use_residual = use_residual
-
-        # Linear transformation on attention scores
-        # Input: (batch, seq_len, seq_len) -> Output: (batch, seq_len, seq_len)
-        self.dense = torch.nn.Linear(seq_length, seq_length, bias=True)
-
-        # Initialize as identity for residual learning
-        torch.nn.init.eye_(self.dense.weight)
-        torch.nn.init.zeros_(self.dense.bias)
-
-    def forward(self, attention_scores: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            attention_scores: (batch, seq_len, seq_len) attention weights
-
-        Returns:
-            Refined attention scores of same shape
-        """
-        # attention_scores: (B, S, S)
-        output = self.dense(attention_scores)  # (B, S, S)
-
-        if self.use_residual:
-            output = output + attention_scores
-
-        return output
-
-
-class AlbertWithAttentionAlignment(torch.nn.Module):
-    """
-    Wrapper around AlbertForMaskedLM that adds supervised attention alignment.
-
-    Extracts attention from a specific layer/head, passes through a learnable
-    dense layer, and computes both MLM loss and attention alignment loss.
-    """
-
-    def __init__(
-        self,
-        base_model: AlbertForMaskedLM,
-        supervised_config: SupervisedConfig,
-        max_length: int = 256,
-    ):
-        super().__init__()
-        self.base_model = base_model
-        self.supervised_config = supervised_config
-
-        if getattr(self.base_model.config, "_attn_implementation", None) != "eager":
-            self.base_model.config._attn_implementation = "eager"
-
-        # Enable attention output
-        self.base_model.config.output_attentions = True
-
-        # Attention alignment head
-        self.attention_head = AttentionAlignmentHead(
-            seq_length=max_length,
-            use_residual=supervised_config.use_residual,
-        )
-
-        # Optionally freeze base model
-        if supervised_config.freeze_base_model:
-            for param in self.base_model.parameters():
-                param.requires_grad = False
-
-    def forward(
-        self,
-        input_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        token_type_ids: torch.Tensor,
-        labels: torch.Tensor | None = None,
-        attention_target: torch.Tensor | None = None,
-        attention_loss_mask: torch.Tensor | None = None,
-    ) -> Dict[str, torch.Tensor]:
-        """
-        Forward pass with optional MLM and attention alignment losses.
-
-        Returns:
-            Dict with keys:
-                - loss: Combined loss (or just one if single-task)
-                - mlm_loss: MLM loss (if labels provided)
-                - attention_loss: Attention alignment loss (if targets provided)
-                - attention_logits: Predicted attention (B, S, S)
-        """
-        # Forward through base model with attention output
-        outputs = self.base_model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            labels=labels,
-            output_attentions=True,
-        )
-
-        result = {}
-
-        # MLM loss
-        mlm_loss = outputs.loss if labels is not None else None
-        if mlm_loss is not None:
-            result["mlm_loss"] = mlm_loss
-
-        # Extract attention from target layer/head
-        # attentions is tuple of (batch, num_heads, seq_len, seq_len) per layer
-        attentions = outputs.attentions
-        target_layer = self.supervised_config.target_layer
-        target_head = self.supervised_config.target_head
-
-        # Get attention from specified layer and head
-        layer_attention = attentions[target_layer]  # (B, H, S, S)
-        head_attention = layer_attention[:, target_head, :, :]  # (B, S, S)
-
-        # Pass through learnable head
-        attention_logits = self.attention_head(head_attention)  # (B, S, S)
-        result["attention_logits"] = attention_logits
-
-        # Compute attention alignment loss
-        attention_loss = None
-        if attention_target is not None:
-            attention_loss = self._compute_attention_loss(
-                attention_logits, attention_target, attention_loss_mask
-            )
-            result["attention_loss"] = attention_loss
-
-        # Combine losses
-        total_loss = torch.tensor(0.0, device=input_ids.device)
-
-        if self.supervised_config.multitask and mlm_loss is not None:
-            total_loss = total_loss + self.supervised_config.mlm_loss_weight * mlm_loss
-
-        if attention_loss is not None:
-            total_loss = (
-                total_loss
-                + self.supervised_config.attention_loss_weight * attention_loss
-            )
-
-        result["loss"] = total_loss
-
-        return result
-
-    def _compute_attention_loss(
-        self,
-        logits: torch.Tensor,
-        targets: torch.Tensor,
-        mask: torch.Tensor | None,
-    ) -> torch.Tensor:
-        """
-        Compute cross-entropy loss for attention alignment.
-
-        Args:
-            logits: (B, S, S) predicted attention scores
-            targets: (B, S, S) one-hot target attention
-            mask: (B, S) binary mask, 1 where loss should be computed
-
-        Returns:
-            Scalar loss value
-        """
-        batch_size, seq_len, _ = logits.shape
-
-        # Convert one-hot targets to class indices
-        # targets: (B, S, S) -> target_indices: (B, S)
-        target_indices = targets.argmax(dim=-1)  # (B, S)
-
-        # Reshape for cross entropy: (B*S, S) and (B*S,)
-        logits_flat = logits.view(-1, seq_len)  # (B*S, S)
-        targets_flat = target_indices.view(-1)  # (B*S,)
-
-        # Compute per-position cross entropy
-        loss_per_position = torch.nn.functional.cross_entropy(
-            logits_flat, targets_flat, reduction="none"
-        )  # (B*S,)
-
-        # Apply mask
-        if mask is not None:
-            mask_flat = mask.view(-1)  # (B*S,)
-            loss_per_position = loss_per_position * mask_flat
-
-            # Average over valid positions only
-            num_valid = mask_flat.sum()
-            if num_valid > 0:
-                loss = loss_per_position.sum() / num_valid
-            else:
-                loss = loss_per_position.sum() * 0  # Zero loss if no valid positions
-        else:
-            loss = loss_per_position.mean()
-
-        return loss
 
 
 # ============================================================

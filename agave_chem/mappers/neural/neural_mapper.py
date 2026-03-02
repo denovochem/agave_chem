@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from importlib.resources import files
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import numpy as np
@@ -26,6 +28,280 @@ class StringInfoDict(TypedDict):
     non_atom_tokens: List[int]
 
 
+@dataclass
+class SupervisedConfig:
+    """Configuration for supervised attention alignment training."""
+
+    target_layer: int = 9  # Which layer's attention to supervise
+    target_head: int = 2  # Which head's attention to supervise
+
+    # Loss weighting for multitask learning
+    mlm_loss_weight: float = 1.0
+    attention_loss_weight: float = 1.0
+
+    # Training mode
+    multitask: bool = True  # If False, only attention alignment loss
+    freeze_base_model: bool = False  # If True, only train the attention head
+
+    # Dense layer config
+    use_residual: bool = True  # Initialize with identity for residual learning
+
+
+class AttentionAlignmentHead(torch.nn.Module):
+    """
+    A learnable layer that refines attention scores for atom mapping.
+
+    Initialized as identity (with optional residual connection) so that
+    initial behavior matches the pre-trained attention patterns.
+    """
+
+    def __init__(self, seq_length: int, use_residual: bool = True):
+        super().__init__()
+        self.use_residual = use_residual
+
+        # Linear transformation on attention scores
+        # Input: (batch, seq_len, seq_len) -> Output: (batch, seq_len, seq_len)
+        self.dense = torch.nn.Linear(seq_length, seq_length, bias=True)
+
+        # Initialize as identity for residual learning
+        torch.nn.init.eye_(self.dense.weight)
+        torch.nn.init.zeros_(self.dense.bias)
+
+    def forward(self, attention_scores: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            attention_scores: (batch, seq_len, seq_len) attention weights
+
+        Returns:
+            Refined attention scores of same shape
+        """
+        # attention_scores: (B, S, S)
+        output = self.dense(attention_scores)  # (B, S, S)
+
+        if self.use_residual:
+            output = output + attention_scores
+
+        return output
+
+
+class AlbertWithAttentionAlignment(torch.nn.Module):
+    """
+    Wrapper around AlbertForMaskedLM that adds supervised attention alignment.
+
+    Extracts attention from a specific layer/head, passes through a learnable
+    dense layer, and computes both MLM loss and attention alignment loss.
+    """
+
+    def __init__(
+        self,
+        base_model: AlbertForMaskedLM,
+        supervised_config: SupervisedConfig,
+        max_length: int = 256,
+    ):
+        super().__init__()
+        self.base_model = base_model
+        self.supervised_config = supervised_config
+
+        if getattr(self.base_model.config, "_attn_implementation", None) != "eager":
+            self.base_model.config._attn_implementation = "eager"
+
+        # Enable attention output
+        self.base_model.config.output_attentions = True
+
+        # Attention alignment head
+        self.attention_head = AttentionAlignmentHead(
+            seq_length=max_length,
+            use_residual=supervised_config.use_residual,
+        )
+
+        # Optionally freeze base model
+        if supervised_config.freeze_base_model:
+            for param in self.base_model.parameters():
+                param.requires_grad = False
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: torch.Tensor,
+        labels: torch.Tensor | None = None,
+        attention_target: torch.Tensor | None = None,
+        attention_loss_mask: torch.Tensor | None = None,
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Forward pass with optional MLM and attention alignment losses.
+
+        Returns:
+            Dict with keys:
+                - loss: Combined loss (or just one if single-task)
+                - mlm_loss: MLM loss (if labels provided)
+                - attention_loss: Attention alignment loss (if targets provided)
+                - attention_logits: Predicted attention (B, S, S)
+        """
+        # Forward through base model with attention output
+        outputs = self.base_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            labels=labels,
+            output_attentions=True,
+        )
+
+        result = {}
+
+        # MLM loss
+        mlm_loss = outputs.loss if labels is not None else None
+        if mlm_loss is not None:
+            result["mlm_loss"] = mlm_loss
+
+        # Extract attention from target layer/head
+        # attentions is tuple of (batch, num_heads, seq_len, seq_len) per layer
+        attentions = outputs.attentions
+        target_layer = self.supervised_config.target_layer
+        target_head = self.supervised_config.target_head
+
+        # Get attention from specified layer and head
+        layer_attention = attentions[target_layer]  # (B, H, S, S)
+        head_attention = layer_attention[:, target_head, :, :]  # (B, S, S)
+
+        # Pass through learnable head
+        attention_logits = self.attention_head(head_attention)  # (B, S, S)
+        result["attention_logits"] = attention_logits
+
+        # Compute attention alignment loss
+        attention_loss = None
+        if attention_target is not None:
+            attention_loss = self._compute_attention_loss(
+                attention_logits, attention_target, attention_loss_mask
+            )
+            result["attention_loss"] = attention_loss
+
+        # Combine losses
+        total_loss = torch.tensor(0.0, device=input_ids.device)
+
+        if self.supervised_config.multitask and mlm_loss is not None:
+            total_loss = total_loss + self.supervised_config.mlm_loss_weight * mlm_loss
+
+        if attention_loss is not None:
+            total_loss = (
+                total_loss
+                + self.supervised_config.attention_loss_weight * attention_loss
+            )
+
+        result["loss"] = total_loss
+
+        return result
+
+    def _compute_attention_loss(
+        self,
+        logits: torch.Tensor,
+        targets: torch.Tensor,
+        mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """
+        Compute cross-entropy loss for attention alignment.
+
+        Args:
+            logits: (B, S, S) predicted attention scores
+            targets: (B, S, S) one-hot target attention
+            mask: (B, S) binary mask, 1 where loss should be computed
+
+        Returns:
+            Scalar loss value
+        """
+        batch_size, seq_len, _ = logits.shape
+
+        # Convert one-hot targets to class indices
+        # targets: (B, S, S) -> target_indices: (B, S)
+        target_indices = targets.argmax(dim=-1)  # (B, S)
+
+        # Reshape for cross entropy: (B*S, S) and (B*S,)
+        logits_flat = logits.view(-1, seq_len)  # (B*S, S)
+        targets_flat = target_indices.view(-1)  # (B*S,)
+
+        # Compute per-position cross entropy
+        loss_per_position = torch.nn.functional.cross_entropy(
+            logits_flat, targets_flat, reduction="none"
+        )  # (B*S,)
+
+        # Apply mask
+        if mask is not None:
+            mask_flat = mask.view(-1)  # (B*S,)
+            loss_per_position = loss_per_position * mask_flat
+
+            # Average over valid positions only
+            num_valid = mask_flat.sum()
+            if num_valid > 0:
+                loss = loss_per_position.sum() / num_valid
+            else:
+                loss = loss_per_position.sum() * 0  # Zero loss if no valid positions
+        else:
+            loss = loss_per_position.mean()
+
+        return loss
+
+    @torch.no_grad()
+    def predict_attention_probs(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: torch.Tensor,
+    ) -> torch.Tensor:
+        self.eval()
+        outputs = self.base_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            output_attentions=True,
+            return_dict=True,
+        )
+
+        attentions = outputs.attentions
+        layer_attention = attentions[self.supervised_config.target_layer]  # (B,H,S,S)
+        head_attention = layer_attention[
+            :, self.supervised_config.target_head, :, :
+        ]  # (B,S,S)
+
+        attention_logits = self.attention_head(head_attention)  # (B,S,S)
+        attention_probs = torch.softmax(attention_logits, dim=-1)  # (B,S,S)
+        return attention_probs
+
+
+def load_neural_albert_model(
+    checkpoint_dir: str,
+    device: torch.device,
+    use_supervised: bool,
+    max_length: int = 256,
+    supervised_config: SupervisedConfig | None = None,
+) -> torch.nn.Module:
+    checkpoint_dir = str(checkpoint_dir)
+    base_model = AlbertForMaskedLM.from_pretrained(
+        checkpoint_dir,
+        attn_implementation="eager",
+    ).to(device)
+
+    if not use_supervised:
+        return base_model
+
+    if supervised_config is None:
+        supervised_config = SupervisedConfig()
+
+    wrapper = AlbertWithAttentionAlignment(
+        base_model=base_model,
+        supervised_config=supervised_config,
+        max_length=max_length,
+    ).to(device)
+
+    pt_path = str(Path(checkpoint_dir).with_suffix(Path(checkpoint_dir).suffix + ".pt"))
+    # If checkpoint_dir has no suffix (common), this yields "<dir>.pt" which is what you have.
+    # Example: ".../supervised-checkpoint-epoch-3" -> ".../supervised-checkpoint-epoch-3.pt"
+
+    ckpt = torch.load(pt_path, map_location=device)
+    wrapper.load_state_dict(ckpt["model_state_dict"], strict=True)
+    wrapper.eval()
+    return wrapper
+
+
 class NeuralReactionMapper(ReactionMapper):
     """
     Neural network-based reaction atom-mapping
@@ -36,6 +312,9 @@ class NeuralReactionMapper(ReactionMapper):
         mapper_name: str,
         mapper_weight: float = 3,
         checkpoint_path: Optional[str] = None,
+        use_supervised: bool = True,
+        supervised_config: SupervisedConfig | None = None,
+        sequence_max_length: int = 256,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -55,13 +334,17 @@ class NeuralReactionMapper(ReactionMapper):
 
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        model = AlbertForMaskedLM.from_pretrained(
-            checkpoint_path,
-            attn_implementation="eager",
-        )
-        model = model.to(self._device)
+        self._sequence_max_length = sequence_max_length
+        self._use_supervised = use_supervised
+        self._supervised_config = supervised_config or SupervisedConfig()
 
-        self._model = model
+        self._model = load_neural_albert_model(
+            checkpoint_dir=checkpoint_path,
+            device=self._device,
+            use_supervised=use_supervised,
+            max_length=sequence_max_length,
+            supervised_config=self._supervised_config,
+        )
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
@@ -125,37 +408,51 @@ class NeuralReactionMapper(ReactionMapper):
         input_ids = enc["input_ids"].to(self._device)
         attention_mask = enc["attention_mask"].to(self._device)
 
+        token_type_ids = enc.get("token_type_ids", torch.zeros_like(enc["input_ids"]))
+        token_type_ids = token_type_ids.to(self._device)
+
         with torch.no_grad():
-            outputs = self._model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                output_attentions=True,
-                return_dict=True,
-            )
+            if self._use_supervised:
+                # self._model is AlbertWithAttentionAlignment
+                attn_probs = self._model.predict_attention_probs(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    token_type_ids=token_type_ids,
+                )  # (B,S,S)
+                attn = attn_probs[0].detach().cpu()  # (S,S)
+            else:
+                # self._model is AlbertForMaskedLM
+                outputs = self._model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    output_attentions=True,
+                    return_dict=True,
+                )
+                attentions = outputs.attentions  # tuple[num_layers] of (B,H,S,S)
 
-        attentions = outputs.attentions  # tuple[num_layers] of (B, H, S, S)
+                if layer < 0 or layer >= len(attentions):
+                    raise ValueError(
+                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
+                    )
 
-        if layer < 0 or layer >= len(attentions):
-            raise ValueError(
-                f"layer must be in [0, {len(attentions) - 1}], got {layer}"
-            )
+                num_heads = attentions[layer].shape[1]
+                if head < 0 or head >= num_heads:
+                    raise ValueError(
+                        f"head must be in [0, {num_heads - 1}], got {head}"
+                    )
 
-        num_heads = attentions[layer].shape[1]
-        if head < 0 or head >= num_heads:
-            raise ValueError(f"head must be in [0, {num_heads - 1}], got {head}")
-
-        attn = attentions[layer][0, head].detach().cpu()  # (S, S)
+                attn = attentions[layer][0, head].detach().cpu()  # (S,S)
 
         # Tokens for inspection/plotting
         token_ids = enc["input_ids"][0].tolist()
         tokens = self._tokenizer.convert_ids_to_tokens(token_ids)
 
         if trim_padding:
-            # attention_mask is 1 for non-pad, 0 for pad
             real_len = int(enc["attention_mask"][0].sum().item())
             attn = attn[:real_len, :real_len]
             tokens = tokens[:real_len]
 
+        # IMPORTANT: keep downstream behavior identical by returning log-attn
         return torch.log(attn)[1:-1, 1:-1].numpy(), tokens
 
     def get_reactants_products_dict(
