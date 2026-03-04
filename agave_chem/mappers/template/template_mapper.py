@@ -622,7 +622,7 @@ class ExpertReactionMapper(ReactionMapper):
         mapped_outcomes = [
             canonicalize_atom_mapping(
                 canonicalize_reaction_smiles(
-                    ele, canonicalize_tautomer=True, remove_mapping=False
+                    ele, canonicalize_tautomer=False, remove_mapping=False
                 )
             )
             for ele in list(set(list(mapped_outcomes_smirks_dict.keys())))
@@ -637,7 +637,7 @@ class ExpertReactionMapper(ReactionMapper):
                 [
                     ele
                     for ele in deduplicated_mapped_outcomes
-                    if canonicalize_reaction_smiles(ele, canonicalize_tautomer=True)
+                    if canonicalize_reaction_smiles(ele, canonicalize_tautomer=False)
                     == canonicalized_reaction_smiles
                 ]
             )
@@ -645,6 +645,9 @@ class ExpertReactionMapper(ReactionMapper):
 
         if len(possible_mappings) > 1:
             logger.warning("Multiple possible mappings")
+            ## add tie breaker - more specified SMARTS?
+            ## also order the applied_smirks_names by most specific smarts
+
             return default_mapping_dict
         if len(possible_mappings) == 0:
             return default_mapping_dict

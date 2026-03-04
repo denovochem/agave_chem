@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
@@ -329,7 +330,7 @@ class NeuralReactionMapper(ReactionMapper):
 
         if not checkpoint_path:
             checkpoint_path = str(
-                files("agave_chem.datafiles").joinpath("albert_model")
+                files("agave_chem.datafiles").joinpath("supervised_albert_model")
             )
 
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -516,7 +517,7 @@ class NeuralReactionMapper(ReactionMapper):
         self,
         attn: np.ndarray,
         string_info_dict: StringInfoDict,
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Masks the attention matrix to set the attention probability for certain tokens to 0.
 
@@ -611,7 +612,7 @@ class NeuralReactionMapper(ReactionMapper):
             probs[np.ix_(idx, diff_atom_mask)] = 0
             probs[np.ix_(diff_atom_mask, idx)] = 0
 
-        return probs
+        return probs, exp_logits
 
     def average_attn_scores(
         self,
@@ -674,6 +675,27 @@ class NeuralReactionMapper(ReactionMapper):
 
         return attn
 
+    def get_duplicate_indices(self, list_of_lists: list) -> Dict[int, List[int]]:
+        result = {}
+        offset = 0
+
+        for sublist in list_of_lists:
+            # Group flattened indices by value within this sublist
+            value_to_indices = defaultdict(list)
+            for i, val in enumerate(sublist):
+                value_to_indices[val].append(offset + i)
+
+            # For each item, map to OTHER items with same value in the same sublist
+            for i, val in enumerate(sublist):
+                flat_idx = offset + i
+                others = [idx for idx in value_to_indices[val] if idx != flat_idx]
+                if others:  # only include entries that actually have duplicates
+                    result[flat_idx] = others
+
+            offset += len(sublist)
+
+        return result
+
     def assign_atom_maps(
         self,
         rxn_smiles: str,
@@ -683,7 +705,7 @@ class NeuralReactionMapper(ReactionMapper):
         identical_adjacent_atom_multiplier: float = 10,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
-    ) -> str:
+    ) -> Tuple[str, float]:
         """
         Assign atom maps to a reaction SMILES string based on the attention matrix.
 
@@ -760,6 +782,44 @@ class NeuralReactionMapper(ReactionMapper):
             if value != 0
         }
 
+        orig_attn = attn.copy()
+
+        reactants_mols_canonical = [
+            list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
+            for mol in reactants_mols
+        ]
+        products_mols_canonical = [
+            list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
+            for mol in products_mols
+        ]
+
+        reactants_symmetric_atom_indices = self.get_duplicate_indices(
+            reactants_mols_canonical
+        )
+        # products_symmetric_atom_indices = self.get_duplicate_indices(products_mols_canonical)
+
+        reactants_identical_atoms_indices = []
+        for k, v in reactants_symmetric_atom_indices.items():
+            reactants_identical_atoms_indices.append(tuple(sorted([k] + v)))
+
+        reactants_identical_atoms_indices = list(set(reactants_identical_atoms_indices))
+
+        symmetric_atom_new_val_mapping = {}
+        for symmetric_atoms in reactants_identical_atoms_indices:
+            summed_vals = np.sum(
+                orig_attn[
+                    :,
+                    symmetric_atoms,
+                ],
+                axis=1,
+            )
+            for val in symmetric_atoms:
+                symmetric_atom_new_val_mapping[val] = summed_vals
+
+        for k, v in symmetric_atom_new_val_mapping.items():
+            orig_attn[:, k] = v
+
+        assignment_probs = []
         if one_to_one_correspondence:
             for map_num in range(attn.shape[0]):
                 if products_orig_mapping_to_idx.get(map_num + 1, 0):
@@ -769,6 +829,7 @@ class NeuralReactionMapper(ReactionMapper):
                     reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
+                    assignment_probs.append(1.0)
 
                 else:
                     highest_attn_score = attn.max()
@@ -779,6 +840,9 @@ class NeuralReactionMapper(ReactionMapper):
                     reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
+                    assignment_probs.append(
+                        orig_attn[row_highest_attn, col_highest_attn]
+                    )
 
                 # Update neighbors
                 for (
@@ -813,6 +877,7 @@ class NeuralReactionMapper(ReactionMapper):
                 highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
                 products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
                 reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
+                assignment_probs.append(orig_attn[map_num, highest_attn_indices])
 
         mapped_reactants_str = ".".join(
             [Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols]
@@ -822,7 +887,9 @@ class NeuralReactionMapper(ReactionMapper):
         )
         mapped_rxn_smiles = mapped_reactants_str + ">>" + mapped_products_str
 
-        return mapped_rxn_smiles
+        confidence = float(np.prod(assignment_probs))
+
+        return mapped_rxn_smiles, confidence
 
     def get_data_from_partially_mapped_smiles(self, rxn_smiles):
         reactants_str = rxn_smiles.split(">>")[0]
@@ -939,9 +1006,9 @@ class NeuralReactionMapper(ReactionMapper):
             return ""
 
         string_info_dict = self.get_reactants_products_dict(tokens)
-        attn = self.mask_attn_matrix(attn, string_info_dict)
+        attn_probs, _ = self.mask_attn_matrix(attn, string_info_dict)
         attn = self.average_attn_scores(
-            attn,
+            attn_probs,
             string_info_dict["reactants_start_index"],
             string_info_dict["reactants_end_index"],
             string_info_dict["products_start_index"],
@@ -949,7 +1016,7 @@ class NeuralReactionMapper(ReactionMapper):
 
         attn = self.remove_non_atom_rows_and_columns(attn, string_info_dict)
 
-        mapped_rxn_smiles = self.assign_atom_maps(
+        mapped_rxn_smiles, confidence = self.assign_atom_maps(
             rxn_smiles,
             attn,
             one_to_one_correspondence=one_to_one_correspondence,
@@ -958,7 +1025,7 @@ class NeuralReactionMapper(ReactionMapper):
             reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
         )
-        return mapped_rxn_smiles
+        return mapped_rxn_smiles, confidence
 
     def map_reactions(self, reaction_list: List[str]) -> List[str]:
         """ """

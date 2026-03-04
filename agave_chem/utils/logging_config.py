@@ -134,11 +134,11 @@ def configure_logging(
 
 
 def disable_library_logging() -> None:
-    logger.disable("cholla_chem")
+    logger.disable("agave_chem")
 
 
 def enable_library_logging() -> None:
-    logger.enable("cholla_chem")
+    logger.enable("agave_chem")
 
 
 __all__ = ["logger", "configure_logging"]

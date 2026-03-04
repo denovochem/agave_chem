@@ -36,6 +36,7 @@ from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
     SupervisedConfig,
 )
 from agave_chem.utils.chem_utils import (  # noqa: E402
+    randomize_reaction_smiles,
     remove_reaction_smiles_atom_mapping,
 )
 
@@ -47,7 +48,12 @@ from agave_chem.utils.chem_utils import (  # noqa: E402
 def build_attention_target_from_mapped_rxn_smiles(
     tokenizer: PreTrainedTokenizer,
     mapped_rxn_smiles: str,
+    randomize_mapped_rxn_smiles: bool = True,
 ) -> tuple[np.ndarray, str]:
+    if randomize_mapped_rxn_smiles:
+        mapped_rxn_smiles = randomize_reaction_smiles(
+            mapped_rxn_smiles, remove_mapping=False
+        )
     tokens = tokenizer.preprocess_sentence_reaction_smiles(mapped_rxn_smiles).split()
     unmapped_rxn_smiles = remove_reaction_smiles_atom_mapping(mapped_rxn_smiles)
 

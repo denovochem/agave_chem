@@ -33,8 +33,8 @@ def canonicalize_smiles(
     Args:
         smiles (str): The input SMILES string to canonicalize
         isomeric (bool): Whether to retain isomeric information. Defaults to True
-        canonicalize_tautomer (bool): Whether to use the canonical tautomer. Defaults to True
         remove_mapping (bool): Whether to remove atom mapping numbers. Defaults to True
+        canonicalize_tautomer (bool): Whether to use the canonical tautomer. Defaults to True
 
     Returns:
         str: The canonicalized SMILES string. If conversion fails, returns the input string
@@ -66,6 +66,7 @@ def randomize_smiles(
     isomeric: bool = True,
     shuffle_order: bool = True,
     remove_mapping: bool = True,
+    randomize_tautomer: bool = False,
 ) -> str:
     try:
         x = smiles.split(".")
@@ -148,6 +149,7 @@ def canonicalize_reaction_smiles(
 def randomize_reaction_smiles(
     smiles: str,
     isomeric: bool = True,
+    remove_mapping: bool = True,
     shuffle_order: bool = True,
 ) -> str:
     try:
@@ -157,9 +159,17 @@ def randomize_reaction_smiles(
         reactants_list = []
         products_list = []
         for reactant in split_roles[0].split("."):
-            reactants_list.append(randomize_smiles(reactant, isomeric=isomeric))
+            reactants_list.append(
+                randomize_smiles(
+                    reactant, isomeric=isomeric, remove_mapping=remove_mapping
+                )
+            )
         for product in split_roles[1].split("."):
-            products_list.append(randomize_smiles(product, isomeric=isomeric))
+            products_list.append(
+                randomize_smiles(
+                    product, isomeric=isomeric, remove_mapping=remove_mapping
+                )
+            )
         if shuffle_order:
             random.shuffle(reactants_list)
             random.shuffle(products_list)
