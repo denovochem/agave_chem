@@ -975,6 +975,10 @@ class NeuralReactionMapper(ReactionMapper):
         Returns:
             str: A mapped reaction SMILES string with atom map numbers assigned.
         """
+        default_mapping_dict = {"mapping": "", "additional_info": [{}]}
+        if not self._reaction_smiles_valid(rxn_smiles):
+            return default_mapping_dict
+
         reactants_atom_idx_to_orig_mapping = None
         products_atom_idx_to_orig_mapping = None
         if start_from_partial_map:
@@ -1025,7 +1029,14 @@ class NeuralReactionMapper(ReactionMapper):
             reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
         )
-        return mapped_rxn_smiles, confidence
+
+        if not self._verify_validity_of_mapping(mapped_rxn_smiles):
+            return default_mapping_dict
+
+        return {
+            "mapping": mapped_rxn_smiles,
+            "additional_info": {"confidence": confidence},
+        }
 
     def map_reactions(self, reaction_list: List[str]) -> List[str]:
         """ """

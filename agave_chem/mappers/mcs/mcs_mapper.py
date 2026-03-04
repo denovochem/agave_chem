@@ -108,17 +108,19 @@ class MCSReactionMapper(ReactionMapper):
 
         return encoded_environment
 
-    def _encode_atom(self, mol: Chem.Mol, idx: int) -> List[int]:
+    def _encode_atom(self, mol: Chem.Mol, idx: int) -> List[str | int]:
         """
         Encode an RDKit Atom object into a list of integers.
 
         The encoding is as follows:
+        - encoding_type: Atom encoding.
         - z: The atomic number of the atom.
         - chg: The formal charge of the atom.
         - arom: 1 if the atom is aromatic, 0 otherwise.
         - ring: 1 if the atom is in a ring, 0 otherwise.
         - h: The total number of hydrogen atoms bonded to the atom.
         - d: The degree of the atom.
+        - chiral_type: The chiral type of the atom.
         - atom_map_num: The atom map number of the atom.
         - idx: The index of the atom in the molecule.
 
@@ -137,14 +139,28 @@ class MCSReactionMapper(ReactionMapper):
         h = a.GetTotalNumHs()
         d = a.GetDegree()
         atom_map_num = a.GetAtomMapNum()
-        return [z, chg, arom, ring, h, d, atom_map_num, idx]
+        chiral_type = int(a.GetChiralTag())
+        return [
+            "atom_encoding",
+            z,
+            chg,
+            arom,
+            ring,
+            h,
+            d,
+            chiral_type,
+            atom_map_num,
+            idx,
+        ]
 
-    def _encode_bond(self, mol: Chem.Mol, idx: int) -> List[int]:
+    def _encode_bond(self, mol: Chem.Mol, idx: int) -> List[str | int]:
         """
         Encode an RDKit Bond object into a list of integers.
 
         The encoding is as follows:
+        - encoding_type: Bond encoding.
         - bond_order: The bond order of the bond multiplied by 10.
+        - stereo: The stereochemistry of the bond.
 
         Args:
             mol (Chem.Mol): The RDKit Molecule object containing the bond.
@@ -155,7 +171,7 @@ class MCSReactionMapper(ReactionMapper):
         """
         b = mol.GetBondWithIdx(idx)
         stereo = b.GetStereo()
-        return [int(b.GetBondTypeAsDouble() * 10), int(stereo)]
+        return ["bond_encoding", int(b.GetBondTypeAsDouble() * 10), int(stereo)]
 
     def _assign_mapping(self, mol: Chem.Mol, atom_idx: int, atom_map_num: int) -> None:
         """
@@ -189,7 +205,7 @@ class MCSReactionMapper(ReactionMapper):
         for init_list in atom_map_list:
             atom_bond_list = []
             for sub_list in init_list:
-                if len(sub_list) == 8:
+                if sub_list[0] == "atom_encoding":
                     atom_bond_list.append(sub_list[:-1])
                 else:
                     atom_bond_list.append(sub_list)
@@ -224,7 +240,10 @@ class MCSReactionMapper(ReactionMapper):
                 continue
             if radius < min_radius_to_anchor_new_mapping:
                 mapping_nums = [
-                    subsub[-2] for sub in v for subsub in sub if len(subsub) == 8
+                    subsub[-2]
+                    for sub in v
+                    for subsub in sub
+                    if subsub[0] == "atom_encoding"
                 ]
                 if list(set(mapping_nums)) == [0]:
                     continue
@@ -238,7 +257,10 @@ class MCSReactionMapper(ReactionMapper):
                 continue
             if radius < min_radius_to_anchor_new_mapping:
                 mapping_nums = [
-                    subsub[-2] for sub in v for subsub in sub if len(subsub) == 8
+                    subsub[-2]
+                    for sub in v
+                    for subsub in sub
+                    if subsub[0] == "atom_encoding"
                 ]
                 if list(set(mapping_nums)) == [0]:
                     continue
@@ -308,7 +330,7 @@ class MCSReactionMapper(ReactionMapper):
                 keys_to_delete.append(k1)
             for sub_v1 in v1:
                 for sub_sub_v1 in sub_v1:
-                    if len(sub_sub_v1) == 8:
+                    if sub_sub_v1[0] == "atom_encoding":
                         if sub_sub_v1[-1] == reactant_atom_idx:
                             sub_sub_v1[-2] = atom_map_num
         for key in keys_to_delete:
@@ -322,7 +344,7 @@ class MCSReactionMapper(ReactionMapper):
                 keys_to_delete.append(k1)
             for sub_v1 in v1:
                 for sub_sub_v1 in sub_v1:
-                    if len(sub_sub_v1) == 8:
+                    if sub_sub_v1[0] == "atom_encoding":
                         if sub_sub_v1[-1] == product_atom_idx:
                             sub_sub_v1[-2] = atom_map_num
         for key in keys_to_delete:
@@ -434,6 +456,9 @@ class MCSReactionMapper(ReactionMapper):
             [Chem.MolToSmiles(mol, isomericSmiles=True) for mol in product_mols]
         )
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
+
+        if not self._verify_validity_of_mapping(mapped_reaction_smiles):
+            return default_mapping_dict
 
         return {"mapping": mapped_reaction_smiles, "additional_info": [{}]}
 

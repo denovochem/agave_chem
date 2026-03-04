@@ -600,9 +600,7 @@ class ExpertReactionMapper(ReactionMapper):
             >>> mapped = mapper.map_reaction("CC(=O)O.CN>>CC(=O)NC")
             '[CH3:1][C:2](=[O:3])[OH:4].[NH2:5][CH3:6]>>[CH3:1][NH:2][C:3]([CH3:5])=[O:6]'
         """
-
         default_mapping_dict = {"mapping": "", "additional_info": [{}]}
-
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
 
@@ -642,6 +640,12 @@ class ExpertReactionMapper(ReactionMapper):
                 ]
             )
         )
+
+        possible_mappings = [
+            ele
+            for ele in possible_mappings
+            if self._verify_validity_of_mapping(possible_mappings[0])
+        ]
 
         if len(possible_mappings) > 1:
             logger.warning("Multiple possible mappings")

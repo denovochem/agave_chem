@@ -100,12 +100,14 @@ class SupervisedAtomMappingDataset(Dataset):
         tokenizer: PreTrainedTokenizer,
         mlm_config: MLMConfig,
         max_length: int = 256,
+        use_random_smiles: bool = True,
         protected_tokens: Set[str] | None = None,
     ):
         self.texts = list(texts)
         self.tokenizer = tokenizer
         self.mlm_config = mlm_config
         self.max_length = max_length
+        self.use_random_smiles = use_random_smiles
 
         special_token_ids = set(tokenizer.all_special_ids)
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
@@ -120,6 +122,7 @@ class SupervisedAtomMappingDataset(Dataset):
         attention_target, unmapped_text = build_attention_target_from_mapped_rxn_smiles(
             tokenizer=self.tokenizer,
             mapped_rxn_smiles=mapped_text,
+            randomize_mapped_rxn_smiles=self.use_random_smiles,
         )
 
         encoding = self.tokenizer(
