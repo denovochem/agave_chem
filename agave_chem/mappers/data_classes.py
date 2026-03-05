@@ -7,8 +7,7 @@ process, including atom mappings, bond changes, and scoring metrics.
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Dict, List, Optional, Set, Tuple, FrozenSet
-from agave_chem.utils.logging_config import logger
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 
 class MappingAlgorithm(Enum):

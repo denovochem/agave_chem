@@ -1,9 +1,15 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 from rdchiral import main as rdc
 from rdkit import Chem
 
 from agave_chem.utils.logging_config import logger
+
+
+class SmirksPattern(TypedDict):
+    name: str
+    smirks: str
+    superclass_id: Optional[int]
 
 
 def has_top_level_comma(s: str) -> bool:
@@ -198,7 +204,7 @@ def verify_validity_of_template(template: str) -> bool:
     return True
 
 
-def initialize_template_data(named_reactions: List[Dict[str, str]]) -> List:
+def initialize_template_data(named_reactions: List[SmirksPattern]) -> List:
     """
     Initialize reaction template data by processing SMIRKS patterns from named reactions.
 

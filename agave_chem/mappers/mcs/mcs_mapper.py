@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 from rdkit import Chem
 
-from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
 from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
 )
@@ -357,7 +357,7 @@ class MCSReactionMapper(ReactionMapper):
         reaction_smiles: str,
         min_radius: int = 1,
         min_radius_to_anchor_new_mapping: int = 2,
-    ) -> Dict[str, Any]:
+    ) -> ReactionMapperResult:
         """
         Maps a reaction SMILES string using a mcs-like approach.
 
@@ -371,7 +371,10 @@ class MCSReactionMapper(ReactionMapper):
         The dictionary will have the following keys: "mapping" and "additional_info". The value for "mapping" will be the mapped reaction SMILES string. The value for "additional_info" will be a list containing a single empty dictionary.
 
         """
-        default_mapping_dict = {"mapping": "", "additional_info": [{}]}
+        default_mapping_dict: ReactionMapperResult = {
+            "mapping": "",
+            "additional_info": [{}],
+        }
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
 
@@ -459,7 +462,7 @@ class MCSReactionMapper(ReactionMapper):
 
         return {"mapping": mapped_reaction_smiles, "additional_info": [{}]}
 
-    def map_reactions(self, reaction_list: List[str]) -> List[Dict[str, Any]]:
+    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
         """ """
 
         mapped_reactions = []

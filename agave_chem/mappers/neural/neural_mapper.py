@@ -14,7 +14,7 @@ from agave_chem.mappers.neural.constants import (
     token_atom_identity_dict,
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
-from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
 from agave_chem.utils.logging_config import logger
 
 
@@ -542,9 +542,7 @@ class NeuralReactionMapper(ReactionMapper):
                 "products_start_index"
             ]
             - 1,
-        ] = (
-            -1e6
-        )  # Set attention probability for reactant tokens to other reactant tokens to 0
+        ] = -1e6  # Set attention logits for reactant tokens to other reactant tokens to very small value
         attn[
             string_info_dict["products_start_index"] : string_info_dict[
                 "products_end_index"
@@ -554,17 +552,15 @@ class NeuralReactionMapper(ReactionMapper):
                 "products_end_index"
             ]
             + 1,
-        ] = (
-            -1e6
-        )  # Set attention probability for product tokens to other product tokens to 0
+        ] = -1e6  # Set attention logits for product tokens to other product tokens to very small value
         for i in string_info_dict[
             "non_atom_tokens"
-        ]:  # Set attention probability for reactant or product tokens to non-atom tokens to 0
+        ]:  # Set attention logits for reactant or product tokens to non-atom tokens to very small value
             attn[i] = -1e6
             attn[:, i] = -1e6
         for token_indices in string_info_dict[
             "atom_tokens_dict"
-        ].values():  # Set attention probability for reactant and product tokens of different atom numbers to 0
+        ].values():  # Set attention logits for reactant and product tokens of different atom numbers to very small value
             idx = np.asarray(token_indices, dtype=np.int64)
 
             diff_atom_mask = np.ones(attn.shape[1], dtype=bool)
@@ -722,8 +718,8 @@ class NeuralReactionMapper(ReactionMapper):
         if not products_atom_idx_to_orig_mapping:
             products_atom_idx_to_orig_mapping = {}
 
-        reactants_str = rxn_smiles.split(">>")[0]
-        products_str = rxn_smiles.split(">>")[1]
+        reactants_str, products_str = self._split_reaction_components(rxn_smiles)
+
         reactants_mols = [
             Chem.MolFromSmiles(reactant) for reactant in reactants_str.split(".")
         ]
@@ -892,8 +888,7 @@ class NeuralReactionMapper(ReactionMapper):
         return mapped_rxn_smiles, confidence
 
     def get_data_from_partially_mapped_smiles(self, rxn_smiles):
-        reactants_str = rxn_smiles.split(">>")[0]
-        products_str = rxn_smiles.split(">>")[1]
+        reactants_str, products_str = self._split_reaction_components(rxn_smiles)
         reactants_mols = [
             Chem.MolFromSmiles(reactant) for reactant in reactants_str.split(".")
         ]
@@ -963,7 +958,7 @@ class NeuralReactionMapper(ReactionMapper):
         identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = False,
         start_from_partial_map: bool = False,
-    ):
+    ) -> ReactionMapperResult:
         """
         Maps a reaction SMILES string using a pre-trained Albert model.
 
@@ -975,7 +970,10 @@ class NeuralReactionMapper(ReactionMapper):
         Returns:
             str: A mapped reaction SMILES string with atom map numbers assigned.
         """
-        default_mapping_dict = {"mapping": "", "additional_info": [{}]}
+        default_mapping_dict: ReactionMapperResult = {
+            "mapping": "",
+            "additional_info": [{}],
+        }
         if not self._reaction_smiles_valid(rxn_smiles):
             return default_mapping_dict
 
@@ -998,16 +996,16 @@ class NeuralReactionMapper(ReactionMapper):
 
         if "[UNK]" in tokens:
             logger.warning("Unknown token in sequence")
-            return ""
+            return default_mapping_dict
 
         if ">>" not in tokens:
             logger.warning("Sequence too long")
 
-            return ""
+            return default_mapping_dict
 
         if len(tokens) >= sequence_max_length:
             logger.warning("Sequence too long")
-            return ""
+            return default_mapping_dict
 
         string_info_dict = self.get_reactants_products_dict(tokens)
         attn_probs, _ = self.mask_attn_matrix(attn, string_info_dict)
@@ -1035,10 +1033,10 @@ class NeuralReactionMapper(ReactionMapper):
 
         return {
             "mapping": mapped_rxn_smiles,
-            "additional_info": {"confidence": confidence},
+            "additional_info": [{"confidence": confidence}],
         }
 
-    def map_reactions(self, reaction_list: List[str]) -> List[str]:
+    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
         """ """
         mapped_reactions = []
         for reaction in reaction_list:

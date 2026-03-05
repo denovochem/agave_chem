@@ -649,7 +649,9 @@ class MLMDataset(Dataset):
             "labels": torch.tensor(labels, dtype=torch.long),
         }
 
-    def decode_sample(self, idx: int, print_output: bool = True) -> Dict[str, str]:
+    def decode_sample(
+        self, idx: int, print_output: bool = True
+    ) -> Dict[str, str | List[str]]:
         """
         Decode a sample from the dataset back to human-readable text.
 

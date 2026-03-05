@@ -1,9 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple, TypedDict
 
 from rdkit import Chem
 
 from agave_chem.utils.logging_config import logger
+
+
+class ReactionMapperResult(TypedDict):
+    mapping: str
+    additional_info: List[Dict[str, Any]]
 
 
 class ReactionMapper(ABC):
@@ -73,11 +78,13 @@ class ReactionMapper(ABC):
         return reactants, products
 
     @abstractmethod
-    def map_reaction(self, reaction_smiles: str):
+    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
         pass
 
     @abstractmethod
-    def map_reactions(self, reaction_smiles_list: List[str]):
+    def map_reactions(
+        self, reaction_smiles_list: List[str]
+    ) -> List[ReactionMapperResult]:
         pass
 
     def _verify_validity_of_mapping(self, reaction_smiles: str) -> bool:

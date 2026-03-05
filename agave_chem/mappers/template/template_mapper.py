@@ -1,13 +1,16 @@
 import json
 from importlib.resources import files
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Tuple, TypedDict
 
 from rdchiral import main as rdc
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.template.template_initialization import initialize_template_data
+from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.template.template_initialization import (
+    SmirksPattern,
+    initialize_template_data,
+)
 from agave_chem.utils.chem_utils import (
     canonicalize_atom_mapping,
     canonicalize_reaction_smiles,
@@ -16,16 +19,10 @@ from agave_chem.utils.chem_utils import (
 from agave_chem.utils.logging_config import logger
 
 
-class SmirksPattern(TypedDict):
-    name: str
-    smirks: str
-    superclass_id: Optional[int]
-
-
 class ReactionData(TypedDict):
     products: List[Chem.Mol]
     reactants: List[Chem.Mol]
-    rdchiral_reaction: Any
+    rdchiral_reactants: Any
     tautomer_smiles_dict: Dict[str, List[str]]
     fragment_count_dict: Dict[str, int]
 
@@ -113,67 +110,39 @@ class ExpertReactionMapper(ReactionMapper):
         self._tautomer_enumerator.SetMaxTransforms(max_transforms)
         self._tautomer_enumerator.SetMaxTautomers(max_tautomers)
 
-    def _reaction_smiles_valid(self, reaction_smiles: str) -> bool:
-        """
-        Checks if the reaction SMILES string is valid.
+    def _validate_smirks_patterns(self, smirks_patterns: List[SmirksPattern]) -> None:
+        """Validates SMIRKS patterns."""
+        pass
 
-        Args:
-            reaction_smiles (str): The reaction SMILES string to check
-
-        Returns:
-            bool: True if the reaction SMILES string is valid, False otherwise
-        """
-        if reaction_smiles.count(">>") != 1:
-            return False
-        for ele in reaction_smiles.split(">>"):
-            if len(ele) <= 0:
-                return False
-        return True
-
-    def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str, str]:
-        """
-        Splits a reaction SMILES string into reactants and products.
-
-        Args:
-            reaction_smiles (str): A reaction SMILES string in the format "reactants>>products"
-
-        Returns:
-            tuple: A tuple containing the reactants and products as strings
-        """
-        parts = reaction_smiles.strip().split(">>")
-        reactants = parts[0]
-        products = parts[1]
-        return reactants, products
-
-    def _prepare_reaction_data(self, reactants: str, products: str) -> ReactionData:
+    def _prepare_reaction_data(
+        self, reactants_str: str, products_str: str
+    ) -> ReactionData:
         """
         Prepares reaction data for reaction mapping.
 
         Args:
-            reactants (str): Reactants SMILES string
-            products (str): Products SMILES string
+            reactants_str (str): Reactants SMILES string
+            products_str (str): Products SMILES string
 
         Returns:
             List: A list containing the reactants and products as RDKit Mol objects, the RDChiral reaction object, a dictionary of enumerated tautomer SMILES strings, and a dictionary of fragment counts.
         """
 
-        # return {
-        #     "products": [Chem.MolFromSmiles(product) for product in products.split(".")],
-        #     "reactants": [Chem.MolFromSmiles(reactant) for reactant in reactants.split(".")],
-        #     "rdchiral_reaction": rdc.rdchiralReactants(products),
-        #     "tautomer_smiles_dict": self._enumerate_tautomer_smiles(reactants),
-        #     "fragment_count_dict": self._get_fragment_count_dict(reactants),
-        # }
+        return {
+            "products": [
+                Chem.MolFromSmiles(product_str)
+                for product_str in products_str.split(".")
+            ],
+            "reactants": [
+                Chem.MolFromSmiles(reactant_str)
+                for reactant_str in reactants_str.split(".")
+            ],
+            "rdchiral_reactants": rdc.rdchiralReactants(products_str),
+            "tautomer_smiles_dict": self._enumerate_tautomer_smiles(reactants_str),
+            "fragment_count_dict": self._get_fragment_count_dict(reactants_str),
+        }
 
-        return [
-            [Chem.MolFromSmiles(product) for product in products.split(".")],
-            [Chem.MolFromSmiles(reactant) for reactant in reactants.split(".")],
-            rdc.rdchiralReactants(products),
-            self._enumerate_tautomer_smiles(reactants),
-            self._get_fragment_count_dict(reactants),
-        ]
-
-    def _enumerate_tautomer_smiles(self, smiles: str) -> Dict[str, List]:
+    def _enumerate_tautomer_smiles(self, smiles: str) -> Dict[str, List[str]]:
         """
 
         Enumerate tautomer SMILES strings for a given SMILES string.
@@ -188,22 +157,24 @@ class ExpertReactionMapper(ReactionMapper):
         enumerated_smiles_dict = {}
         for fragment in smiles.split("."):
             mol = Chem.MolFromSmiles(fragment)
-            if mol is not None:
-                enumerated_fragment_mols = list(
-                    self._tautomer_enumerator.Enumerate(mol)
-                )
-                enumerated_fragment_smiles = [
-                    Chem.MolToSmiles(frag_mol) for frag_mol in enumerated_fragment_mols
-                ]
-                enumerated_fragment_smiles.append(fragment)
-                enumerated_fragment_smiles = [
-                    canonicalize_smiles(frag_smiles)
-                    for frag_smiles in enumerated_fragment_smiles
-                    if frag_smiles
-                ]
-                enumerated_smiles_dict[fragment] = list(set(enumerated_fragment_smiles))
-            else:
+
+            if mol is None:
                 enumerated_smiles_dict[fragment] = []
+                continue
+
+            enumerated_fragment_mols = list(self._tautomer_enumerator.Enumerate(mol))
+            enumerated_fragment_smiles = [
+                Chem.MolToSmiles(frag_mol) for frag_mol in enumerated_fragment_mols
+            ]
+            enumerated_fragment_smiles.append(fragment)
+            canonicalized_enumerated_fragment_smiles = [
+                canonicalize_smiles(frag_smiles)
+                for frag_smiles in enumerated_fragment_smiles
+                if frag_smiles
+            ]
+            enumerated_smiles_dict[fragment] = list(
+                set(canonicalized_enumerated_fragment_smiles)
+            )
 
         return enumerated_smiles_dict
 
@@ -228,7 +199,7 @@ class ExpertReactionMapper(ReactionMapper):
 
         return fragment_count_dict
 
-    def _process_templates(self, reaction_smiles_data: List) -> Dict[str, List]:
+    def _process_templates(self, reaction_smiles_data: ReactionData) -> Dict[str, List]:
         """
         Process templates for a given reaction.
 
@@ -248,15 +219,15 @@ class ExpertReactionMapper(ReactionMapper):
             mapped_outcomes_smirks_dict = self._process_single_outcome(
                 outcome_and_applied_smirk[0],
                 outcome_and_applied_smirk[1],
-                reaction_smiles_data[-2],
-                reaction_smiles_data[-1],
+                reaction_smiles_data["tautomer_smiles_dict"],
+                reaction_smiles_data["fragment_count_dict"],
                 atom_mapped_product,
                 mapped_outcomes_smirks_dict,
             )
 
         return mapped_outcomes_smirks_dict
 
-    def _get_mapped_product(self, reaction_smiles_data: List) -> str:
+    def _get_mapped_product(self, reaction_smiles_data: ReactionData) -> str:
         """Get the mapped product SMILES string for a given reaction.
 
         Args:
@@ -266,7 +237,7 @@ class ExpertReactionMapper(ReactionMapper):
             str: The mapped product SMILES string.
 
         """
-        [_, _, rdc_reactants, _, _] = reaction_smiles_data
+        rdc_reactants = reaction_smiles_data["rdchiral_reactants"]
 
         rdc_mol = rdc_reactants.reactants
         for atom in rdc_mol.GetAtoms():
@@ -275,10 +246,11 @@ class ExpertReactionMapper(ReactionMapper):
 
         return mapped_product
 
-    def _apply_templates(self, reaction_smiles_data):
+    def _apply_templates(self, reaction_smiles_data: ReactionData) -> List[List[Any]]:
         """ """
-
-        [product_mol, reactant_mol, rdc_reactants, _, _] = reaction_smiles_data
+        product_mols = reaction_smiles_data["products"]
+        reactant_mols = reaction_smiles_data["reactants"]
+        rdc_reactants = reaction_smiles_data["rdchiral_reactants"]
 
         outcomes_and_applied_smirks = []
 
@@ -289,10 +261,10 @@ class ExpertReactionMapper(ReactionMapper):
 
             product_mol_has_substruct_match = all(
                 any(
-                    product_fragment.HasSubstructMatch(smarts_fragment)
-                    for product_fragment in product_mol
+                    product_mol.HasSubstructMatch(products_smarts_fragment)
+                    for product_mol in product_mols
                 )
-                for smarts_fragment in products_smarts
+                for products_smarts_fragment in products_smarts
             )
 
             if not product_mol_has_substruct_match:
@@ -300,10 +272,10 @@ class ExpertReactionMapper(ReactionMapper):
 
             reactant_mol_has_substruct_match = all(
                 any(
-                    reactant_fragment.HasSubstructMatch(smarts_fragment)
-                    for reactant_fragment in reactant_mol
+                    reactant_mol.HasSubstructMatch(reactant_smarts_fragment)
+                    for reactant_mol in reactant_mols
                 )
-                for smarts_fragment in reactant_smarts
+                for reactant_smarts_fragment in reactant_smarts
             )
 
             if not reactant_mol_has_substruct_match:
@@ -324,9 +296,10 @@ class ExpertReactionMapper(ReactionMapper):
         mol_fragments = []
         for smiles_fragment in smiles_fragments:
             mol_fragment = Chem.MolFromSmiles(smiles_fragment)
+            if mol_fragment is None:
+                continue
             for atom in mol_fragment.GetAtoms():
-                map_num = atom.GetAtomMapNum()
-                if map_num >= 900:
+                if atom.GetAtomMapNum() >= 900:
                     atom.SetAtomMapNum(0)
             mol_fragments.append(mol_fragment)
         return ".".join(
@@ -335,13 +308,13 @@ class ExpertReactionMapper(ReactionMapper):
 
     def _process_single_outcome(
         self,
-        rdc_outcome,
-        applied_smirk,
-        unmapped_reactants_tautomers_dict,
-        fragment_count_dict,
-        atom_mapped_product,
-        mapped_outcomes_smirks_dict,
-    ):
+        rdc_outcome: Tuple[List[str], Dict[str, List[str]]],
+        applied_smirk: List[str],
+        unmapped_reactants_tautomers_dict: Dict[str, List[str]],
+        fragment_count_dict: Dict[str, int],
+        atom_mapped_product: str,
+        mapped_outcomes_smirks_dict: Dict[str, List],
+    ) -> Dict[str, List[Any]]:
         reactants_list, atom_mapped_reactants_dict = rdc_outcome
 
         for reactant in reactants_list:
@@ -407,13 +380,13 @@ class ExpertReactionMapper(ReactionMapper):
         missing_fragments = []
         found_fragments = []
         reactant_fragments = list(unmapped_reactants.values())
-        reactant_fragments = [
+        flattened_reactant_fragments = [
             item for sublist in reactant_fragments for item in sublist
         ]
 
         for mapped_fragment in mapped_outcome.split("."):
             unmapped_fragment = canonicalize_smiles(mapped_fragment)
-            if unmapped_fragment not in reactant_fragments:
+            if unmapped_fragment not in flattened_reactant_fragments:
                 missing_fragments.append([unmapped_fragment, mapped_fragment])
             else:
                 found_fragments.append([unmapped_fragment, mapped_fragment])
@@ -422,11 +395,11 @@ class ExpertReactionMapper(ReactionMapper):
 
     def _handle_missing_fragments(
         self,
-        missing_fragments,
-        found_fragments,
-        unmapped_reactants,
-        mapped_outcomes_smirks_dict,
-    ):
+        missing_fragments: List,
+        found_fragments: List,
+        unmapped_reactants: Dict[str, List[str]],
+        mapped_outcomes_smirks_dict: Dict[str, List],
+    ) -> Dict[str, str]:
         all_fragments_substructs = self._are_fragments_substructures(
             missing_fragments, found_fragments, unmapped_reactants
         )
@@ -450,8 +423,11 @@ class ExpertReactionMapper(ReactionMapper):
         return fragment_mapped_dict
 
     def _are_fragments_substructures(
-        self, missing_fragments, found_fragments, unmapped_reactants
-    ):
+        self,
+        missing_fragments: List,
+        found_fragments: List,
+        unmapped_reactants: Dict[str, List[str]],
+    ) -> bool:
         unmapped_found_fragments = [ele[0] for ele in found_fragments]
         for fragment_str, _ in missing_fragments:
             if "*" not in fragment_str:
@@ -481,8 +457,11 @@ class ExpertReactionMapper(ReactionMapper):
         return True
 
     def _identify_and_map_fragments(
-        self, missing_fragments, found_fragments, unmapped_reactants
-    ):
+        self,
+        missing_fragments: List,
+        found_fragments: List,
+        unmapped_reactants: Dict[str, List[str]],
+    ) -> Dict[Any, List[str]]:
         unmapped_found_fragments = [ele[0] for ele in found_fragments]
         fragment_mapped_dict = {}
         for _, mapped_reactant_fragment in missing_fragments:
@@ -537,9 +516,11 @@ class ExpertReactionMapper(ReactionMapper):
         pattern = Chem.MolFromSmarts(mapped_substructure_smarts)
         if not pattern:
             return None
+
         mol = Chem.MolFromSmiles(full_molecule_smiles)
         if not mol:
             return None
+
         match_indices = mol.GetSubstructMatches(pattern)
 
         symmetry_class = {
@@ -580,7 +561,7 @@ class ExpertReactionMapper(ReactionMapper):
         mapped_smiles_output = Chem.MolToSmiles(mol)
         return mapped_smiles_output
 
-    def map_reaction(self, reaction_smiles: str):
+    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
         """
         Maps atoms between reactants and products in a chemical reaction.
 
@@ -600,18 +581,21 @@ class ExpertReactionMapper(ReactionMapper):
             >>> mapped = mapper.map_reaction("CC(=O)O.CN>>CC(=O)NC")
             '[CH3:1][C:2](=[O:3])[OH:4].[NH2:5][CH3:6]>>[CH3:1][NH:2][C:3]([CH3:5])=[O:6]'
         """
-        default_mapping_dict = {"mapping": "", "additional_info": [{}]}
+        default_mapping_dict: ReactionMapperResult = {
+            "mapping": "",
+            "additional_info": [{}],
+        }
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
             reaction_smiles, canonicalize_tautomer=True
         )
-        reactants, products = self._split_reaction_components(
+        reactants_str, products_str = self._split_reaction_components(
             canonicalized_reaction_smiles
         )
 
-        reaction_data = self._prepare_reaction_data(reactants, products)
+        reaction_data = self._prepare_reaction_data(reactants_str, products_str)
 
         mapped_outcomes_smirks_dict = self._process_templates(
             reaction_data,
@@ -671,8 +655,18 @@ class ExpertReactionMapper(ReactionMapper):
             "additional_info": applied_smirks_names,
         }
 
-    def map_reactions(self, reaction_list: List[str]) -> List[Dict[str, List[str]]]:
-        """ """
+    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
+        """
+        Map a list of reaction strings.
+
+        Args:
+            reaction_list: List of reaction representations to map. Each entry is
+                passed to :meth:`map_reaction`.
+
+        Returns:
+            A list of :class:`ReactionMapperResult` objects, one per input reaction,
+            in the same order.
+        """
 
         mapped_reactions = []
         for reaction in reaction_list:
