@@ -457,9 +457,6 @@ class MCSReactionMapper(ReactionMapper):
         )
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
 
-        if not self._verify_validity_of_mapping(mapped_reaction_smiles):
-            return default_mapping_dict
-
         return {"mapping": mapped_reaction_smiles, "additional_info": [{}]}
 
     def map_reactions(self, reaction_list: List[str]) -> List[Dict[str, Any]]:
