@@ -75,6 +75,9 @@ def randomize_smiles(
         frags = []
         for i in x:
             m = Chem.MolFromSmiles(i)
+            if randomize_tautomer:
+                tautomers = tautomer_enumerator.Enumerate(m)
+                m = random.choice(tautomers)
             if remove_mapping:
                 [a.SetAtomMapNum(0) for a in m.GetAtoms()]
             new_atom_order = list(range(m.GetNumAtoms()))
@@ -147,27 +150,35 @@ def canonicalize_reaction_smiles(
 
 
 def randomize_reaction_smiles(
-    smiles: str,
+    rxn_smiles: str,
     isomeric: bool = True,
     remove_mapping: bool = True,
     shuffle_order: bool = True,
+    randomize_tautomer: bool = False,
+    randomize_atom_mapping: bool = False,
 ) -> str:
     try:
-        split_roles = smiles.split(">>")
+        split_roles = rxn_smiles.split(">>")
         if len(split_roles) != 2:
-            raise ValueError(f"Invalid reaction SMILES: {smiles}")
+            raise ValueError(f"Invalid reaction SMILES: {rxn_smiles}")
         reactants_list = []
         products_list = []
         for reactant in split_roles[0].split("."):
             reactants_list.append(
                 randomize_smiles(
-                    reactant, isomeric=isomeric, remove_mapping=remove_mapping
+                    reactant,
+                    isomeric=isomeric,
+                    remove_mapping=remove_mapping,
+                    randomize_tautomer=randomize_tautomer,
                 )
             )
         for product in split_roles[1].split("."):
             products_list.append(
                 randomize_smiles(
-                    product, isomeric=isomeric, remove_mapping=remove_mapping
+                    product,
+                    isomeric=isomeric,
+                    remove_mapping=remove_mapping,
+                    randomize_tautomer=randomize_tautomer,
                 )
             )
         if shuffle_order:
@@ -176,8 +187,8 @@ def randomize_reaction_smiles(
         randomized_rxn = ">>".join([".".join(reactants_list), ".".join(products_list)])
         return randomized_rxn
     except Exception as e:
-        logger.warning(f"Could not randomize {smiles}: {e}")
-        return smiles
+        logger.warning(f"Could not randomize {rxn_smiles}: {e}")
+        return rxn_smiles
 
 
 def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:

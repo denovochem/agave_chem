@@ -12,6 +12,14 @@ class SmirksPattern(TypedDict):
     superclass_id: Optional[int]
 
 
+class InitializedSmirksPattern(TypedDict):
+    products_smarts: List[Chem.Mol]
+    reactant_smarts: List[Chem.Mol]
+    rdc_rxn: rdc.rdchiralReaction
+    parent_smirks: str
+    child_smirks: str
+
+
 def has_top_level_comma(s: str) -> bool:
     """Check if string has a comma at top level (not inside [] or ())."""
     depth = 0
@@ -204,7 +212,9 @@ def verify_validity_of_template(template: str) -> bool:
     return True
 
 
-def initialize_template_data(named_reactions: List[SmirksPattern]) -> List:
+def initialize_template_data(
+    named_reactions: List[SmirksPattern],
+) -> List[InitializedSmirksPattern]:
     """
     Initialize reaction template data by processing SMIRKS patterns from named reactions.
 
@@ -267,7 +277,13 @@ def initialize_template_data(named_reactions: List[SmirksPattern]) -> List:
                 continue
 
             rdc_info.append(
-                [products_smarts, reactants_smarts, rdc_rxn, original_smirk, smirk]
+                InitializedSmirksPattern(
+                    products_smarts=products_smarts,
+                    reactant_smarts=reactants_smarts,
+                    rdc_rxn=rdc_rxn,
+                    parent_smirks=original_smirk,
+                    child_smirks=smirk,
+                )
             )
 
     return rdc_info

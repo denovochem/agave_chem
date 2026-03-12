@@ -453,10 +453,16 @@ class MCSReactionMapper(ReactionMapper):
                     break
 
         mapped_reactant_smiles = ".".join(
-            [Chem.MolToSmiles(mol, isomericSmiles=True) for mol in reactant_mols]
+            [
+                Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
+                for mol in reactant_mols
+            ]
         )
         mapped_product_smiles = ".".join(
-            [Chem.MolToSmiles(mol, isomericSmiles=True) for mol in product_mols]
+            [
+                Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
+                for mol in product_mols
+            ]
         )
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
 

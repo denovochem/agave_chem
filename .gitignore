@@ -62,3 +62,5 @@
 !training_scripts/__init__.py
 !training_scripts/albert_mapper_training.py
 !training_scripts/albert_mapper_supervised_training.py
+
+!.windsurfrules
