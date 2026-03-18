@@ -3,11 +3,16 @@ from typing import Any, Dict, List, Tuple, TypedDict
 
 from rdkit import Chem
 
+from agave_chem.mappers.template.template_initialization import InitializedSmirksPattern
 from agave_chem.utils.logging_config import logger
 
 
 class ReactionMapperResult(TypedDict):
-    mapping: str
+    original_smiles: str
+    selected_mapping: str
+    possible_mappings: Dict[str, InitializedSmirksPattern]
+    mapping_type: str
+    mapping_score: Any
     additional_info: List[Dict[str, Any]]
 
 

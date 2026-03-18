@@ -294,8 +294,6 @@ def load_neural_albert_model(
     ).to(device)
 
     pt_path = str(Path(checkpoint_dir).with_suffix(Path(checkpoint_dir).suffix + ".pt"))
-    # If checkpoint_dir has no suffix (common), this yields "<dir>.pt" which is what you have.
-    # Example: ".../supervised-checkpoint-epoch-3" -> ".../supervised-checkpoint-epoch-3.pt"
 
     ckpt = torch.load(pt_path, map_location=device)
     wrapper.load_state_dict(ckpt["model_state_dict"], strict=True)
@@ -702,17 +700,7 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
     ) -> Tuple[str, float]:
-        """
-        Assign atom maps to a reaction SMILES string based on the attention matrix.
-
-        Args:
-            rxn_smiles (str): A reaction SMILES string.
-            attn (np.ndarray): The attention matrix.
-            one_to_one_correspondence (bool): Whether to use one-to-one correspondence for atom mapping.
-
-        Returns:
-            str: The mapped reaction SMILES string.
-        """
+        """ """
         if not reactants_atom_idx_to_orig_mapping:
             reactants_atom_idx_to_orig_mapping = {}
         if not products_atom_idx_to_orig_mapping:
@@ -970,10 +958,14 @@ class NeuralReactionMapper(ReactionMapper):
         Returns:
             str: A mapped reaction SMILES string with atom map numbers assigned.
         """
-        default_mapping_dict: ReactionMapperResult = {
-            "mapping": "",
-            "additional_info": [{}],
-        }
+        default_mapping_dict = ReactionMapperResult(
+            original_smiles="",
+            selected_mapping="",
+            possible_mappings={},
+            mapping_type=self._mapper_type,
+            mapping_score=None,
+            additional_info=[{}],
+        )
         if not self._reaction_smiles_valid(rxn_smiles):
             return default_mapping_dict
 
@@ -1031,10 +1023,14 @@ class NeuralReactionMapper(ReactionMapper):
         if not self._verify_validity_of_mapping(mapped_rxn_smiles):
             return default_mapping_dict
 
-        return {
-            "mapping": mapped_rxn_smiles,
-            "additional_info": [{"confidence": confidence}],
-        }
+        return ReactionMapperResult(
+            original_smiles=rxn_smiles,
+            selected_mapping=mapped_rxn_smiles,
+            possible_mappings={},
+            mapping_type=self._mapper_type,
+            mapping_score=confidence,
+            additional_info=[{}],
+        )
 
     def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
         """ """

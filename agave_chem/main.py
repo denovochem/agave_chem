@@ -1,22 +1,28 @@
-from typing import Dict, List
+from typing import List, TypedDict
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     create_identical_fragments_mapping_list,
     resolve_identical_fragments_mapping_dict,
 )
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
-from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
 from agave_chem.mappers.template.template_mapper import ExpertReactionMapper
 from agave_chem.utils.logging_config import logger
+
+
+class AgaveChemMapperResult(TypedDict):
+    final_mapping: str
+    original_reaction: str
+    mapper_results: List[ReactionMapperResult]
 
 
 def map_reactions_using_mappers(
     reaction_list: List[str],
     mappers_list: List[ReactionMapper],
     batch_size: int,
-) -> Dict[str, Dict[str, Dict[str, str]]]:
+) -> List[AgaveChemMapperResult]:
     """ """
-    mappers_out_dict = {}
+    mappers_out_dict: List[AgaveChemMapperResult] = []
     for mapper in mappers_list:
         for i in range(0, len(reaction_list), batch_size):
             chunk = reaction_list[i : i + batch_size]
@@ -27,16 +33,26 @@ def map_reactions_using_mappers(
             for reaction, identical_fragments in zip(
                 out, identical_fragments_mapping_list
             ):
-                if not reaction["mapping"] or not identical_fragments:
-                    final_mapping = reaction["mapping"]
+                if not reaction["selected_mapping"] or not identical_fragments:
+                    final_mapping = reaction["selected_mapping"]
                 else:
                     final_mapping = resolve_identical_fragments_mapping_dict(
-                        [reaction["mapping"]], [identical_fragments]
+                        [reaction["selected_mapping"]], [identical_fragments]
                     )
-                reaction["mapping"] = final_mapping
+                reaction["selected_mapping"] = final_mapping
         mappers_out_dict[mapper.mapper_name] = {
             "out": out,
         }
+
+    for mapper_name, mapper_data in mappers_out_dict.items():
+        for reaction in mapper_data["out"]:
+            mappers_out_dict.append(
+                AgaveChemMapperResult(
+                    final_mapping=reaction["selected_mapping"],
+                    original_reaction=reaction["reaction"],
+                    mapper_results=mappers_out_dict[mapper_name]["out"],
+                )
+            )
     return mappers_out_dict
 
 
@@ -45,7 +61,7 @@ def map_reactions(
     mappers_list: List[ReactionMapper] = [],
     mapping_selection_mode: str = "weighted",
     batch_size: int = 500,
-) -> Dict[str, Dict[str, Dict[str, str]]]:
+) -> List[AgaveChemMapperResult]:
     """ """
     if not mappers_list:
         mappers_list = [
@@ -107,9 +123,5 @@ def map_reactions(
 
     if not mappers_out_dict:
         raise ValueError("Invalid input: batch_size must be an integer between 1-1000.")
-
-    mappers_out_dict = map_reactions_using_mappers(
-        reaction_list, mappers_list, batch_size
-    )
 
     return mappers_out_dict

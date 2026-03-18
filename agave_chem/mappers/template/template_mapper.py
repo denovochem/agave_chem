@@ -1,7 +1,7 @@
 import json
 from collections import deque
 from importlib.resources import files
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+from typing import Dict, List, Optional, Set, Tuple
 
 from rdchiral import main as rdc
 from rdkit import Chem
@@ -14,30 +14,16 @@ from agave_chem.mappers.template.template_initialization import (
     SmirksPattern,
     initialize_template_data,
 )
+from agave_chem.mappers.template.types import (
+    AppliedSmirkData,
+    ReactionData,
+)
 from agave_chem.utils.chem_utils import (
     canonicalize_atom_mapping,
     canonicalize_reaction_smiles,
     canonicalize_smiles,
 )
 from agave_chem.utils.logging_config import logger
-
-
-class ReactionData(TypedDict):
-    products_mols: List[Chem.Mol]
-    reactants_mols: List[Chem.Mol]
-    rdc_products: Any
-    tautomers_reactants: Dict[str, List[str]]
-    fragment_count_reactants: Dict[str, int]
-    unmapped_product_atom_islands: Dict[int, Set[int]]
-
-
-class AppliedSmirkData(TypedDict):
-    outcome_unmapped_smiles: str
-    outcome_mapped_smiles: str
-    outcome_atom_map_indices: List[int]
-    applied_smirk: InitializedSmirksPattern
-    outcome_to_island_id: int | None
-    num_smirks_applied: int
 
 
 class ExpertReactionMapper(ReactionMapper):
@@ -113,6 +99,9 @@ class ExpertReactionMapper(ReactionMapper):
             pattern["smirks"]: {
                 "name": pattern["name"],
                 "superclass": pattern["superclass_id"],
+                "class": pattern["class_id"],
+                "subclass": pattern["subclass_id"],
+                "class_str": f"{pattern['superclass_id']}.{pattern['class_id']}.{pattern['subclass_id']}",
             }
             for pattern in self._smirks_patterns
         }
@@ -274,9 +263,7 @@ class ExpertReactionMapper(ReactionMapper):
 
         rdc_products = reaction_smiles_data["rdc_products"]
 
-        rdc_products_mol = (
-            rdc_products.reactants
-        )  # rdchiral calls the product "reactants" in the RDC object
+        rdc_products_mol = rdc_products.reactants  # confusing rdchiral nomenclature - difference between retro and forward perspective
         for atom in rdc_products_mol.GetAtoms():
             atom.SetAtomMapNum(rdc_products.idx_to_mapnum(atom.GetIdx()))
         mapped_product = Chem.MolToSmiles(rdc_products_mol)
@@ -309,7 +296,7 @@ class ExpertReactionMapper(ReactionMapper):
 
         for template in self._initialized_smirks_patterns:
             products_smarts = template["products_smarts"]
-            reactant_smarts = template["reactant_smarts"]
+            reactants_smarts = template["reactants_smarts"]
             rdc_rxn = template["rdc_rxn"]
 
             product_mol_has_substruct_match = all(
@@ -328,7 +315,7 @@ class ExpertReactionMapper(ReactionMapper):
                     reactant_mol.HasSubstructMatch(reactant_smarts_fragment)
                     for reactant_mol in reactant_mols
                 )
-                for reactant_smarts_fragment in reactant_smarts
+                for reactant_smarts_fragment in reactants_smarts
             )
 
             if not reactant_mol_has_substruct_match:
@@ -437,6 +424,7 @@ class ExpertReactionMapper(ReactionMapper):
         if not apply_multiple_smirks:
             return outcomes_and_applied_smirks
 
+        ## TODO: Implement recursive application of SMIRKS for multiple applications
         # for outcome_and_applied_smirk in outcomes_and_applied_smirks:
         #     if outcome_and_applied_smirk.num_smirks_applied >= num_smirks_to_apply:
         #         continue
@@ -665,22 +653,7 @@ class ExpertReactionMapper(ReactionMapper):
     def _transfer_mapping(
         self, mapped_substructure_smarts: str, full_molecule_smiles: str
     ) -> str | None:
-        """
-        Transfers atom map numbers from a mapped SMARTS substructure
-        to a full molecule SMILES, leaving atoms corresponding to '*' unmapped.
-
-        Args:
-            mapped_substructure_smarts (str): SMARTS string of the substructure
-                                               with atom map numbers. Wildcards (*)
-                                               are expected for connection points
-                                               and should not have map numbers.
-            full_molecule_smiles (str): SMILES string of the complete, unmapped molecule.
-
-        Returns:
-            str: The SMILES string of the full molecule with map numbers transferred
-                 from the substructure match, or None if an error occurs (e.g.,
-                 parsing failed, substructure not found).
-        """
+        """ """
         pattern = Chem.MolFromSmarts(mapped_substructure_smarts)
         if not pattern:
             return None
@@ -730,7 +703,20 @@ class ExpertReactionMapper(ReactionMapper):
         return mapped_smiles_output
 
     def _get_unmapped_product_atom_islands(self, smiles: str) -> Dict[int, Set[int]]:
-        """ """
+        """
+        Find connected components ("islands") of unmapped atoms in a product SMILES.
+
+        Args:
+            smiles (str): Product SMILES string to analyze.
+
+        Returns:
+            Dict[int, Set[int]]: Mapping from island index (0..N-1) to a set of RDKit
+            atom indices belonging to that connected component, considering only atoms
+            with atom map number equal to 0.
+
+        Raises:
+            ValueError: If the SMILES cannot be parsed into an RDKit molecule.
+        """
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             raise ValueError(f"Could not parse SMILES: {smiles}")
@@ -765,12 +751,134 @@ class ExpertReactionMapper(ReactionMapper):
 
         return islands
 
+    def _select_preferred_mapping(
+        self, possible_outcomes: Dict[str, InitializedSmirksPattern]
+    ) -> str:
+        """
+        Select the preferred mapping from a list of mappings.
+
+        Args:
+            possible_outcomes (Dict[str, InitializedSmirksPattern]): Dictionary of possible mappings.
+
+        Returns:
+            str: The selected preferred mapping.
+        """
+        selected_mapping = ""
+        max_num_mapped_product_atoms = 0
+        for canonicalized_mapping, possible_mappings in possible_outcomes.items():
+            for possible_mapping in possible_mappings:
+                mapping_num_fragments = len(possible_mapping["reactants_smarts"])
+                mapping_num_atoms = mapping_num_fragments
+                for mol in possible_mapping["reactants_smarts"]:
+                    mapping_num_atoms += len(mol.GetAtoms())
+                for mol in possible_mapping["products_smarts"]:
+                    mapping_num_atoms += len(mol.GetAtoms())
+                if max_num_mapped_product_atoms < mapping_num_atoms:
+                    selected_mapping = canonicalized_mapping
+                    max_num_mapped_product_atoms = mapping_num_atoms
+        return selected_mapping
+
+    def _post_process_mapped_outcomes(
+        self,
+        mapped_outcomes_smirks_dict: Dict[str, InitializedSmirksPattern],
+        canonicalized_input_smiles: str,
+        original_smiles: str,
+    ) -> Optional[ReactionMapperResult]:
+        """
+        Filter, validate, and deduplicate mapped reaction outcomes.
+
+        Args:
+            mapped_outcomes_smirks_dict (Dict[str, InitializedSmirksPattern]): Map of
+                candidate mapped reaction SMIRKS/SMILES strings to their originating
+                initialized pattern metadata.
+            canonicalized_input_smiles (str): Canonicalized representation of the
+                input reaction (used to discard outcomes that do not match).
+            original_smiles (str): Original (non-canonicalized) input reaction string
+                to return in the result.
+
+        Returns:
+            Optional[ReactionMapperResult]: A single selected mapping and associated
+                candidate metadata if exactly one valid, matching outcome remains;
+                otherwise, returns None.
+        """
+        deduplicated_mapped_outcomes: Dict[str, List[InitializedSmirksPattern]] = {}
+        for k, v in mapped_outcomes_smirks_dict.items():
+            canonicalized_k = canonicalize_atom_mapping(
+                canonicalize_reaction_smiles(
+                    k, canonicalize_tautomer=False, remove_mapping=False
+                )
+            )
+            if not k:
+                continue
+            if (
+                canonicalize_reaction_smiles(
+                    canonicalized_k, canonicalize_tautomer=False
+                )
+                != canonicalized_input_smiles
+            ):
+                continue
+            if not self._verify_validity_of_mapping(canonicalized_k):
+                continue
+
+            applied_smirk_forward = (
+                v["parent_smirks"].split(">>")[1]
+                + ">>"
+                + v["parent_smirks"].split(">>")[0]
+            )
+
+            v["template_name"] = self._smirks_name_dictionary[applied_smirk_forward]
+
+            if canonicalized_k not in deduplicated_mapped_outcomes:
+                deduplicated_mapped_outcomes[canonicalized_k] = [v]
+            else:
+                deduplicated_mapped_outcomes[canonicalized_k].append(v)
+
+        if len(deduplicated_mapped_outcomes) == 0:
+            return None
+        if len(deduplicated_mapped_outcomes) > 1:
+            logger.warning("Multiple possible mappings")
+            selected_mapping = self._select_preferred_mapping(
+                deduplicated_mapped_outcomes
+            )
+            return ReactionMapperResult(
+                original_smiles=original_smiles,
+                selected_mapping=selected_mapping,
+                possible_mappings=deduplicated_mapped_outcomes,
+                mapping_type=self._mapper_type,
+                mapping_score=None,
+                additional_info=[],
+            )
+
+        return ReactionMapperResult(
+            original_smiles=original_smiles,
+            selected_mapping=list(deduplicated_mapped_outcomes.keys())[0],
+            possible_mappings=deduplicated_mapped_outcomes,
+            mapping_type=self._mapper_type,
+            mapping_score=None,
+            additional_info=[],
+        )
+
     def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
-        """ """
-        default_mapping_dict: ReactionMapperResult = {
-            "mapping": "",
-            "additional_info": [{}],
-        }
+        """
+        Map a reaction SMILES string using template-based atom mapping.
+
+        Args:
+            reaction_smiles (str): Reaction SMILES to map.
+
+        Returns:
+            ReactionMapperResult: A mapping result containing the selected mapping and
+            related metadata. If the input is invalid or no unique valid mapping can be
+            produced, an "empty" default result is returned.
+        """
+        default_mapping_dict = ReactionMapperResult(
+            original_smiles="",
+            selected_mapping="",
+            possible_mappings={},
+            mapping_type=self._mapper_type,
+            mapping_score=None,
+            additional_info=[{}],
+        )
+
         if not self._reaction_smiles_valid(reaction_smiles):
             return default_mapping_dict
 
@@ -781,12 +889,11 @@ class ExpertReactionMapper(ReactionMapper):
         unmapped_product_atom_islands = {}
         if self._mcs_mapper is not None:
             mcs_result = self._mcs_mapper.map_reaction(canonicalized_reaction_smiles)
-            # print("MCS RESULT:", mcs_result)
-            # print("~~~~~~~~~~~~~~~~~~~~~")
 
-            unmapped_product_atom_islands = self._get_unmapped_product_atom_islands(
-                mcs_result["mapping"].split(">>")[1]
-            )
+            if mcs_result["selected_mapping"] != "":
+                unmapped_product_atom_islands = self._get_unmapped_product_atom_islands(
+                    mcs_result["selected_mapping"].split(">>")[1]
+                )
 
         reactants_str, products_str = self._split_reaction_components(
             canonicalized_reaction_smiles
@@ -800,62 +907,24 @@ class ExpertReactionMapper(ReactionMapper):
             reaction_data,
         )
 
-        mapped_outcomes = [
-            canonicalize_atom_mapping(
-                canonicalize_reaction_smiles(
-                    ele, canonicalize_tautomer=False, remove_mapping=False
-                )
-            )
-            for ele in list(set(list(mapped_outcomes_smirks_dict.keys())))
-        ]
-
-        deduplicated_mapped_outcomes = list(
-            set([ele for ele in mapped_outcomes if ele != ""])
+        result = self._post_process_mapped_outcomes(
+            mapped_outcomes_smirks_dict, canonicalized_reaction_smiles, reaction_smiles
         )
-
-        possible_mappings = list(
-            set(
-                [
-                    ele
-                    for ele in deduplicated_mapped_outcomes
-                    if canonicalize_reaction_smiles(ele, canonicalize_tautomer=False)
-                    == canonicalized_reaction_smiles
-                ]
-            )
-        )
-
-        possible_mappings = [
-            ele
-            for ele in possible_mappings
-            if self._verify_validity_of_mapping(possible_mappings[0])
-        ]
-
-        if len(possible_mappings) > 1:
-            logger.warning("Multiple possible mappings")
-            ## add tie breaker - more specified SMARTS?
-            ## also order the applied_smirks_names by most specific smarts
-
-            return default_mapping_dict
-        if len(possible_mappings) == 0:
+        if not result:
             return default_mapping_dict
 
-        applied_smirks_names = []
-        for initialized_smirk in list(mapped_outcomes_smirks_dict.values()):
-            parent_smirk = initialized_smirk["parent_smirks"]
-            applied_smirk_forward = (
-                parent_smirk.split(">>")[1] + ">>" + parent_smirk.split(">>")[0]
-            )
-            applied_smirks_names.append(
-                self._smirks_name_dictionary[applied_smirk_forward]
-            )
-
-        return {
-            "mapping": possible_mappings[0],
-            "additional_info": applied_smirks_names,
-        }
+        return result
 
     def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
-        """ """
+        """
+        Map a list of reaction SMILES strings using this mapper.
+
+        Args:
+            reaction_list (List[str]): Reaction SMILES strings to map.
+
+        Returns:
+            List[ReactionMapperResult]: Mapping results in the same order as the input.
+        """
 
         mapped_reactions = []
         for reaction in reaction_list:

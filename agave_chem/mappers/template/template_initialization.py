@@ -1,23 +1,10 @@
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Optional, Tuple
 
 from rdchiral import main as rdc
 from rdkit import Chem
 
+from agave_chem.mappers.template.types import InitializedSmirksPattern, SmirksPattern
 from agave_chem.utils.logging_config import logger
-
-
-class SmirksPattern(TypedDict):
-    name: str
-    smirks: str
-    superclass_id: Optional[int]
-
-
-class InitializedSmirksPattern(TypedDict):
-    products_smarts: List[Chem.Mol]
-    reactant_smarts: List[Chem.Mol]
-    rdc_rxn: rdc.rdchiralReaction
-    parent_smirks: str
-    child_smirks: str
 
 
 def has_top_level_comma(s: str) -> bool:
@@ -279,7 +266,7 @@ def initialize_template_data(
             rdc_info.append(
                 InitializedSmirksPattern(
                     products_smarts=products_smarts,
-                    reactant_smarts=reactants_smarts,
+                    reactants_smarts=reactants_smarts,
                     rdc_rxn=rdc_rxn,
                     parent_smirks=original_smirk,
                     child_smirks=smirk,
