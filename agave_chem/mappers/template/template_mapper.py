@@ -26,7 +26,7 @@ from agave_chem.utils.chem_utils import (
 from agave_chem.utils.logging_config import logger
 
 
-class ExpertReactionMapper(ReactionMapper):
+class TemplateReactionMapper(ReactionMapper):
     """
     Expert template reaction classification and atom-mapping
     """
@@ -52,7 +52,7 @@ class ExpertReactionMapper(ReactionMapper):
                 patterns.
         """
 
-        super().__init__("expert", mapper_name, mapper_weight)
+        super().__init__("template", mapper_name, mapper_weight)
 
         if custom_smirks_patterns is not None:
             if not isinstance(custom_smirks_patterns, list):
@@ -174,7 +174,7 @@ class ExpertReactionMapper(ReactionMapper):
                 for each fragment.
 
         """
-        enumerated_smiles_dict = {}
+        enumerated_smiles_dict: Dict[str, List[str]] = {}
         for fragment_str in smiles.split("."):
             mol = Chem.MolFromSmiles(fragment_str)
 
@@ -188,7 +188,7 @@ class ExpertReactionMapper(ReactionMapper):
             ]
             enumerated_fragment_smiles.append(fragment_str)
             canonicalized_enumerated_fragment_smiles = [
-                canonicalize_smiles(frag_smiles)
+                canonicalize_smiles(frag_smiles, canonicalize_tautomer=False)
                 for frag_smiles in enumerated_fragment_smiles
                 if frag_smiles
             ]

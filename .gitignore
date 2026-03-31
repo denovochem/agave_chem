@@ -7,6 +7,7 @@
 !.github/workflows/docs.yml
 !.github/workflows/tests.yml
 !.gitignore
+!.gitattributes
 !LICENSE
 !MANIFEST.in
 !README.md
@@ -36,6 +37,7 @@
 !agave_chem/mappers/template/__init__.py
 !agave_chem/mappers/template/template_initialization.py
 !agave_chem/mappers/template/template_mapper.py
+!agave_chem/mappers/template/types.py
 !agave_chem/mappers/neural/
 !agave_chem/mappers/neural/__init__.py
 !agave_chem/mappers/neural/neural_mapper.py
@@ -53,6 +55,7 @@
 !docs/getting_started.md
 !docs/index.md
 !docs/installation.md
+!docs/reference.md
 !docs/stylesheets/extra.css
 !mkdocs.yml
 !requirements.txt
