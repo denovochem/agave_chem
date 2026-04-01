@@ -326,7 +326,7 @@ class MCSReactionMapper(ReactionMapper):
         self,
         reaction_smiles: str,
         min_radius: int = 1,
-        min_radius_to_anchor_new_mapping: int = 2,
+        min_radius_to_anchor_new_mapping: int = 3,
     ) -> ReactionMapperResult:
         """ """
         default_mapping_dict = ReactionMapperResult(
@@ -374,11 +374,13 @@ class MCSReactionMapper(ReactionMapper):
                         str(i) + "_" + str(atom.GetIdx()) + "_" + str(radius)
                     ] = self._get_atoms_in_radius(product_mol, atom, radius)
 
+            # For the purpose of finding final radius and populating encoding dictionaries,
+            # we don't care if radius < min_radius_to_anchor_new_mapping
             matches = self._get_num_matching_atom_envs(
                 reactant_encoding_dict,
                 product_encoding_dict,
                 radius,
-                min_radius_to_anchor_new_mapping=0,  # For the purpose of finding final radius and populating encoding dictionaries, we don't care if radius < min_radius_to_anchor_new_mapping
+                min_radius_to_anchor_new_mapping=0,
             )
             if len(matches) == 1:
                 final_radius = radius

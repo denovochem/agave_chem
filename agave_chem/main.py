@@ -1,4 +1,4 @@
-from typing import List, TypedDict
+from typing import Dict, List, TypedDict
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     create_identical_fragments_mapping_list,
@@ -6,6 +6,7 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
 )
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
 from agave_chem.utils.logging_config import logger
 
 
@@ -21,7 +22,7 @@ def map_reactions_using_mappers(
     batch_size: int,
 ) -> List[AgaveChemMapperResult]:
     """ """
-    mappers_out_dict: List[AgaveChemMapperResult] = []
+    mappers_out_dict: Dict[str, AgaveChemMapperResult] = {}
     for mapper in mappers_list:
         for i in range(0, len(reaction_list), batch_size):
             chunk = reaction_list[i : i + batch_size]

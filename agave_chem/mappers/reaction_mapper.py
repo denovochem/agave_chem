@@ -1,19 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import List, Tuple
 
 from rdkit import Chem
 
-from agave_chem.mappers.template.template_initialization import InitializedSmirksPattern
+from agave_chem.mappers.template.types import ReactionMapperResult
 from agave_chem.utils.logging_config import logger
-
-
-class ReactionMapperResult(TypedDict):
-    original_smiles: str
-    selected_mapping: str
-    possible_mappings: Dict[str, InitializedSmirksPattern]
-    mapping_type: str
-    mapping_score: Any
-    additional_info: List[Dict[str, Any]]
 
 
 class ReactionMapper(ABC):
@@ -136,7 +127,11 @@ class ReactionMapper(ABC):
                     logger.warning("Atomic transmutation in reaction")
                     return False
                 reactant_atom_maps_and_elements[atom.GetAtomMapNum()] = atom.GetSymbol()
-                seen_product_atoms.remove(atom.GetAtomMapNum())
+                if atom.GetAtomMapNum() in seen_product_atoms:
+                    seen_product_atoms.remove(atom.GetAtomMapNum())
+                else:
+                    logger.warning("Mapped reactant atom(s) not present in product")
+                    return False
 
         if len(seen_product_atoms) != 0:
             logger.warning("Mapped product atom(s) not present in reactants")

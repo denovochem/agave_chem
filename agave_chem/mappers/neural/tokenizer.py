@@ -146,11 +146,18 @@ class CustomTokenizer(PreTrainedTokenizer):
         REGEXPS_RXN = {
             "2_ring_nums": re.compile(r"(%\d{2})"),
             "rxn_symbol": re.compile(r"(>>)"),
-            "arrow": re.compile(r"(->)"),
+            "arrow_forward": re.compile(r"(->)"),
+            "arrow_backward": re.compile(r"(<-)"),
             "brcl": re.compile(r"(Li|Na|Mg|Si|Ca|Cu|Ag|Pb|Br|Cl|>>)"),
         }
 
-        REGEXP_ORDER_RXN = ["2_ring_nums", "arrow", "brcl", "rxn_symbol"]
+        REGEXP_ORDER_RXN = [
+            "2_ring_nums",
+            "arrow_forward",
+            "arrow_backward",
+            "brcl",
+            "rxn_symbol",
+        ]
 
         def split_by(template_smarts, regexps):
             if not regexps:

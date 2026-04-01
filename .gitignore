@@ -6,6 +6,7 @@
 !.github/workflows/
 !.github/workflows/docs.yml
 !.github/workflows/tests.yml
+!.github/workflows/publish.yml
 !.gitignore
 !.gitattributes
 !LICENSE

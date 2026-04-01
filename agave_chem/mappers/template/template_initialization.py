@@ -190,7 +190,11 @@ def verify_validity_of_template(template: str) -> bool:
                 logger.warning(f"Atomic transmutation in template: {template}")
                 return False
             reactant_atom_maps_and_elements[atom.GetAtomMapNum()] = atom.GetSymbol()
-            seen_product_atoms.remove(atom.GetAtomMapNum())
+            if atom.GetAtomMapNum() in seen_product_atoms:
+                seen_product_atoms.remove(atom.GetAtomMapNum())
+            else:
+                logger.warning("Mapped reactant atom(s) not present in product")
+                return False
 
     if len(seen_product_atoms) != 0:
         logger.warning(f"Mapped product atom(s) not present in reactant: {template}")
@@ -270,6 +274,7 @@ def initialize_template_data(
                     rdc_rxn=rdc_rxn,
                     parent_smirks=original_smirk,
                     child_smirks=smirk,
+                    template_name=reaction["name"],
                 )
             )
 

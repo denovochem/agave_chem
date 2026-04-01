@@ -19,6 +19,7 @@ class InitializedSmirksPattern(TypedDict):
     rdc_rxn: rdc.rdchiralReaction
     parent_smirks: str
     child_smirks: str
+    template_name: str
 
 
 class AppliedSmirkData(TypedDict):
@@ -36,3 +37,20 @@ class SmirksPattern(TypedDict):
     superclass_id: Optional[int]
     class_id: Optional[int]
     subclass_id: Optional[int]
+
+
+class SmirksNameDict(TypedDict):
+    name: str
+    superclass_id: int | None
+    class_id: int | None
+    subclass_id: int | None
+    class_str: str
+
+
+class ReactionMapperResult(TypedDict):
+    original_smiles: str
+    selected_mapping: str
+    possible_mappings: Dict[str, List[InitializedSmirksPattern]]
+    mapping_type: str
+    mapping_score: Any
+    additional_info: List[Dict[str, Any]]
