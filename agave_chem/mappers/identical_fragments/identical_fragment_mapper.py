@@ -164,7 +164,7 @@ class IdenticalFragmentMapper(ReactionMapper):
                 default result is returned.
         """
         if not self._reaction_smiles_valid(reaction_smiles):
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
 
         atom_mapped_fragments, remaining_rxn = self._atom_map_identical_fragments(
             reaction_smiles
@@ -181,7 +181,7 @@ class IdenticalFragmentMapper(ReactionMapper):
             mapped_reaction_smiles, expect_full_mapping=False
         ):
             logger.warning("Invalid mapping")
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
 
         return ReactionMapperResult(
             original_smiles=reaction_smiles,
@@ -203,7 +203,7 @@ class IdenticalFragmentMapper(ReactionMapper):
             List[ReactionMapperResult]: The mapping results in the same order as the
                 input reactions.
         """
-        mapped_reactions = []
+        mapped_reactions: List[ReactionMapperResult] = []
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions

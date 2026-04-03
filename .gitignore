@@ -21,7 +21,10 @@
 
 !agave_chem/__init__.py
 !agave_chem/main.py
-!agave_chem/scoring.py
+
+!agave_chem/scoring/
+!agave_chem/scoring/__init__.py
+!agave_chem/scoring/scoring.py
 
 !agave_chem/datafiles/
 !agave_chem/datafiles/__init__.py
@@ -84,4 +87,7 @@
 !model_training/scripts/layer_head_identification.py
 
 !tests/
-!tests/test_*.py
+!tests/unit/
+!tests/integration/
+!tests/unit/test_*.py
+!tests/integration/test_*.py

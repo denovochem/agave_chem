@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Tuple, TypedDict
+from collections import defaultdict
+from typing import Dict, List, Optional, Set, Tuple
 
 from rdkit import Chem
 
@@ -9,66 +10,104 @@ from agave_chem.utils.chem_utils import (
 )
 from agave_chem.utils.logging_config import logger
 
+AtomProps = Tuple[int, ...]
+"""Immutable atom properties: (z, chg, arom, ring, h, d, chiral_type)."""
 
-class AtomEncoding(TypedDict):
-    atom_encoding: str
-    z: int
-    chg: int
-    arom: int
-    ring: int
-    h: int
-    d: int
-    chiral_type: int
-    atom_map_num: int
-    idx: int
+BondProps = Tuple[int, int]
+"""Immutable bond properties: (bond_order_x10, stereo)."""
+
+EnvKey = Tuple[int, int, int]
+"""Environment key: (mol_idx, atom_idx, radius)."""
+
+Skeleton = List[Tuple[int, int, int]]
+"""Canonical bond-environment skeleton: [(begin_atom_idx, bond_idx, end_atom_idx), ...]."""
+
+Fingerprint = Tuple[Tuple[AtomProps, BondProps, AtomProps], ...]
+"""Hashable, index-free encoding of a bond environment used for equality matching."""
 
 
-class BondEncoding(TypedDict):
-    bond_encoding: str
-    bond_order: int
-    bond_stereo: int
+class MolPropertyCache:
+    """
+    Pre-computed, immutable atom and bond properties for a single molecule,
+    plus mutable atom-mapping numbers updated during the mapping phase.
+
+    Atom and bond properties are extracted once at construction time so that
+    downstream code can look them up by index in O(1) instead of repeatedly
+    querying the RDKit molecule.
+
+    Args:
+        mol (Chem.Mol): RDKit molecule to extract properties from.
+    """
+
+    __slots__ = ("atom_props", "bond_props", "atom_map_nums")
+
+    def __init__(self, mol: Chem.Mol) -> None:
+        self.atom_props: List[AtomProps] = []
+        for a in mol.GetAtoms():
+            self.atom_props.append(
+                (
+                    a.GetAtomicNum(),
+                    a.GetFormalCharge(),
+                    1 if a.GetIsAromatic() else 0,
+                    1 if a.IsInRing() else 0,
+                    a.GetTotalNumHs(),
+                    a.GetDegree(),
+                    int(a.GetChiralTag()),
+                )
+            )
+        self.bond_props: List[BondProps] = []
+        for b in mol.GetBonds():
+            self.bond_props.append(
+                (
+                    int(b.GetBondTypeAsDouble() * 10),
+                    int(b.GetStereo()),
+                )
+            )
+        self.atom_map_nums: List[int] = [0] * mol.GetNumAtoms()
 
 
 class MCSReactionMapper(ReactionMapper):
     """
-    MCS reaction classification and atom-mapping
+    MCS reaction classification and atom-mapping.
     """
 
     def __init__(self, mapper_name: str, mapper_weight: float = 3):
         super().__init__("mcs", mapper_name, mapper_weight)
 
-    def _get_atoms_in_radius(
-        self, mol: Chem.Mol, atom: Chem.Atom, radius: int
-    ) -> List[list]:
+    @staticmethod
+    def _compute_skeleton(mol: Chem.Mol, atom_idx: int, radius: int) -> Skeleton:
         """
-        Encode the bond environment within a radius of a root atom.
+        Compute the canonical bond-environment skeleton for an atom at a given
+        radius.
+
+        The skeleton records *which* parent-molecule atoms and bonds participate
+        in the environment and in what canonical order, but does **not** encode
+        any chemical properties.  Properties are looked up later from a
+        ``MolPropertyCache`` when a full ``Fingerprint`` is needed.
 
         Args:
-            mol (Chem.Mol): RDKit molecule containing the environment.
-            atom (Chem.Atom): Root atom in `mol` to build the environment around.
-            radius (int): Bond-radius to use when extracting the local environment.
+            mol (Chem.Mol): RDKit molecule.
+            atom_idx (int): Index of the root atom in *mol*.
+            radius (int): Bond-radius for environment extraction.
 
         Returns:
-            List[List[List[str | int]]]: A deterministic, sorted encoding of the
-            radius-limited bond environment. Each element is a 3-item list of
-            `[encoded_atom_begin, encoded_bond, encoded_atom_end]`. Returns an
-            empty list when no bonds are found within the given radius.
+            Skeleton: Canonically ordered list of
+                ``(begin_atom_idx, bond_idx, end_atom_idx)`` referencing
+                parent-molecule indices.  Empty list when no bonds are found
+                within the given radius.
         """
         bond_ids = Chem.rdmolops.FindAtomEnvironmentOfRadiusN(
             mol,
             radius=radius,
-            rootedAtAtom=atom.GetIdx(),
+            rootedAtAtom=atom_idx,
         )
-
         if not bond_ids:
             return []
 
         amap: Dict[int, int] = {}
         submol = Chem.PathToSubmol(mol, bond_ids, atomMap=amap)
 
-        root_parent = atom.GetIdx()
-        root_sub = amap[root_parent]
-
+        root_sub = amap[atom_idx]
         for a in submol.GetAtoms():
             a.SetAtomMapNum(0)
         submol.GetAtomWithIdx(root_sub).SetAtomMapNum(1)
@@ -79,12 +118,11 @@ class MCSReactionMapper(ReactionMapper):
 
         inv_amap = {sub_i: parent_i for parent_i, sub_i in amap.items()}
 
-        bond_items = []
+        bond_items: List[Tuple[Tuple[int, ...], int, int]] = []
         for sb in submol.GetBonds():
             sa1, sa2 = sb.GetBeginAtomIdx(), sb.GetEndAtomIdx()
             r1, r2 = ranks[sa1], ranks[sa2]
             lo, hi = (r1, r2) if r1 <= r2 else (r2, r1)
-
             key = (
                 lo,
                 hi,
@@ -96,7 +134,7 @@ class MCSReactionMapper(ReactionMapper):
 
         bond_items.sort(key=lambda x: x[0])
 
-        encoded_environment = []
+        skeleton: Skeleton = []
         for _, sa1, sa2 in bond_items:
             if ranks[sa1] <= ranks[sa2]:
                 s_begin, s_end = sa1, sa2
@@ -105,328 +143,433 @@ class MCSReactionMapper(ReactionMapper):
 
             p_begin = inv_amap[s_begin]
             p_end = inv_amap[s_end]
-
             pbond = mol.GetBondBetweenAtoms(p_begin, p_end)
-            pbidx = pbond.GetIdx()
+            skeleton.append((p_begin, pbond.GetIdx(), p_end))
 
-            encoded_environment.append(
-                [
-                    self._encode_atom(mol, p_begin),
-                    self._encode_bond(mol, pbidx),
-                    self._encode_atom(mol, p_end),
-                ]
+        return skeleton
+
+    @staticmethod
+    def _compute_fingerprint(
+        cache: MolPropertyCache, skeleton: Skeleton
+    ) -> Fingerprint:
+        """
+        Build a hashable fingerprint from a skeleton and current properties.
+
+        The fingerprint includes atom properties and the current atom-map number
+        but **excludes** atom indices, so two environments that are chemically
+        identical (modulo index) produce the same fingerprint.
+
+        Args:
+            cache (MolPropertyCache): Pre-computed properties for the molecule
+                that owns the skeleton.
+            skeleton (Skeleton): Canonical list of
+                ``(begin_atom_idx, bond_idx, end_atom_idx)``.
+
+        Returns:
+            Fingerprint: Hashable nested tuple suitable for equality / hash-based
+                matching.
+        """
+        parts: List[Tuple[AtomProps, BondProps, AtomProps]] = []
+        for begin_idx, bond_idx, end_idx in skeleton:
+            parts.append(
+                (
+                    cache.atom_props[begin_idx] + (cache.atom_map_nums[begin_idx],),
+                    cache.bond_props[bond_idx],
+                    cache.atom_props[end_idx] + (cache.atom_map_nums[end_idx],),
+                )
             )
+        return tuple(parts)
 
-        return encoded_environment
-
-    def _encode_atom(self, mol: Chem.Mol, idx: int) -> List[str | int]:
-        """
-        Encode an RDKit Atom object into a list of integers.
-
-        The encoding is as follows:
-        - encoding_type: Atom encoding.
-        - z: The atomic number of the atom.
-        - chg: The formal charge of the atom.
-        - arom: 1 if the atom is aromatic, 0 otherwise.
-        - ring: 1 if the atom is in a ring, 0 otherwise.
-        - h: The total number of hydrogen atoms bonded to the atom.
-        - d: The degree of the atom.
-        - chiral_type: The chiral type of the atom.
-        - atom_map_num: The atom map number of the atom.
-        - idx: The index of the atom in the molecule.
-
-        Args:
-            mol (Chem.Mol): The RDKit Molecule object containing the atom.
-            idx (int): The index of the atom in the molecule.
-
-        Returns:
-            List[int]: A list of integers encoding the atom.
-        """
-        a = mol.GetAtomWithIdx(idx)
-        z = a.GetAtomicNum()
-        chg = a.GetFormalCharge()
-        arom = 1 if a.GetIsAromatic() else 0
-        ring = 1 if a.IsInRing() else 0
-        h = a.GetTotalNumHs()
-        d = a.GetDegree()
-        atom_map_num = a.GetAtomMapNum()
-        chiral_type = int(a.GetChiralTag())
-        return [
-            "atom_encoding",
-            z,
-            chg,
-            arom,
-            ring,
-            h,
-            d,
-            chiral_type,
-            atom_map_num,
-            idx,
-        ]
-
-    def _encode_bond(self, mol: Chem.Mol, idx: int) -> List[str | int]:
-        """
-        Encode an RDKit Bond object into a list of integers.
-
-        The encoding is as follows:
-        - encoding_type: Bond encoding.
-        - bond_order: The bond order of the bond multiplied by 10.
-        - stereo: The stereochemistry of the bond.
-
-        Args:
-            mol (Chem.Mol): The RDKit Molecule object containing the bond.
-            idx (int): The index of the bond in the molecule.
-
-        Returns:
-            List[int]: A list of integers encoding the bond.
-        """
-        b = mol.GetBondWithIdx(idx)
-        stereo = b.GetStereo()
-        return ["bond_encoding", int(b.GetBondTypeAsDouble() * 10), int(stereo)]
-
-    def _assign_mapping(self, mol: Chem.Mol, atom_idx: int, atom_map_num: int) -> None:
-        """Assign an atom-mapping number to a specific atom in a molecule.
-
-        Args:
-            mol (Chem.Mol): Molecule whose atom will be updated.
-            atom_idx (int): Index of the atom in `mol` to update.
-            atom_map_num (int): Atom-mapping number to assign to the atom.
-
-        Returns:
-            None: This method updates `mol` in place.
-        """
-        atom = mol.GetAtomWithIdx(atom_idx)
-        atom.SetAtomMapNum(atom_map_num)
-        return None
-
-    def _remove_atom_idx_for_comparison(
-        self, atom_map_list: List[List[List[int]]]
-    ) -> List[List[List[int]]]:
-        """Remove the trailing atom index from atom-encoding entries for equality checks.
-
-        Args:
-            atom_map_list (List[List[List[int]]]): Nested list structure describing a
-                mapping in terms of atom/bond encodings, where sub-lists whose first
-                element equals ``"atom_encoding"`` have a trailing atom index that
-                should be ignored for comparison.
-
-        Returns:
-            List[List[List[int]]]: A new nested list with the last element removed
-                from any ``["atom_encoding", ...]`` sub-list, leaving all other
-                sub-lists unchanged.
-        """
-        new_list = []
-        for init_list in atom_map_list:
-            atom_bond_list = []
-            for sub_list in init_list:
-                if sub_list[0] == "atom_encoding":
-                    atom_bond_list.append(sub_list[:-1])
-                else:
-                    atom_bond_list.append(sub_list)
-
-            new_list.append(atom_bond_list)
-        return new_list
-
-    def _get_num_matching_atom_envs(
+    def _build_skeletons_at_radius(
         self,
-        reactant_encoding_dict: Dict[str, List[List[List[int]]]],
-        product_encoding_dict: Dict[str, List[List[List[int]]]],
+        mols: List[Chem.Mol],
+        caches: List[MolPropertyCache],
+        radius: int,
+        skeletons: Dict[EnvKey, Skeleton],
+        fingerprints: Dict[EnvKey, Fingerprint],
+        atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+    ) -> None:
+        """
+        Compute skeletons and fingerprints for every atom in *mols* at a single
+        radius and append them to the provided dicts.
+
+        Args:
+            mols (List[Chem.Mol]): List of molecules.
+            caches (List[MolPropertyCache]): Property caches parallel to *mols*.
+            radius (int): Bond-radius to compute.
+            skeletons (Dict[EnvKey, Skeleton]): Skeleton dict to extend in place.
+            fingerprints (Dict[EnvKey, Fingerprint]): Fingerprint dict to extend
+                in place.
+            atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Reverse index
+                mapping ``(mol_idx, atom_idx)`` to the set of ``EnvKey`` values
+                whose skeletons reference that atom.  Extended in place.
+
+        Returns:
+            None: All three dicts are mutated in place.
+        """
+        for mol_idx, mol in enumerate(mols):
+            if mol.GetNumAtoms() < radius:
+                continue
+            cache = caches[mol_idx]
+            for atom in mol.GetAtoms():
+                aidx = atom.GetIdx()
+                key: EnvKey = (mol_idx, aidx, radius)
+                skel = self._compute_skeleton(mol, aidx, radius)
+                skeletons[key] = skel
+                fingerprints[key] = self._compute_fingerprint(cache, skel)
+                for begin_idx, _, end_idx in skel:
+                    atom_to_entries[(mol_idx, begin_idx)].add(key)
+                    atom_to_entries[(mol_idx, end_idx)].add(key)
+
+    @staticmethod
+    def _find_matches(
+        r_fps: Dict[EnvKey, Fingerprint],
+        p_fps: Dict[EnvKey, Fingerprint],
         radius: int,
         min_radius_to_anchor_new_mapping: int = 2,
-    ) -> List[List[str]]:
-        """ """
-        matches = []
-        reactant_encoding_dict_no_idx = {}
-        for k, v in reactant_encoding_dict.items():
-            if str(radius) != k.split("_")[-1]:
-                continue
-            if not v:
-                continue
-            if radius < min_radius_to_anchor_new_mapping:
-                mapping_nums = [
-                    subsub[-2]
-                    for sub in v
-                    for subsub in sub
-                    if subsub[0] == "atom_encoding"
-                ]
-                if list(set(mapping_nums)) == [0]:
-                    continue
-            reactant_encoding_dict_no_idx[k] = self._remove_atom_idx_for_comparison(v)
+    ) -> List[Tuple[EnvKey, EnvKey]]:
+        """
+        Find reactant–product environment pairs with identical fingerprints at a
+        given radius.
 
-        product_encoding_dict_no_idx = {}
-        for k, v in product_encoding_dict.items():
-            if str(radius) != k.split("_")[-1]:
-                continue
-            if not v:
-                continue
-            if radius < min_radius_to_anchor_new_mapping:
-                mapping_nums = [
-                    subsub[-2]
-                    for sub in v
-                    for subsub in sub
-                    if subsub[0] == "atom_encoding"
-                ]
-                if list(set(mapping_nums)) == [0]:
-                    continue
-            product_encoding_dict_no_idx[k] = self._remove_atom_idx_for_comparison(v)
+        Uses hash-based grouping for O(R + P) complexity instead of the
+        previous O(R × P) pairwise comparison.
 
-        for k1, v1 in reactant_encoding_dict_no_idx.items():
-            for k2, v2 in product_encoding_dict_no_idx.items():
-                if v1 == v2:
-                    matches.append([k1, k2])
+        Args:
+            r_fps (Dict[EnvKey, Fingerprint]): Reactant fingerprints.
+            p_fps (Dict[EnvKey, Fingerprint]): Product fingerprints.
+            radius (int): Radius to match at.
+            min_radius_to_anchor_new_mapping (int): Below this radius, only
+                match environments that already contain at least one mapped
+                atom (i.e. at least one atom-map number ≠ 0).
+
+        Returns:
+            List[Tuple[EnvKey, EnvKey]]: Pairs of
+                ``(reactant_key, product_key)`` whose fingerprints are equal.
+        """
+        need_mapped_check = radius < min_radius_to_anchor_new_mapping
+
+        def _has_mapped_atom(fp: Fingerprint) -> bool:
+            for atom_begin, _, atom_end in fp:
+                if atom_begin[-1] != 0 or atom_end[-1] != 0:
+                    return True
+            return False
+
+        # Build reactant index: fingerprint → [keys]
+        fp_to_r_keys: Dict[Fingerprint, List[EnvKey]] = defaultdict(list)
+        for key, fp in r_fps.items():
+            if key[2] != radius:
+                continue
+            if not fp:
+                continue
+            if need_mapped_check and not _has_mapped_atom(fp):
+                continue
+            fp_to_r_keys[fp].append(key)
+
+        # Match product fingerprints against the reactant index
+        matches: List[Tuple[EnvKey, EnvKey]] = []
+        for key, fp in p_fps.items():
+            if key[2] != radius:
+                continue
+            if not fp:
+                continue
+            if need_mapped_check and not _has_mapped_atom(fp):
+                continue
+            if fp in fp_to_r_keys:
+                for rkey in fp_to_r_keys[fp]:
+                    matches.append((rkey, key))
 
         return matches
 
-    def _assign_atom_mapping(
-        self,
-        matches: List[List[str]],
-        reactants_mols: List[Chem.Mol],
-        products_mols: List[Chem.Mol],
-        reactant_encoding_dict: Dict[str, List[List[List[int]]]],
-        product_encoding_dict: Dict[str, List[List[List[int]]]],
-        atom_map_num: int,
-    ) -> Tuple[int, Dict[str, List[List[List[int]]]], Dict[str, List[List[List[int]]]]]:
-        """ """
-        reactant_mol_idx = int(matches[0][0].split("_")[0])
-        reactant_atom_idx = int(matches[0][0].split("_")[1])
-        if (
-            reactants_mols[reactant_mol_idx]
-            .GetAtomWithIdx(reactant_atom_idx)
-            .GetAtomMapNum()
-            != 0
-        ):
-            return atom_map_num, reactant_encoding_dict, product_encoding_dict
-        self._assign_mapping(
-            reactants_mols[reactant_mol_idx], reactant_atom_idx, atom_map_num
-        )
-
-        product_mol_idx = int(matches[0][1].split("_")[0])
-        product_atom_idx = int(matches[0][1].split("_")[1])
-        if (
-            products_mols[product_mol_idx]
-            .GetAtomWithIdx(product_atom_idx)
-            .GetAtomMapNum()
-            != 0
-        ):
-            return atom_map_num, reactant_encoding_dict, product_encoding_dict
-        self._assign_mapping(
-            products_mols[product_mol_idx], product_atom_idx, atom_map_num
-        )
-
-        keys_to_delete = []
-        for k1, v1 in reactant_encoding_dict.items():
-            if int(k1.split("_")[0]) != reactant_mol_idx:
-                continue
-            if int(k1.split("_")[1]) == reactant_atom_idx:
-                keys_to_delete.append(k1)
-            for sub_v1 in v1:
-                for sub_sub_v1 in sub_v1:
-                    if sub_sub_v1[0] == "atom_encoding":
-                        if sub_sub_v1[-1] == reactant_atom_idx:
-                            sub_sub_v1[-2] = atom_map_num
-        for key in keys_to_delete:
-            del reactant_encoding_dict[key]
-
-        keys_to_delete = []
-        for k1, v1 in product_encoding_dict.items():
-            if int(k1.split("_")[0]) != product_mol_idx:
-                continue
-            if int(k1.split("_")[1]) == product_atom_idx:
-                keys_to_delete.append(k1)
-            for sub_v1 in v1:
-                for sub_sub_v1 in sub_v1:
-                    if sub_sub_v1[0] == "atom_encoding":
-                        if sub_sub_v1[-1] == product_atom_idx:
-                            sub_sub_v1[-2] = atom_map_num
-        for key in keys_to_delete:
-            del product_encoding_dict[key]
-
-        return atom_map_num + 1, reactant_encoding_dict, product_encoding_dict
-
-    def _get_radius_encoding_dict(
+    def _build_skeletons_and_find_radius(
         self,
         reactant_mols: List[Chem.Mol],
         product_mols: List[Chem.Mol],
+        r_caches: List[MolPropertyCache],
+        p_caches: List[MolPropertyCache],
         min_radius: int,
         max_radius: int,
-    ):
-        reactant_encoding_dict = {}
-        product_encoding_dict = {}
+    ) -> Tuple[
+        Dict[EnvKey, Skeleton],
+        Dict[EnvKey, Skeleton],
+        Dict[EnvKey, Fingerprint],
+        Dict[EnvKey, Fingerprint],
+        Dict[Tuple[int, int], Set[EnvKey]],
+        Dict[Tuple[int, int], Set[EnvKey]],
+        int,
+    ]:
+        """
+        Incrementally build skeletons/fingerprints radius-by-radius and
+        determine the optimal (final) radius for atom-mapping.
 
+        Stops early as soon as a unique match is found or matches disappear.
+
+        Args:
+            reactant_mols (List[Chem.Mol]): Reactant molecules.
+            product_mols (List[Chem.Mol]): Product molecules.
+            r_caches (List[MolPropertyCache]): Reactant property caches.
+            p_caches (List[MolPropertyCache]): Product property caches.
+            min_radius (int): Minimum bond-radius (inclusive).
+            max_radius (int): Maximum bond-radius (exclusive).
+
+        Returns:
+            Tuple containing:
+                - Reactant skeletons dict.
+                - Product skeletons dict.
+                - Reactant fingerprints dict.
+                - Product fingerprints dict.
+                - Reactant atom-to-entries reverse index.
+                - Product atom-to-entries reverse index.
+                - The final radius selected for the mapping phase.
+        """
+        r_skeletons: Dict[EnvKey, Skeleton] = {}
+        p_skeletons: Dict[EnvKey, Skeleton] = {}
+        r_fps: Dict[EnvKey, Fingerprint] = {}
+        p_fps: Dict[EnvKey, Fingerprint] = {}
+        r_a2e: Dict[Tuple[int, int], Set[EnvKey]] = defaultdict(set)
+        p_a2e: Dict[Tuple[int, int], Set[EnvKey]] = defaultdict(set)
+
+        final_radius = min_radius
         for radius in range(min_radius, max_radius):
             final_radius = radius
-            for i, reactant_mol in enumerate(reactant_mols):
-                if len(reactant_mol.GetAtoms()) < radius:
-                    continue
-                for atom in reactant_mol.GetAtoms():
-                    reactant_encoding_dict[
-                        str(i) + "_" + str(atom.GetIdx()) + "_" + str(radius)
-                    ] = self._get_atoms_in_radius(reactant_mol, atom, radius)
 
-            for i, product_mol in enumerate(product_mols):
-                if len(product_mol.GetAtoms()) < radius:
-                    continue
-                for atom in product_mol.GetAtoms():
-                    product_encoding_dict[
-                        str(i) + "_" + str(atom.GetIdx()) + "_" + str(radius)
-                    ] = self._get_atoms_in_radius(product_mol, atom, radius)
+            self._build_skeletons_at_radius(
+                reactant_mols,
+                r_caches,
+                radius,
+                r_skeletons,
+                r_fps,
+                r_a2e,
+            )
+            self._build_skeletons_at_radius(
+                product_mols,
+                p_caches,
+                radius,
+                p_skeletons,
+                p_fps,
+                p_a2e,
+            )
 
-            # For the purpose of finding final radius and populating encoding dictionaries,
-            # we don't care if radius < min_radius_to_anchor_new_mapping
-            matches = self._get_num_matching_atom_envs(
-                reactant_encoding_dict,
-                product_encoding_dict,
+            matches = self._find_matches(
+                r_fps,
+                p_fps,
                 radius,
                 min_radius_to_anchor_new_mapping=0,
             )
 
-            # If we found a unique match at this radius, we're done
             if len(matches) == 1:
-                final_radius = radius
                 break
-            # If we didn't find any matches at this radius, we're done
-            # Multiple matches at next smallest radius
             if len(matches) == 0:
                 final_radius = radius - 1
                 break
 
-        return reactant_encoding_dict, product_encoding_dict, final_radius
+        return r_skeletons, p_skeletons, r_fps, p_fps, r_a2e, p_a2e, final_radius
+
+    def _recompute_affected_fingerprints(
+        self,
+        mol_idx: int,
+        atom_idx: int,
+        skeletons: Dict[EnvKey, Skeleton],
+        fps: Dict[EnvKey, Fingerprint],
+        caches: List[MolPropertyCache],
+        atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+    ) -> None:
+        """
+        Recompute fingerprints for every skeleton entry that references a
+        given atom.
+
+        Called after updating an atom's map number so that fingerprints
+        reflect the new mapping state.
+
+        Args:
+            mol_idx (int): Index of the molecule containing the updated atom.
+            atom_idx (int): Index of the updated atom within the molecule.
+            skeletons (Dict[EnvKey, Skeleton]): All precomputed skeletons.
+            fps (Dict[EnvKey, Fingerprint]): Fingerprint dict to update in
+                place.
+            caches (List[MolPropertyCache]): Property caches indexed by
+                *mol_idx*.
+            atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Reverse
+                index.
+
+        Returns:
+            None: *fps* is mutated in place.
+        """
+        affected = atom_to_entries.get((mol_idx, atom_idx), set())
+        for key in affected:
+            if key in skeletons:
+                fps[key] = self._compute_fingerprint(
+                    caches[key[0]],
+                    skeletons[key],
+                )
+
+    def _assign_single_mapping(
+        self,
+        r_key: EnvKey,
+        p_key: EnvKey,
+        reactant_mols: List[Chem.Mol],
+        product_mols: List[Chem.Mol],
+        r_caches: List[MolPropertyCache],
+        p_caches: List[MolPropertyCache],
+        r_skeletons: Dict[EnvKey, Skeleton],
+        p_skeletons: Dict[EnvKey, Skeleton],
+        r_fps: Dict[EnvKey, Fingerprint],
+        p_fps: Dict[EnvKey, Fingerprint],
+        r_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+        p_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+        atom_map_num: int,
+    ) -> int:
+        """
+        Assign an atom-mapping number to one matched reactant–product atom
+        pair.
+
+        Updates molecule objects, property caches, and fingerprints in place.
+        Deletes skeleton / fingerprint entries whose root is the newly mapped
+        atom (at all radii) so they cannot match again.
+
+        Args:
+            r_key (EnvKey): Reactant environment key ``(mol_idx, atom_idx, radius)``.
+            p_key (EnvKey): Product environment key ``(mol_idx, atom_idx, radius)``.
+            reactant_mols (List[Chem.Mol]): Reactant molecule objects.
+            product_mols (List[Chem.Mol]): Product molecule objects.
+            r_caches (List[MolPropertyCache]): Reactant property caches.
+            p_caches (List[MolPropertyCache]): Product property caches.
+            r_skeletons (Dict[EnvKey, Skeleton]): Reactant skeletons (mutated).
+            p_skeletons (Dict[EnvKey, Skeleton]): Product skeletons (mutated).
+            r_fps (Dict[EnvKey, Fingerprint]): Reactant fingerprints (mutated).
+            p_fps (Dict[EnvKey, Fingerprint]): Product fingerprints (mutated).
+            r_atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Reactant
+                reverse index.
+            p_atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Product
+                reverse index.
+            atom_map_num (int): The atom-map number to assign.
+
+        Returns:
+            int: The next ``atom_map_num`` to use — incremented by 1 when the
+                assignment succeeds, unchanged otherwise.
+        """
+        r_mol_idx, r_atom_idx, _ = r_key
+        p_mol_idx, p_atom_idx, _ = p_key
+
+        # Skip if the reactant root atom is already mapped
+        if reactant_mols[r_mol_idx].GetAtomWithIdx(r_atom_idx).GetAtomMapNum() != 0:
+            return atom_map_num
+
+        # Assign on reactant mol
+        reactant_mols[r_mol_idx].GetAtomWithIdx(r_atom_idx).SetAtomMapNum(atom_map_num)
+
+        # Skip if the product root atom is already mapped
+        # (reactant mol was already modified — matches original behaviour)
+        if product_mols[p_mol_idx].GetAtomWithIdx(p_atom_idx).GetAtomMapNum() != 0:
+            return atom_map_num
+
+        # Assign on product mol
+        product_mols[p_mol_idx].GetAtomWithIdx(p_atom_idx).SetAtomMapNum(atom_map_num)
+
+        # Update caches
+        r_caches[r_mol_idx].atom_map_nums[r_atom_idx] = atom_map_num
+        p_caches[p_mol_idx].atom_map_nums[p_atom_idx] = atom_map_num
+
+        # Delete entries whose root IS the newly mapped atom (all radii)
+        for k in [k for k in r_skeletons if k[0] == r_mol_idx and k[1] == r_atom_idx]:
+            del r_skeletons[k]
+            r_fps.pop(k, None)
+
+        for k in [k for k in p_skeletons if k[0] == p_mol_idx and k[1] == p_atom_idx]:
+            del p_skeletons[k]
+            p_fps.pop(k, None)
+
+        # Recompute fingerprints that reference the mapped atoms
+        self._recompute_affected_fingerprints(
+            r_mol_idx,
+            r_atom_idx,
+            r_skeletons,
+            r_fps,
+            r_caches,
+            r_atom_to_entries,
+        )
+        self._recompute_affected_fingerprints(
+            p_mol_idx,
+            p_atom_idx,
+            p_skeletons,
+            p_fps,
+            p_caches,
+            p_atom_to_entries,
+        )
+
+        return atom_map_num + 1
 
     def _assign_atom_map_nums(
         self,
         reactant_mols: List[Chem.Mol],
         product_mols: List[Chem.Mol],
-        reactant_encoding_dict: Dict[str, List[int]],
-        product_encoding_dict: Dict[str, List[int]],
+        r_caches: List[MolPropertyCache],
+        p_caches: List[MolPropertyCache],
+        r_skeletons: Dict[EnvKey, Skeleton],
+        p_skeletons: Dict[EnvKey, Skeleton],
+        r_fps: Dict[EnvKey, Fingerprint],
+        p_fps: Dict[EnvKey, Fingerprint],
+        r_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+        p_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
         final_radius: int,
         min_radius_to_anchor_new_mapping: int,
     ) -> Tuple[List[Chem.Mol], List[Chem.Mol]]:
+        """
+        Walk from *final_radius* down to 1, assigning atom-map numbers to
+        matched reactant–product pairs at each level.
+
+        Args:
+            reactant_mols (List[Chem.Mol]): Reactant molecule objects.
+            product_mols (List[Chem.Mol]): Product molecule objects.
+            r_caches (List[MolPropertyCache]): Reactant property caches.
+            p_caches (List[MolPropertyCache]): Product property caches.
+            r_skeletons (Dict[EnvKey, Skeleton]): Reactant skeletons.
+            p_skeletons (Dict[EnvKey, Skeleton]): Product skeletons.
+            r_fps (Dict[EnvKey, Fingerprint]): Reactant fingerprints.
+            p_fps (Dict[EnvKey, Fingerprint]): Product fingerprints.
+            r_atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Reactant
+                reverse index.
+            p_atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Product
+                reverse index.
+            final_radius (int): Largest radius to start assigning from.
+            min_radius_to_anchor_new_mapping (int): Passed through to
+                ``_find_matches``.
+
+        Returns:
+            Tuple[List[Chem.Mol], List[Chem.Mol]]: The (mutated) reactant and
+                product molecule lists with atom-map numbers assigned.
+        """
         atom_map_num = 1
         for radius in range(final_radius, 0, -1):
-            matches = self._get_num_matching_atom_envs(
-                reactant_encoding_dict,
-                product_encoding_dict,
+            matches = self._find_matches(
+                r_fps,
+                p_fps,
                 radius,
                 min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
             )
             num_matches = len(matches)
             for _ in range(num_matches):
-                atom_map_num, reactant_encoding_dict, product_encoding_dict = (
-                    self._assign_atom_mapping(
-                        [matches[0]],
-                        reactant_mols,
-                        product_mols,
-                        reactant_encoding_dict,
-                        product_encoding_dict,
-                        atom_map_num,
-                    )
+                atom_map_num = self._assign_single_mapping(
+                    matches[0][0],
+                    matches[0][1],
+                    reactant_mols,
+                    product_mols,
+                    r_caches,
+                    p_caches,
+                    r_skeletons,
+                    p_skeletons,
+                    r_fps,
+                    p_fps,
+                    r_atom_to_entries,
+                    p_atom_to_entries,
+                    atom_map_num,
                 )
-                matches = self._get_num_matching_atom_envs(
-                    reactant_encoding_dict,
-                    product_encoding_dict,
+                matches = self._find_matches(
+                    r_fps,
+                    p_fps,
                     radius,
                 )
-                if len(matches) == 0:
+                if not matches:
                     break
 
         return reactant_mols, product_mols
@@ -438,67 +581,101 @@ class MCSReactionMapper(ReactionMapper):
         min_radius_to_anchor_new_mapping: int = 3,
         max_radius: Optional[int] = None,
     ) -> ReactionMapperResult:
-        """ """
+        """
+        Atom-map a single reaction SMILES using MCS-based environment matching.
+
+        Args:
+            reaction_smiles (str): Reaction SMILES of the form
+                ``"reactants>>products"``.
+            min_radius (int): Smallest bond-radius to consider.
+            min_radius_to_anchor_new_mapping (int): Below this radius,
+                environments are only matched when they already contain at
+                least one mapped atom.
+            max_radius (Optional[int]): Largest bond-radius to search.
+                Defaults to the size of the largest molecule.
+
+        Returns:
+            ReactionMapperResult: Mapping result containing the original and
+                mapped SMILES.  Falls back to the default (empty) result on
+                invalid input or failed mapping.
+        """
         if not self._reaction_smiles_valid(reaction_smiles):
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
-            reaction_smiles, canonicalize_tautomer=False
+            reaction_smiles,
+            canonicalize_tautomer=False,
         )
         reactants_str, products_str = self._split_reaction_components(
-            canonicalized_reaction_smiles
+            canonicalized_reaction_smiles,
         )
 
         reactant_mols = [Chem.MolFromSmiles(r) for r in reactants_str.split(".")]
         if None in reactant_mols:
             logger.warning(f"Failed to parse reactant SMILES: {reactants_str}")
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
         product_mols = [Chem.MolFromSmiles(p) for p in products_str.split(".")]
         if None in product_mols:
             logger.warning(f"Failed to parse product SMILES: {products_str}")
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
 
         if not max_radius:
-            max_radius = max(
-                [len(mol.GetAtoms()) for mol in reactant_mols + product_mols]
-            )
+            max_radius = max(mol.GetNumAtoms() for mol in reactant_mols + product_mols)
 
-        reactant_encoding_dict, product_encoding_dict, final_radius = (
-            self._get_radius_encoding_dict(
-                reactant_mols, product_mols, min_radius, max_radius
-            )
+        # Pre-compute property caches
+        r_caches = [MolPropertyCache(m) for m in reactant_mols]
+        p_caches = [MolPropertyCache(m) for m in product_mols]
+
+        # Build skeletons / fingerprints incrementally and find optimal radius
+        (
+            r_skeletons,
+            p_skeletons,
+            r_fps,
+            p_fps,
+            r_a2e,
+            p_a2e,
+            final_radius,
+        ) = self._build_skeletons_and_find_radius(
+            reactant_mols,
+            product_mols,
+            r_caches,
+            p_caches,
+            min_radius,
+            max_radius,
         )
 
+        # Assign atom-map numbers from final_radius down to 1
         reactant_mols, product_mols = self._assign_atom_map_nums(
             reactant_mols,
             product_mols,
-            reactant_encoding_dict,
-            product_encoding_dict,
+            r_caches,
+            p_caches,
+            r_skeletons,
+            p_skeletons,
+            r_fps,
+            p_fps,
+            r_a2e,
+            p_a2e,
             final_radius,
             min_radius_to_anchor_new_mapping,
         )
 
         mapped_reactant_smiles = ".".join(
-            [
-                Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
-                for mol in reactant_mols
-            ]
+            Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
+            for mol in reactant_mols
         )
-
         mapped_product_smiles = ".".join(
-            [
-                Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
-                for mol in product_mols
-            ]
+            Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
+            for mol in product_mols
         )
-
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
 
         if not self._verify_validity_of_mapping(
-            mapped_reaction_smiles, expect_full_mapping=False
+            mapped_reaction_smiles,
+            expect_full_mapping=False,
         ):
             logger.warning("Invalid mapping")
-            return self._default_mapping_dict
+            return self._return_default_mapping_dict(reaction_smiles)
 
         return ReactionMapperResult(
             original_smiles=reaction_smiles,
@@ -520,12 +697,15 @@ class MCSReactionMapper(ReactionMapper):
 
         Args:
             reaction_list (List[str]): List of reaction SMILES strings to map.
+            min_radius (int): Smallest bond-radius to consider.
+            min_radius_to_anchor_new_mapping (int): Below this radius,
+                environments are only matched when they already contain at
+                least one mapped atom.
 
         Returns:
-            List[ReactionMapperResult]: The mapping results in the same order as the
-                input reactions.
+            List[ReactionMapperResult]: The mapping results in the same order
+                as the input reactions.
         """
-
         mapped_reactions = []
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))

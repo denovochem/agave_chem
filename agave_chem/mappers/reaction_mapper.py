@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from rdkit import Chem
 
 from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.utils.chem_utils import canonicalize_atom_mapping
 from agave_chem.utils.logging_config import logger
 
 
@@ -50,22 +51,14 @@ class ReactionMapper(ABC):
         """Return mapper_weight."""
         return self._mapper_weight
 
-    def _reaction_smiles_valid(self, reaction_smiles: str) -> bool:
-        """
-        Checks if the reaction SMILES string is valid.
+    def _return_default_mapping_dict(
+        self, original_smiles: str
+    ) -> ReactionMapperResult:
+        """Return a default mapping dictionary."""
+        default_mapping_dict = self._default_mapping_dict
+        default_mapping_dict["original_smiles"] = original_smiles
 
-        Args:
-            reaction_smiles (str): The reaction SMILES string to check
-
-        Returns:
-            bool: True if the reaction SMILES string is valid, False otherwise
-        """
-        if reaction_smiles.count(">>") != 1:
-            return False
-        for ele in reaction_smiles.split(">>"):
-            if len(ele) <= 0:
-                return False
-        return True
+        return default_mapping_dict
 
     def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str, str]:
         """
@@ -82,21 +75,123 @@ class ReactionMapper(ABC):
         products = parts[1]
         return reactants, products
 
+    def _reaction_smiles_valid(self, reaction_smiles: str) -> bool:
+        """
+        Checks if the reaction SMILES string is valid.
+
+        Args:
+            reaction_smiles (str): The reaction SMILES string to check
+
+        Returns:
+            bool: True if the reaction SMILES string is valid, False otherwise
+        """
+        if reaction_smiles.count(">>") != 1:
+            return False
+        for ele in reaction_smiles.split(">>"):
+            if len(ele) <= 0:
+                return False
+        reactant_strs, product_strs = self._split_reaction_components(reaction_smiles)
+        if not reactant_strs or not product_strs:
+            return False
+        reactant_mols = [
+            Chem.MolFromSmiles(reactant_str)
+            for reactant_str in reactant_strs.split(".")
+        ]
+        if None in reactant_mols:
+            return False
+        product_mols = [
+            Chem.MolFromSmiles(product_str) for product_str in product_strs.split(".")
+        ]
+        if None in product_mols:
+            return False
+        return True
+
+    def _remove_duplicate_fragments(self, smiles: str) -> str:
+        """
+        Removes duplicate fragments from a SMILES string.
+
+        Args:
+            smiles (str): A SMILES string
+
+        Returns:
+            str: A SMILES string with duplicate fragments removed
+        """
+        reactants_strs, products_strs = self._split_reaction_components(smiles)
+        reactants_strs_list = reactants_strs.split(".")
+        products_strs_list = products_strs.split(".")
+        unique_reactants_strs_list = list(set(reactants_strs_list))
+        unique_products_strs_list = list(set(products_strs_list))
+        return (
+            ".".join(unique_reactants_strs_list)
+            + ">>"
+            + ".".join(unique_products_strs_list)
+        )
+
+    def _remove_existing_mapping(self, rxn_smiles: str) -> str:
+        """
+        Removes existing atom mapping from a SMILES string.
+
+        Args:
+            rxn_smiles (str): A reaction SMILES string
+
+        Returns:
+            str: A SMILES string with existing atom mapping removed
+        """
+        reactants_strs, products_strs = self._split_reaction_components(rxn_smiles)
+        reactant_mols = [
+            Chem.MolFromSmiles(reactant_str)
+            for reactant_str in reactants_strs.split(".")
+        ]
+        for reactant_mol in reactant_mols:
+            if reactant_mol is not None:
+                for atom in reactant_mol.GetAtoms():
+                    atom.SetAtomMapNum(0)
+        product_mols = [
+            Chem.MolFromSmiles(product_str) for product_str in products_strs.split(".")
+        ]
+        for product_mol in product_mols:
+            if product_mol is not None:
+                for atom in product_mol.GetAtoms():
+                    atom.SetAtomMapNum(0)
+        reactants_strs = ".".join(
+            [
+                Chem.MolToSmiles(reactant)
+                for reactant in reactant_mols
+                if reactant is not None
+            ]
+        )
+        products_strs = ".".join(
+            [
+                Chem.MolToSmiles(product)
+                for product in product_mols
+                if product is not None
+            ]
+        )
+        return reactants_strs + ">>" + products_strs
+
     @abstractmethod
-    def map_reaction(
-        self, reaction_smiles: str, *args, **kwargs
-    ) -> ReactionMapperResult:
+    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
         pass
 
     @abstractmethod
     def map_reactions(
-        self, reaction_smiles_list: List[str], *args, **kwargs
+        self, reaction_smiles_list: List[str]
     ) -> List[ReactionMapperResult]:
         pass
 
     def _verify_validity_of_mapping(
         self, reaction_smiles: str, expect_full_mapping: bool = True
     ) -> bool:
+        """
+        Verifies the validity of a mapped reaction SMILES string.
+
+        Args:
+            reaction_smiles (str): A mapped reaction SMILES string
+            expect_full_mapping (bool): Whether to expect a full mapping
+
+        Returns:
+            bool: True if the mapping is valid, False otherwise
+        """
         reactants_smiles = reaction_smiles.split(">>")[0]
         products_smiles = reaction_smiles.split(">>")[1]
         reactants_mols = [
@@ -154,3 +249,57 @@ class ReactionMapper(ABC):
             return False
 
         return True
+
+    def sanitize_molecule(
+        self, mol: Chem.Mol, add_hs: bool = False
+    ) -> Optional[Chem.Mol]:
+        """
+        Sanitize a molecule and optionally add hydrogens.
+
+        Args:
+            mol: RDKit molecule object
+            add_hs: Whether to add explicit hydrogens
+
+        Returns:
+            Sanitized molecule or None if sanitization fails
+        """
+        try:
+            mol_copy = Chem.Mol(mol)
+            Chem.SanitizeMol(mol_copy)
+            if add_hs:
+                mol_copy = Chem.AddHs(mol_copy)
+            return mol_copy
+        except Exception as e:
+            logger.warning(f"Sanitization failed: {e}")
+            return None
+
+    def sanitize_rxn_string(
+        self,
+        reaction_smiles: str,
+        expect_full_mapping: bool = True,
+        canonicalize: bool = True,
+        remove_mapping: bool = False,
+    ) -> str:
+        """
+        Sanitize a reaction SMILES string.
+
+        Args:
+            reaction_smiles: Reaction SMILES string
+            expect_full_mapping: Whether to expect full atom mapping
+            canonicalize: Whether to canonicalize the reaction SMILES
+            remove_mapping: Whether to remove existing atom mapping
+
+        Returns:
+            Sanitized reaction SMILES string
+        """
+
+        if not self._verify_validity_of_mapping(reaction_smiles, expect_full_mapping):
+            raise ValueError("Reaction SMILES string is not valid")
+
+        if remove_mapping:
+            reaction_smiles = self._remove_existing_mapping(reaction_smiles)
+
+        if canonicalize:
+            reaction_smiles = canonicalize_atom_mapping(reaction_smiles)
+
+        return reaction_smiles

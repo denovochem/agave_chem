@@ -3,7 +3,6 @@ from rdkit.Chem import AllChem
 
 
 def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
-    # RDKit parses reaction SMILES via ReactionFromSmarts(useSmiles=True)
     rxn = AllChem.ReactionFromSmarts(rxn_smiles, useSmiles=True)
     G = nx.Graph()
 
@@ -18,10 +17,12 @@ def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
                     node_id,
                     Z=atom.GetAtomicNum(),
                     side=side_label,
-                    # frag=frag_i,
-                    # you can add more invariants if you want:
                     charge=atom.GetFormalCharge(),
                     aromatic=atom.GetIsAromatic(),
+                    in_ring=atom.IsInRing(),
+                    hydrogen_count=atom.GetTotalNumHs(),
+                    degree=atom.GetDegree(),
+                    chiral_tag=int(atom.GetChiralTag()),
                 )
             for bond in mol.GetBonds():
                 a = (side_label, frag_i, bond.GetBeginAtomIdx())
@@ -70,9 +71,12 @@ def mapping_equivalent(rxn1: str, rxn2: str) -> bool:
         return (
             a["Z"] == b["Z"]
             and a["side"] == b["side"]
-            # and a["frag"] == b["frag"]
             and a["charge"] == b["charge"]
             and a["aromatic"] == b["aromatic"]
+            and a["in_ring"] == b["in_ring"]
+            and a["hydrogen_count"] == b["hydrogen_count"]
+            and a["degree"] == b["degree"]
+            and a["chiral_tag"] == b["chiral_tag"]
         )
 
     def edge_match(a, b):

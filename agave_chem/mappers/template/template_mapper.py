@@ -884,8 +884,10 @@ class TemplateReactionMapper(ReactionMapper):
         """
         if not self._reaction_smiles_valid(reaction_smiles):
             if return_mcs_result:
-                return self._default_mapping_dict, self._default_mapping_dict
-            return self._default_mapping_dict
+                return self._return_default_mapping_dict(
+                    reaction_smiles
+                ), self._return_default_mapping_dict(reaction_smiles)
+            return self._return_default_mapping_dict(reaction_smiles)
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
             reaction_smiles, canonicalize_tautomer=True
@@ -917,8 +919,8 @@ class TemplateReactionMapper(ReactionMapper):
         )
         if not result:
             if return_mcs_result:
-                return self._default_mapping_dict, mcs_result
-            return self._default_mapping_dict
+                return self._return_default_mapping_dict(reaction_smiles), mcs_result
+            return self._return_default_mapping_dict(reaction_smiles)
 
         if return_mcs_result:
             return result, mcs_result

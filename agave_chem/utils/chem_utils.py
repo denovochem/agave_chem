@@ -6,12 +6,11 @@ including parsing, sanitization, and atom property access.
 """
 
 import random
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Dict
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-from agave_chem.utils.constants import BOND_ENERGIES
 from agave_chem.utils.logging_config import logger
 
 tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
@@ -22,6 +21,7 @@ def canonicalize_smiles(
     isomeric: bool = True,
     remove_mapping: bool = True,
     canonicalize_tautomer: bool = True,
+    throw_error_on_failure: bool = False,
 ) -> str:
     """
     Converts SMILES strings to their canonical form using RDKit.
@@ -35,6 +35,7 @@ def canonicalize_smiles(
         isomeric (bool): Whether to retain isomeric information. Defaults to True
         remove_mapping (bool): Whether to remove atom mapping numbers. Defaults to True
         canonicalize_tautomer (bool): Whether to use the canonical tautomer. Defaults to True
+        throw_error_on_failure (bool): Whether to throw an error if canonicalization fails. Defaults to False
 
     Returns:
         str: The canonicalized SMILES string. If conversion fails, returns the input string
@@ -58,6 +59,8 @@ def canonicalize_smiles(
         return canonical_smiles_string
     except Exception as e:
         logger.warning(f"Could not canonicalize {smiles}: {e}")
+        if throw_error_on_failure:
+            raise e
         return smiles
 
 
@@ -67,6 +70,7 @@ def randomize_smiles(
     shuffle_order: bool = True,
     remove_mapping: bool = True,
     randomize_tautomer: bool = False,
+    throw_error_on_failure: bool = False,
 ) -> str:
     try:
         x = smiles.split(".")
@@ -91,6 +95,8 @@ def randomize_smiles(
         return random_smiles_string
     except Exception as e:
         logger.warning(f"Could not randomize {smiles}: {e}")
+        if throw_error_on_failure:
+            raise e
         return smiles
 
 
@@ -100,6 +106,7 @@ def canonicalize_reaction_smiles(
     remove_mapping: bool = True,
     canonicalize_tautomer: bool = False,
     return_canonicalized_atom_mapping: bool = False,
+    throw_error_on_failure: bool = False,
 ) -> str:
     """
     Canonicalizes a reaction SMILES string using RDKit.
@@ -146,6 +153,8 @@ def canonicalize_reaction_smiles(
         return canonical_rxn
     except Exception as e:
         logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
+        if throw_error_on_failure:
+            raise e
         return rxn_smiles
 
 
@@ -156,6 +165,7 @@ def randomize_reaction_smiles(
     shuffle_order: bool = True,
     randomize_tautomer: bool = False,
     randomize_atom_mapping: bool = False,
+    throw_error_on_failure: bool = False,
 ) -> str:
     try:
         split_roles = rxn_smiles.split(">>")
@@ -188,6 +198,8 @@ def randomize_reaction_smiles(
         return randomized_rxn
     except Exception as e:
         logger.warning(f"Could not randomize {rxn_smiles}: {e}")
+        if throw_error_on_failure:
+            raise e
         return rxn_smiles
 
 
@@ -331,331 +343,3 @@ def canonicalize_atom_mapping(reaction_smiles: str) -> str:
     )
 
     return canonicalized_rxn
-
-
-def parse_reaction_smiles(
-    reaction_smiles: str,
-) -> Tuple[List[Chem.Mol], List[Chem.Mol]]:
-    """
-    Parse a reaction SMILES into reactants and products.
-
-    Args:
-        reaction_smiles: Reaction SMILES in format "reactants>>products"
-
-    Returns:
-        Tuple of (reactants, products) as lists of RDKit Mol objects
-
-    Raises:
-        ValueError: If the reaction SMILES cannot be parsed
-    """
-    parts = reaction_smiles.split(">>")
-
-    if len(parts) != 2:
-        raise ValueError(
-            f"Invalid reaction SMILES format: expected 2 parts separated by '>>', got {len(parts)}"
-        )
-
-    reactant_smiles, product_smiles = parts
-
-    def parse_molecules(smiles_str: str) -> List[Chem.Mol]:
-        """Parse dot-separated SMILES into list of molecules."""
-        if not smiles_str.strip():
-            return []
-
-        molecules = []
-        for smi in smiles_str.split("."):
-            mol = Chem.MolFromSmiles(smi.strip())
-            if mol is None:
-                logger.warning(f"Could not parse SMILES: {smi}")
-                continue
-            molecules.append(mol)
-        return molecules
-
-    reactants = parse_molecules(reactant_smiles)
-    products = parse_molecules(product_smiles)
-
-    if not reactants:
-        raise ValueError("No valid reactants found in reaction SMILES")
-    if not products:
-        raise ValueError("No valid products found in reaction SMILES")
-
-    return reactants, products
-
-
-def sanitize_molecule(mol: Chem.Mol, add_hs: bool = False) -> Optional[Chem.Mol]:
-    """
-    Sanitize a molecule and optionally add hydrogens.
-
-    Args:
-        mol: RDKit molecule object
-        add_hs: Whether to add explicit hydrogens
-
-    Returns:
-        Sanitized molecule or None if sanitization fails
-    """
-    try:
-        mol_copy = Chem.Mol(mol)
-        Chem.SanitizeMol(mol_copy)
-        if add_hs:
-            mol_copy = Chem.AddHs(mol_copy)
-        return mol_copy
-    except Exception as e:
-        logger.warning(f"Sanitization failed: {e}")
-        return None
-
-
-def get_atom_features(atom: Chem.Atom) -> Dict:
-    """
-    Extract features from an atom for comparison purposes.
-
-    Args:
-        atom: RDKit Atom object
-
-    Returns:
-        Dictionary of atom features
-    """
-    return {
-        "atomic_num": atom.GetAtomicNum(),
-        "symbol": atom.GetSymbol(),
-        "formal_charge": atom.GetFormalCharge(),
-        "num_hs": atom.GetTotalNumHs(),
-        "hybridization": str(atom.GetHybridization()),
-        "is_aromatic": atom.GetIsAromatic(),
-        "is_in_ring": atom.IsInRing(),
-        "degree": atom.GetDegree(),
-        "isotope": atom.GetIsotope(),
-        "chiral_tag": str(atom.GetChiralTag()),
-    }
-
-
-def get_bond_energy(atom1_symbol: str, atom2_symbol: str, bond_order: float) -> float:
-    """
-    Get the bond dissociation energy for a bond.
-
-    Args:
-        atom1_symbol: Symbol of first atom
-        atom2_symbol: Symbol of second atom
-        bond_order: Bond order (1.0, 1.5, 2.0, 3.0)
-
-    Returns:
-        Estimated bond energy in kcal/mol
-    """
-    # Normalize the order of atoms for lookup
-    key1 = (atom1_symbol, atom2_symbol, bond_order)
-    key2 = (atom2_symbol, atom1_symbol, bond_order)
-
-    if key1 in BOND_ENERGIES:
-        return BOND_ENERGIES[key1]
-    elif key2 in BOND_ENERGIES:
-        return BOND_ENERGIES[key2]
-    else:
-        # Default estimate based on average single bond energy
-        logger.debug(
-            f"No bond energy data for {atom1_symbol}-{atom2_symbol} (order {bond_order}), using default"
-        )
-        return 80.0 * bond_order
-
-
-def remove_atom_mapping(mol: Chem.Mol) -> Chem.Mol:
-    """
-    Remove atom mapping numbers from a molecule.
-
-    Args:
-        mol: RDKit molecule with atom mapping
-
-    Returns:
-        New molecule without atom mapping numbers
-    """
-    mol_copy = Chem.Mol(mol)
-    for atom in mol_copy.GetAtoms():
-        atom.SetAtomMapNum(0)
-    return mol_copy
-
-
-def apply_atom_mapping(mol: Chem.Mol, mapping: Dict[int, int]) -> Chem.Mol:
-    """
-    Apply atom mapping numbers to a molecule.
-
-    Args:
-        mol: RDKit molecule
-        mapping: Dictionary mapping atom indices to map numbers
-
-    Returns:
-        New molecule with atom mapping numbers
-    """
-    mol_copy = Chem.Mol(mol)
-    for atom_idx, map_num in mapping.items():
-        if atom_idx < mol_copy.GetNumAtoms():
-            mol_copy.GetAtomWithIdx(atom_idx).SetAtomMapNum(map_num)
-    return mol_copy
-
-
-def get_bond_dict(mol: Chem.Mol) -> Dict[FrozenSet[int], Tuple[float, bool]]:
-    """
-    Get dictionary of bonds in a molecule.
-
-    Args:
-        mol: RDKit molecule
-
-    Returns:
-        Dictionary mapping frozenset of atom indices to (bond_order, is_aromatic)
-    """
-    bonds = {}
-    for bond in mol.GetBonds():
-        atom1_idx = bond.GetBeginAtomIdx()
-        atom2_idx = bond.GetEndAtomIdx()
-        bond_order = bond.GetBondTypeAsDouble()
-        is_aromatic = bond.GetIsAromatic()
-        bonds[frozenset([atom1_idx, atom2_idx])] = (bond_order, is_aromatic)
-    return bonds
-
-
-def get_ring_info(mol: Chem.Mol) -> List[Set[int]]:
-    """
-    Get information about rings in a molecule.
-
-    Args:
-        mol: RDKit molecule
-
-    Returns:
-        List of sets, each containing atom indices in a ring
-    """
-    ring_info = mol.GetRingInfo()
-    return [set(ring) for ring in ring_info.AtomRings()]
-
-
-def validate_rxn_mapping(rxn_smiles: str) -> bool:
-    reactant_mols = []
-    for reactant_smarts in rxn_smiles.split(">>")[0].split("."):
-        reactant_mols.append(Chem.MolFromSmiles(reactant_smarts))
-    product_mols = []
-    for product_smarts in rxn_smiles.split(">>")[1].split("."):
-        product_mols.append(Chem.MolFromSmiles(product_smarts))
-
-    num_product_atoms = sum([mol.GetNumAtoms() for mol in product_mols])
-    num_reactant_atoms = sum([mol.GetNumAtoms() for mol in reactant_mols])
-    if num_product_atoms > num_reactant_atoms:
-        logger.warning("Incorrect number of atoms")
-        return False
-
-    num_atoms_of_each_type_product = {}
-    for product_mol in product_mols:
-        for atom in product_mol.GetAtoms():
-            if atom.GetAtomicNum() not in num_atoms_of_each_type_product:
-                num_atoms_of_each_type_product[atom.GetAtomicNum()] = 1
-            else:
-                num_atoms_of_each_type_product[atom.GetAtomicNum()] += 1
-
-    num_atoms_of_each_type_reactant = {}
-    for reactant_mol in reactant_mols:
-        for atom in reactant_mol.GetAtoms():
-            if atom.GetAtomicNum() not in num_atoms_of_each_type_reactant:
-                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] = 1
-            else:
-                num_atoms_of_each_type_reactant[atom.GetAtomicNum()] += 1
-
-    for k, v in num_atoms_of_each_type_product.items():
-        if num_atoms_of_each_type_reactant[k] < v:
-            logger.warning(f"More atoms of atomic num {k} in products than reactants")
-            return False
-
-    product_mol_atoms = {}
-    for product_mol in product_mols:
-        for atom in product_mol.GetAtoms():
-            if atom.GetAtomMapNum() == 0:
-                logger.warning("Unmapped product atom")
-                return False
-            product_mol_atoms[atom.GetAtomMapNum()] = atom
-
-    reactant_atom_map_nums = []
-    for reactant_mol in reactant_mols:
-        for atom in reactant_mol.GetAtoms():
-            if atom.GetAtomMapNum() == 0:
-                continue
-            if atom.GetAtomMapNum() not in product_mol_atoms:
-                logger.warning(
-                    f"Mapped reactant atom {atom.GetAtomMapNum()} not found in products"
-                )
-                return False
-            if (
-                atom.GetAtomicNum()
-                != product_mol_atoms[atom.GetAtomMapNum()].GetAtomicNum()
-            ):
-                logger.warning(
-                    f"Mapped reactant atom {atom.GetAtomMapNum()} has different atomic number"
-                )
-                return False
-            reactant_atom_map_nums.append(atom.GetAtomMapNum())
-
-    if set(reactant_atom_map_nums) != set(product_mol_atoms.keys()):
-        logger.warning("Incorrect atom mapping nums")
-        return False
-
-    return True
-
-
-def sanitize_rxn_string(
-    rxn_smiles: str,
-    canonicalize: bool = True,
-    remove_duplicate_fragments: bool = False,
-    remove_mapping: bool = False,
-) -> str:
-    """
-    Sanitize the input reaction SMILES string by parsing it into reactants and products
-    and checking that the constituent molecules are standardized.
-
-    Standardization:
-    1. Ensuring each fragment can be rounded-tripped through RDKit
-    2. Removing mapping numbers
-    3. Remove duplicate fragments
-    4. Make sure ">>" is in the string, only once
-    5. Removing isotopes
-    6. Canonicalizing SMILES strings
-    7. Isomerizing SMILES strings
-
-    Args:
-        rxn_smiles (str): Reaction SMILES string
-
-    Returns:
-        str: Sanitized reaction SMILES string
-    """
-    if ">>" not in rxn_smiles:
-        raise ValueError("Invalid reaction SMILES string")
-
-    reactants_str = rxn_smiles.split(">>")[0]
-    products_str = rxn_smiles.split(">>")[1]
-
-    if remove_duplicate_fragments:
-        reactants_strs = list(set(reactants_str.split(".")))
-        products_strs = list(set(products_str.split(".")))
-    else:
-        reactants_strs = reactants_str.split(".")
-        products_strs = products_str.split(".")
-
-    reactants_mols = [Chem.MolFromSmiles(reactant) for reactant in reactants_strs]
-    products_mols = [Chem.MolFromSmiles(product) for product in products_strs]
-
-    if None in reactants_mols or None in products_mols:
-        raise ValueError("Invalid SMILES in reaction SMILES string")
-
-    if remove_mapping:
-        reactants_mols = [remove_atom_mapping(mol) for mol in reactants_mols]
-        products_mols = [remove_atom_mapping(mol) for mol in products_mols]
-
-    standardized_reactants_str = ".".join(
-        [
-            Chem.MolToSmiles(reactant, canonical=canonicalize, isomericSmiles=True)
-            for reactant in reactants_mols
-        ]
-    )
-    standardized_products_str = ".".join(
-        [
-            Chem.MolToSmiles(product, canonical=canonicalize, isomericSmiles=True)
-            for product in products_mols
-        ]
-    )
-    standardized_rxn_smiles = (
-        standardized_reactants_str + ">>" + standardized_products_str
-    )
-
-    return standardized_rxn_smiles
