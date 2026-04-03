@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 from rdkit import Chem
 
-from agave_chem.mappers.template.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionMapperResult
 from agave_chem.utils.logging_config import logger
 
 

@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 from rdchiral import main as rdc
 from rdkit import Chem
 
-from agave_chem.mappers.template.types import InitializedSmirksPattern, SmirksPattern
+from agave_chem.mappers.types import InitializedSmirksPattern, SmirksPattern
 from agave_chem.utils.logging_config import logger
 
 

@@ -5,8 +5,9 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     resolve_identical_fragments_mapping_dict,
 )
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
-from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
+from agave_chem.mappers.types import ReactionMapperResult
 from agave_chem.utils.logging_config import logger
 
 

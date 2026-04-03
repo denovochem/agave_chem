@@ -8,15 +8,16 @@ from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
-from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_initialization import (
     InitializedSmirksPattern,
     SmirksPattern,
     initialize_template_data,
 )
-from agave_chem.mappers.template.types import (
+from agave_chem.mappers.types import (
     AppliedSmirkData,
     ReactionData,
+    ReactionMapperResult,
     SmirksNameDict,
 )
 from agave_chem.utils.chem_utils import (
@@ -77,7 +78,7 @@ class TemplateReactionMapper(ReactionMapper):
                                 "Invalid input: 'name' and 'smirks' values must be strings."
                             )
 
-        SMIRKS_PATTERNS_FILE = files("agave_chem.datafiles").joinpath(
+        SMIRKS_PATTERNS_FILE = files("agave_chem.datafiles.smirks_patterns").joinpath(
             "smirks_patterns.json"
         )
         default_smirks_patterns = []

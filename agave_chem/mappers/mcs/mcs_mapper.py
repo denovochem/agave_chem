@@ -2,7 +2,8 @@ from typing import Dict, List, Tuple
 
 from rdkit import Chem
 
-from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.types import ReactionMapperResult
 from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
 )
