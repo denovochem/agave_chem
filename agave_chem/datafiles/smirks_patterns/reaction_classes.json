@@ -6,6 +6,19 @@
         "description": "Reactions involving the formation of bonds between heteroatoms and carbon atoms",
         "classes": [
           {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
+          {
             "id": 1,
             "name": "N-alkylation",
             "description": "Formation of bonds between nitrogen atoms and alkyl groups",
@@ -143,6 +156,19 @@
         "name": "Acylation and Related Processes",
         "description": "Reactions involving the introduction of acyl groups (R-C=O) into molecules",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "N-acylation",
@@ -301,6 +327,19 @@
         "description": "Removal of a protecting group for a molecule",
         "classes": [
           {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
+          {
             "id": 1,
             "name": "Amine deprotection",
             "description": "Removal of a protecting group for an amine",
@@ -444,6 +483,19 @@
         "name": "C-C bond forming reactions",
         "description": "Reactions that form carbon-carbon bonds",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "Aldol condensation",
@@ -676,6 +728,19 @@
         "description": "Interconversion of functional groups",
         "classes": [
           {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
+          {
             "id": 1,
             "name": "Alcohol to alkyl halide",
             "description": "Conversion of an alcohol to an alkyl halide",
@@ -802,6 +867,19 @@
         "name": "Reductions",
         "description": "Reduction of a molecule",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "Carbonyl reduction",
@@ -960,6 +1038,19 @@
         "description": "Addition of a functional group to a molecule",
         "classes": [
           {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
+          {
             "id": 1,
             "name": "Hydroxylation",
             "description": "Installation of a hydroxyl group (−OH) into an organic compound",
@@ -1091,6 +1182,19 @@
         "name": "Heterocycle Formation",
         "description": "Formation of heterocycles",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "Pyridine synthesis",
@@ -1236,6 +1340,19 @@
         "name": "Protections",
         "description": "Addition of a protecting group to a molecule",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "Alcohol protection",
@@ -1386,6 +1503,19 @@
         "name": "Oxidations",
         "description": "Oxidation of an organic molecule",
         "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
           {
             "id": 1,
             "name": "Alcohol oxidation",
@@ -1568,6 +1698,19 @@
         "description": "Separation of a racemic mixture into its respective enantiomers",
         "classes": [
           {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          },
+          {
             "id": 1,
             "name": "Crystallization",
             "description": "Solid formation from a solution, gas, or liquid, resulting in a highly structured crystal with a well-defined three-dimensional lattice",
@@ -1674,7 +1817,21 @@
         "id": 12,
         "name": "Uncategorized",
         "description": "Uncategorized reactions",
-        "classes": []
+        "classes": [
+          {
+            "id": 0,
+            "name": "Other",
+            "description": "Reactions that don't fit into the other categories",
+            "subclasses": [
+              {
+                "id": 0,
+                "name": "Other",
+                "description": "Reactions that don't fit into the other categories",
+                "subsubclasses": []
+              }
+            ]
+          }
+        ]
       }
     ]
 }

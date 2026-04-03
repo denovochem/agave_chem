@@ -279,3 +279,31 @@ def initialize_template_data(
             )
 
     return rdc_info
+
+
+def initialize_template_data_from_child_patterns(
+    child_smirks: str,
+) -> Tuple[
+    Optional[List[Chem.Mol]], Optional[List[Chem.Mol]], Optional[rdc.rdchiralReaction]
+]:
+    products_smarts = [
+        Chem.MolFromSmarts(smarts) for smarts in child_smirks.split(">>")[0].split(".")
+    ]
+
+    if None in products_smarts:
+        return None, None, None
+
+    reactants_smarts = [
+        Chem.MolFromSmarts(smarts) for smarts in child_smirks.split(">>")[1].split(".")
+    ]
+
+    if None in reactants_smarts:
+        return None, None, None
+
+    try:
+        rdc_rxn = rdc.rdchiralReaction(child_smirks)
+    except Exception as e:
+        logger.warning(f"Error converting smirks to rdchiral reaction: {e}")
+        return None, None, None
+
+    return reactants_smarts, products_smarts, rdc_rxn
