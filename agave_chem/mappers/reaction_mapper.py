@@ -31,6 +31,15 @@ class ReactionMapper(ABC):
             )
         self._mapper_weight: float = float(mapper_weight)
 
+        self._default_mapping_dict = ReactionMapperResult(
+            original_smiles="",
+            selected_mapping="",
+            possible_mappings={},
+            mapping_type=self._mapper_type,
+            mapping_score=None,
+            additional_info=[{}],
+        )
+
     @property
     def mapper_name(self) -> str:
         """Return mapper_name."""
@@ -74,16 +83,20 @@ class ReactionMapper(ABC):
         return reactants, products
 
     @abstractmethod
-    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
+    def map_reaction(
+        self, reaction_smiles: str, *args, **kwargs
+    ) -> ReactionMapperResult:
         pass
 
     @abstractmethod
     def map_reactions(
-        self, reaction_smiles_list: List[str]
+        self, reaction_smiles_list: List[str], *args, **kwargs
     ) -> List[ReactionMapperResult]:
         pass
 
-    def _verify_validity_of_mapping(self, reaction_smiles: str) -> bool:
+    def _verify_validity_of_mapping(
+        self, reaction_smiles: str, expect_full_mapping: bool = True
+    ) -> bool:
         reactants_smiles = reaction_smiles.split(">>")[0]
         products_smiles = reaction_smiles.split(">>")[1]
         reactants_mols = [
@@ -101,8 +114,11 @@ class ReactionMapper(ABC):
         for mol in products_mols:
             for atom in mol.GetAtoms():
                 if atom.GetAtomMapNum() == 0:
-                    logger.warning("Unmapped atom in product")
-                    return False
+                    if expect_full_mapping:
+                        logger.warning("Unmapped atom in product")
+                        return False
+                    else:
+                        continue
                 if atom.GetAtomMapNum() in product_atom_maps_and_elements:
                     logger.warning("Duplicate atom mapping in product")
                     return False

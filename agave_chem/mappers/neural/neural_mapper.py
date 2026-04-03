@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from importlib.resources import as_file, files
+from importlib.resources import files
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypedDict
 
@@ -14,8 +14,7 @@ from agave_chem.mappers.neural.constants import (
     token_atom_identity_dict,
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
-from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
 from agave_chem.utils.logging_config import logger
 
 
@@ -79,40 +78,6 @@ class AttentionAlignmentHead(torch.nn.Module):
         """
         # attention_scores: (B, S, S)
         output = self.dense(attention_scores)  # (B, S, S)
-
-        if self.use_residual:
-            output = output + attention_scores
-
-        return output
-
-
-class AttentionAlignmentHeadNew(torch.nn.Module):
-    """
-    A learnable layer that refines attention scores for atom mapping.
-
-    Applies a position-independent element-wise affine transformation
-    (scale * x + bias) with optional residual connection. Initialized
-    so that initial behavior matches the pre-trained attention patterns.
-    """
-
-    def __init__(self, use_residual: bool = True):
-        super().__init__()
-        self.use_residual = use_residual
-
-        # Element-wise affine: scale * x + bias
-        # Initialized as identity (scale=1, bias=0)
-        self.scale = torch.nn.Parameter(torch.ones(1))
-        self.bias = torch.nn.Parameter(torch.zeros(1))
-
-    def forward(self, attention_scores: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            attention_scores: (batch, seq_len, seq_len) attention weights
-
-        Returns:
-            Refined attention scores of same shape
-        """
-        output = self.scale * attention_scores + self.bias
 
         if self.use_residual:
             output = output + attention_scores
@@ -303,55 +268,16 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         return attention_probs
 
 
-def _resolve_supervised_state_dict_path(base_model_dir: Path) -> Path:
-    candidates = [
-        Path(str(base_model_dir) + ".pt"),
-        base_model_dir.parent / "models" / "albert_model_supervised.pt",
-        base_model_dir.parent / "supervised_albert_model.pt",
-    ]
-
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-
-    tried = "\n".join(f"- {p}" for p in candidates)
-    raise FileNotFoundError(
-        "Could not find supervised checkpoint .pt file. Tried:\n" + tried
-    )
-
-
 def load_neural_albert_model(
-    checkpoint_dir: str | Path | None,
+    checkpoint_dir: str,
     device: torch.device,
     use_supervised: bool,
     max_length: int = 256,
     supervised_config: SupervisedConfig | None = None,
 ) -> torch.nn.Module:
-    if checkpoint_dir is None:
-        base_model_traversable = files("agave_chem.datafiles.models").joinpath(
-            "supervised_albert_model"
-        )
-        with as_file(base_model_traversable) as base_model_dir:
-            return load_neural_albert_model(
-                checkpoint_dir=base_model_dir,
-                device=device,
-                use_supervised=use_supervised,
-                max_length=max_length,
-                supervised_config=supervised_config,
-            )
-
-    base_model_dir = Path(checkpoint_dir)
-    if not base_model_dir.exists():
-        raise FileNotFoundError(
-            f"Checkpoint directory does not exist: {base_model_dir}"
-        )
-    if not base_model_dir.is_dir():
-        raise NotADirectoryError(
-            f"Expected checkpoint_dir to be a directory: {base_model_dir}"
-        )
-
+    checkpoint_dir = str(checkpoint_dir)
     base_model = AlbertForMaskedLM.from_pretrained(
-        str(base_model_dir),
+        checkpoint_dir,
         attn_implementation="eager",
     ).to(device)
 
@@ -367,8 +293,8 @@ def load_neural_albert_model(
         max_length=max_length,
     ).to(device)
 
-    pt_path = _resolve_supervised_state_dict_path(base_model_dir)
-    ckpt = torch.load(str(pt_path), map_location=device)
+    pt_path = str(Path(checkpoint_dir) / "supervised_albert_model.pt")
+    ckpt = torch.load(pt_path, map_location=device, weights_only=False)
     wrapper.load_state_dict(ckpt["model_state_dict"], strict=True)
     wrapper.eval()
     return wrapper
@@ -420,36 +346,6 @@ class NeuralReactionMapper(ReactionMapper):
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
-    def _bond_to_label(self, bond: Chem.Bond) -> str:
-        """
-        Create a canonical string label for an RDKit bond based on its endpoint atoms and bond SMARTS.
-
-        Args:
-            bond (Chem.Bond): RDKit bond object.
-
-        Returns:
-            str: Canonical label encoding the two endpoint atoms (atomic number plus optional atom-map number)
-                and the bond SMARTS.
-        """
-
-        bond_begin_atom = bond.GetBeginAtom()
-        bond_end_atom = bond.GetEndAtom()
-        begin_atom_atomic_num = bond_begin_atom.GetAtomicNum()
-        end_atom_atomic_num = bond_end_atom.GetAtomicNum()
-        begin_atom_map_num = bond_begin_atom.GetAtomMapNum()
-        end_atom_map_num = bond_end_atom.GetAtomMapNum()
-
-        a1_label = str(begin_atom_atomic_num)
-        a2_label = str(end_atom_atomic_num)
-        if begin_atom_map_num:
-            a1_label += str(begin_atom_map_num)
-        if end_atom_map_num:
-            a2_label += str(end_atom_map_num)
-        atoms = sorted([a1_label, a2_label])
-
-        return "{}{}{}".format(atoms[0], Chem.Bond.GetSmarts(bond), atoms[1])
-
-    ## TODO: include bond info? smarts for atom? does "identical" mean identical neighbors
     def _encode_atom(self, atom: Chem.Atom) -> List[int]:
         """
         Encode an RDKit Atom object into a list of integers.
@@ -474,14 +370,7 @@ class NeuralReactionMapper(ReactionMapper):
         ring = 1 if atom.IsInRing() else 0
         h = atom.GetTotalNumHs()
         d = atom.GetDegree()
-
-        neighbors = []
-        for bond in atom.GetBonds():
-            neighbors.append(self._bond_to_label(bond))
-        sorted_neighbors = sorted(neighbors)
-        neighbor_str = "|".join(sorted_neighbors)
-
-        return [z, chg, arom, ring, h, d, neighbor_str]
+        return [z, chg, arom, ring, h, d]
 
     def get_attention_matrix_for_head(
         self,
@@ -960,20 +849,18 @@ class NeuralReactionMapper(ReactionMapper):
         else:
             for map_num, row in enumerate(attn):
                 # get partial mapping working for now
-                if products_orig_mapping_to_idx.get(map_num + 1, 0):
-                    row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
-                    col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
-                    products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
-                    reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
-                    print(map_num + 1, row_highest_attn, col_highest_attn)
-                else:
-                    highest_attn_score = row.max()
-                    highest_attn_indices = int(
-                        np.where(row == highest_attn_score)[0][0]
-                    )
-                    products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
-                    reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
-                    assignment_probs.append(orig_attn[map_num, highest_attn_indices])
+                # if products_orig_mapping_to_idx.get(map_num + 1, 0):
+                #     row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
+                #     col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
+                #     products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                #     reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+                #     print(map_num + 1, row_highest_attn, col_highest_attn)
+                # else:
+                highest_attn_score = row.max()
+                highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
+                products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
+                reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
+                assignment_probs.append(orig_attn[map_num, highest_attn_indices])
 
         mapped_reactants_str = ".".join(
             [Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols]
@@ -1052,7 +939,7 @@ class NeuralReactionMapper(ReactionMapper):
         self,
         rxn_smiles: str,
         layer: int = 9,
-        head: int = 5,
+        head: int = 0,
         sequence_max_length: int = 256,
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,

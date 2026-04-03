@@ -1,8 +1,7 @@
 from typing import Dict, List, TypedDict
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
-    create_identical_fragments_mapping_list,
-    resolve_identical_fragments_mapping_dict,
+    IdenticalFragmentMapper,
 )
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
@@ -24,11 +23,12 @@ def map_reactions_using_mappers(
 ) -> List[AgaveChemMapperResult]:
     """ """
     mappers_out_dict: Dict[str, AgaveChemMapperResult] = {}
+    identical_fragment_mapper = IdenticalFragmentMapper("identical_fragment_helper")
     for mapper in mappers_list:
         for i in range(0, len(reaction_list), batch_size):
             chunk = reaction_list[i : i + batch_size]
             new_rxns, identical_fragments_mapping_list = (
-                create_identical_fragments_mapping_list(chunk)
+                identical_fragment_mapper.create_identical_fragments_mapping_list(chunk)
             )
             out = mapper.map_reactions(new_rxns)
             for reaction, identical_fragments in zip(
@@ -37,7 +37,7 @@ def map_reactions_using_mappers(
                 if not reaction["selected_mapping"] or not identical_fragments:
                     final_mapping = reaction["selected_mapping"]
                 else:
-                    final_mapping = resolve_identical_fragments_mapping_dict(
+                    final_mapping = identical_fragment_mapper.resolve_identical_fragments_mapping_list(
                         [reaction["selected_mapping"]], [identical_fragments]
                     )
                 reaction["selected_mapping"] = final_mapping

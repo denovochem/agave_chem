@@ -882,19 +882,10 @@ class TemplateReactionMapper(ReactionMapper):
             If return_mcs_result is True, a tuple of (ReactionMapperResult, ReactionMapperResult) is returned,
             where the second element is the MCS mapping result.
         """
-        default_mapping_dict = ReactionMapperResult(
-            original_smiles="",
-            selected_mapping="",
-            possible_mappings={},
-            mapping_type=self._mapper_type,
-            mapping_score=None,
-            additional_info=[{}],
-        )
-
         if not self._reaction_smiles_valid(reaction_smiles):
             if return_mcs_result:
-                return default_mapping_dict, default_mapping_dict
-            return default_mapping_dict
+                return self._default_mapping_dict, self._default_mapping_dict
+            return self._default_mapping_dict
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
             reaction_smiles, canonicalize_tautomer=True
@@ -926,8 +917,8 @@ class TemplateReactionMapper(ReactionMapper):
         )
         if not result:
             if return_mcs_result:
-                return default_mapping_dict, mcs_result
-            return default_mapping_dict
+                return self._default_mapping_dict, mcs_result
+            return self._default_mapping_dict
 
         if return_mcs_result:
             return result, mcs_result

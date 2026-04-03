@@ -31,7 +31,11 @@
 !agave_chem/datafiles/smirks_patterns/smirks_patterns.json
 !agave_chem/datafiles/models/
 !agave_chem/datafiles/models/__init__.py
-!agave_chem/datafiles/models/supervised_albert_model.pt
+!agave_chem/datafiles/models/supervised_albert_model/
+!agave_chem/datafiles/models/supervised_albert_model/__init__.py
+!agave_chem/datafiles/models/supervised_albert_model/config.json
+!agave_chem/datafiles/models/supervised_albert_model/model.safetensors
+!agave_chem/datafiles/models/supervised_albert_model/supervised_albert_model.pt
 
 !agave_chem/mappers/
 !agave_chem/mappers/__init__.py
@@ -78,3 +82,6 @@
 !model_training/scripts/unsupervised_training.py
 !model_training/scripts/supervised_training.py
 !model_training/scripts/layer_head_identification.py
+
+!tests/
+!tests/test_*.py

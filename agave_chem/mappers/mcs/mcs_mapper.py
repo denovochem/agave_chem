@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 from rdkit import Chem
 
@@ -7,6 +7,26 @@ from agave_chem.mappers.types import ReactionMapperResult
 from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
 )
+from agave_chem.utils.logging_config import logger
+
+
+class AtomEncoding(TypedDict):
+    atom_encoding: str
+    z: int
+    chg: int
+    arom: int
+    ring: int
+    h: int
+    d: int
+    chiral_type: int
+    atom_map_num: int
+    idx: int
+
+
+class BondEncoding(TypedDict):
+    bond_encoding: str
+    bond_order: int
+    bond_stereo: int
 
 
 class MCSReactionMapper(ReactionMapper):
@@ -323,42 +343,18 @@ class MCSReactionMapper(ReactionMapper):
 
         return atom_map_num + 1, reactant_encoding_dict, product_encoding_dict
 
-    def map_reaction(
+    def _get_radius_encoding_dict(
         self,
-        reaction_smiles: str,
-        min_radius: int = 1,
-        min_radius_to_anchor_new_mapping: int = 3,
-    ) -> ReactionMapperResult:
-        """ """
-        default_mapping_dict = ReactionMapperResult(
-            original_smiles="",
-            selected_mapping="",
-            possible_mappings={},
-            mapping_type=self._mapper_type,
-            mapping_score=None,
-            additional_info=[{}],
-        )
-        if not self._reaction_smiles_valid(reaction_smiles):
-            return default_mapping_dict
-
-        canonicalized_reaction_smiles = canonicalize_reaction_smiles(
-            reaction_smiles, canonicalize_tautomer=False
-        )
-        reactants, products = self._split_reaction_components(
-            canonicalized_reaction_smiles
-        )
-
-        reactant_mols = [Chem.MolFromSmiles(r) for r in reactants.split(".")]
-        product_mols = [Chem.MolFromSmiles(p) for p in products.split(".")]
-
-        largest_num_atoms = max(
-            [len(mol.GetAtoms()) for mol in reactant_mols + product_mols]
-        )
-
+        reactant_mols: List[Chem.Mol],
+        product_mols: List[Chem.Mol],
+        min_radius: int,
+        max_radius: int,
+    ):
         reactant_encoding_dict = {}
         product_encoding_dict = {}
 
-        for radius in range(min_radius, largest_num_atoms):
+        for radius in range(min_radius, max_radius):
+            final_radius = radius
             for i, reactant_mol in enumerate(reactant_mols):
                 if len(reactant_mol.GetAtoms()) < radius:
                     continue
@@ -383,19 +379,35 @@ class MCSReactionMapper(ReactionMapper):
                 radius,
                 min_radius_to_anchor_new_mapping=0,
             )
+
+            # If we found a unique match at this radius, we're done
             if len(matches) == 1:
                 final_radius = radius
                 break
+            # If we didn't find any matches at this radius, we're done
+            # Multiple matches at next smallest radius
             if len(matches) == 0:
                 final_radius = radius - 1
                 break
 
+        return reactant_encoding_dict, product_encoding_dict, final_radius
+
+    def _assign_atom_map_nums(
+        self,
+        reactant_mols: List[Chem.Mol],
+        product_mols: List[Chem.Mol],
+        reactant_encoding_dict: Dict[str, List[int]],
+        product_encoding_dict: Dict[str, List[int]],
+        final_radius: int,
+        min_radius_to_anchor_new_mapping: int,
+    ) -> Tuple[List[Chem.Mol], List[Chem.Mol]]:
         atom_map_num = 1
         for radius in range(final_radius, 0, -1):
             matches = self._get_num_matching_atom_envs(
                 reactant_encoding_dict,
                 product_encoding_dict,
                 radius,
+                min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
             )
             num_matches = len(matches)
             for _ in range(num_matches):
@@ -417,19 +429,76 @@ class MCSReactionMapper(ReactionMapper):
                 if len(matches) == 0:
                     break
 
+        return reactant_mols, product_mols
+
+    def map_reaction(
+        self,
+        reaction_smiles: str,
+        min_radius: int = 1,
+        min_radius_to_anchor_new_mapping: int = 3,
+        max_radius: Optional[int] = None,
+    ) -> ReactionMapperResult:
+        """ """
+        if not self._reaction_smiles_valid(reaction_smiles):
+            return self._default_mapping_dict
+
+        canonicalized_reaction_smiles = canonicalize_reaction_smiles(
+            reaction_smiles, canonicalize_tautomer=False
+        )
+        reactants_str, products_str = self._split_reaction_components(
+            canonicalized_reaction_smiles
+        )
+
+        reactant_mols = [Chem.MolFromSmiles(r) for r in reactants_str.split(".")]
+        if None in reactant_mols:
+            logger.warning(f"Failed to parse reactant SMILES: {reactants_str}")
+            return self._default_mapping_dict
+        product_mols = [Chem.MolFromSmiles(p) for p in products_str.split(".")]
+        if None in product_mols:
+            logger.warning(f"Failed to parse product SMILES: {products_str}")
+            return self._default_mapping_dict
+
+        if not max_radius:
+            max_radius = max(
+                [len(mol.GetAtoms()) for mol in reactant_mols + product_mols]
+            )
+
+        reactant_encoding_dict, product_encoding_dict, final_radius = (
+            self._get_radius_encoding_dict(
+                reactant_mols, product_mols, min_radius, max_radius
+            )
+        )
+
+        reactant_mols, product_mols = self._assign_atom_map_nums(
+            reactant_mols,
+            product_mols,
+            reactant_encoding_dict,
+            product_encoding_dict,
+            final_radius,
+            min_radius_to_anchor_new_mapping,
+        )
+
         mapped_reactant_smiles = ".".join(
             [
                 Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
                 for mol in reactant_mols
             ]
         )
+
         mapped_product_smiles = ".".join(
             [
                 Chem.MolToSmiles(mol, isomericSmiles=True, canonical=False)
                 for mol in product_mols
             ]
         )
+
         mapped_reaction_smiles = mapped_reactant_smiles + ">>" + mapped_product_smiles
+
+        if not self._verify_validity_of_mapping(
+            mapped_reaction_smiles, expect_full_mapping=False
+        ):
+            logger.warning("Invalid mapping")
+            return self._default_mapping_dict
 
         return ReactionMapperResult(
             original_smiles=reaction_smiles,
@@ -440,7 +509,12 @@ class MCSReactionMapper(ReactionMapper):
             additional_info=[{}],
         )
 
-    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
+    def map_reactions(
+        self,
+        reaction_list: List[str],
+        min_radius: int = 1,
+        min_radius_to_anchor_new_mapping: int = 3,
+    ) -> List[ReactionMapperResult]:
         """
         Map a list of reaction SMILES strings using the MCS mapper.
 
