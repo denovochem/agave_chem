@@ -22,7 +22,7 @@ def test_map_reaction_invalid_smiles_returns_default():
     # invalid because reaction_smiles.count('>>') != 1
     res = mapper.map_reaction("CC")
 
-    assert res["original_smiles"] == ""
+    assert res["original_smiles"] == "CC"
     assert res["selected_mapping"] == ""
     assert res["mapping_type"] == "mcs"
 
@@ -80,5 +80,5 @@ def test_map_reactions_returns_results_in_same_order():
     assert len(results) == len(rxns)
 
     assert results[0]["original_smiles"] == rxns[0]
-    assert results[1]["original_smiles"] == ""
+    assert results[1]["original_smiles"] == rxns[1]
     assert results[2]["original_smiles"] == rxns[2]

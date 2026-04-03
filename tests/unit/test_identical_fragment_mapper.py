@@ -74,7 +74,7 @@ def test_map_reaction_invalid_smiles_returns_default():
     # invalid because reaction_smiles.count('>>') != 1
     res = mapper.map_reaction("CC")
 
-    assert res["original_smiles"] == ""
+    assert res["original_smiles"] == "CC"
     assert res["selected_mapping"] == ""
     assert res["mapping_type"] == "identical_fragment"
 

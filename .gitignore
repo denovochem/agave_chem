@@ -89,5 +89,6 @@
 !tests/
 !tests/unit/
 !tests/integration/
+!tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
