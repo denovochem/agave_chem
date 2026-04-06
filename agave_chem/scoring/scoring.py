@@ -15,6 +15,50 @@ from agave_chem.mappers.data_classes import (
     BondChangeType,
     MappingScore,
 )
+from agave_chem.utils.constants import BOND_ENERGIES
+from agave_chem.utils.logging_config import logger
+
+
+def get_bond_energy(atom1_symbol: str, atom2_symbol: str, bond_order: float) -> float:
+    """
+    Get the bond dissociation energy for a bond.
+
+    Args:
+        atom1_symbol: Symbol of first atom
+        atom2_symbol: Symbol of second atom
+        bond_order: Bond order (1.0, 1.5, 2.0, 3.0)
+
+    Returns:
+        Estimated bond energy in kcal/mol
+    """
+    # Normalize the order of atoms for lookup
+    key1 = (atom1_symbol, atom2_symbol, bond_order)
+    key2 = (atom2_symbol, atom1_symbol, bond_order)
+
+    if key1 in BOND_ENERGIES:
+        return BOND_ENERGIES[key1]
+    elif key2 in BOND_ENERGIES:
+        return BOND_ENERGIES[key2]
+    else:
+        # Default estimate based on average single bond energy
+        logger.debug(
+            f"No bond energy data for {atom1_symbol}-{atom2_symbol} (order {bond_order}), using default"
+        )
+        return 80.0 * bond_order
+
+
+def get_ring_info(mol: Chem.Mol) -> List[Set[int]]:
+    """
+    Get information about rings in a molecule.
+
+    Args:
+        mol: RDKit molecule
+
+    Returns:
+        List of sets, each containing atom indices in a ring
+    """
+    ring_info = mol.GetRingInfo()
+    return [set(ring) for ring in ring_info.AtomRings()]
 
 
 class MappingScorer:

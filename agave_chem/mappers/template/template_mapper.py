@@ -9,16 +9,12 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.template.template_initialization import (
-    InitializedSmirksPattern,
-    SmirksPattern,
-    initialize_template_data_from_child_patterns,
-)
 from agave_chem.mappers.types import (
     AppliedSmirkData,
+    InitializedSmirksPattern,
     ReactionData,
     ReactionMapperResult,
-    SmirksNameDict,
+    SmirksPattern,
 )
 from agave_chem.utils.chem_utils import (
     canonicalize_atom_mapping,
@@ -105,13 +101,12 @@ class TemplateReactionMapper(ReactionMapper):
         if self._initialized_smirks_patterns is not None:
             return
 
-        self._smirks_patterns: List[SmirksPattern] = []
         if self._use_default_smirks_patterns and self._custom_smirks_patterns is None:
-            self._smirks_patterns = self._uninitialized_smirks_patterns
+            smirks_patterns = self._uninitialized_smirks_patterns
         elif self._custom_smirks_patterns and not self._use_default_smirks_patterns:
-            self._smirks_patterns = self._custom_smirks_patterns
+            smirks_patterns = self._custom_smirks_patterns
         elif self._custom_smirks_patterns and self._use_default_smirks_patterns:
-            self._smirks_patterns = (
+            smirks_patterns = (
                 self._custom_smirks_patterns + self._uninitialized_smirks_patterns
             )
         else:
@@ -119,11 +114,11 @@ class TemplateReactionMapper(ReactionMapper):
                 "Attempting to initialize AgaveChem with no SMIRKS patterns"
             )
 
-        self._initialized_smirks_patterns: List[InitializedSmirksPattern] = []
-        for pattern in self._smirks_patterns:
+        initialized_smirks_patterns: List[InitializedSmirksPattern] = []
+        for pattern in smirks_patterns:
             for child_pattern in pattern.get("child_smirks", []):
                 reactants_smarts, products_smarts, rdc_rxn = (
-                    initialize_template_data_from_child_patterns(child_pattern)
+                    self._initialize_template_data_from_child_patterns(child_pattern)
                 )
                 if (
                     reactants_smarts is None
@@ -132,29 +127,67 @@ class TemplateReactionMapper(ReactionMapper):
                 ):
                     continue
 
-                self._initialized_smirks_patterns.append(
+                initialized_smirks_patterns.append(
                     InitializedSmirksPattern(
+                        name=str(pattern.get("name", "")),
+                        superclass_id=str(pattern.get("superclass_id", "")),
+                        class_id=str(pattern.get("class_id", "")),
+                        subclass_id=str(pattern.get("subclass_id", "")),
+                        class_str=str(pattern.get("class_str", "")),
                         products_smarts=products_smarts,
                         reactants_smarts=reactants_smarts,
                         rdc_rxn=rdc_rxn,
-                        parent_smirks=pattern.get("smirks", ""),
-                        child_smirks=child_pattern,
-                        template_name=pattern.get("name", ""),
+                        parent_smirks=str(pattern.get("smirks", "")),
+                        child_smirks=str(child_pattern),
+                        template_name=str(pattern.get("name", "")),
                     )
                 )
 
-        self._smirks_name_dictionary: Dict[str, SmirksNameDict] = {
-            pattern["smirks"]: {
-                "name": pattern["name"],
-                "superclass_id": pattern["superclass_id"],
-                "class_id": pattern["class_id"],
-                "subclass_id": pattern["subclass_id"],
-                "class_str": f"{pattern['superclass_id']}.{pattern['class_id']}.{pattern['subclass_id']}",
-            }
-            for pattern in self._smirks_patterns
-        }
+        self._initialized_smirks_patterns = initialized_smirks_patterns
 
         return
+
+    def _initialize_template_data_from_child_patterns(
+        self,
+        child_smirks: str,
+    ) -> Tuple[
+        Optional[List[Chem.Mol]],
+        Optional[List[Chem.Mol]],
+        Optional[rdc.rdchiralReaction],
+    ]:
+        """
+        Initialize template data from child SMIRKS pattern.
+
+        Args:
+            child_smirks (str): Child SMIRKS pattern.
+
+        Returns:
+            Tuple[Optional[List[Chem.Mol]], Optional[List[Chem.Mol]], Optional[rdc.rdchiralReaction]]:
+            Tuple of reactants SMARTS, products SMARTS, and rdchiral reaction.
+        """
+        products_smarts = [
+            Chem.MolFromSmarts(smarts)
+            for smarts in child_smirks.split(">>")[0].split(".")
+        ]
+
+        if None in products_smarts:
+            return None, None, None
+
+        reactants_smarts = [
+            Chem.MolFromSmarts(smarts)
+            for smarts in child_smirks.split(">>")[1].split(".")
+        ]
+
+        if None in reactants_smarts:
+            return None, None, None
+
+        try:
+            rdc_rxn = rdc.rdchiralReaction(child_smirks)
+        except Exception as e:
+            logger.warning(f"Error converting smirks to rdchiral reaction: {e}")
+            return None, None, None
+
+        return reactants_smarts, products_smarts, rdc_rxn
 
     def _prepare_reaction_data(
         self,
@@ -296,9 +329,12 @@ class TemplateReactionMapper(ReactionMapper):
 
         rdc_products = reaction_smiles_data["rdc_products"]
 
-        rdc_products_mol = rdc_products.reactants  # confusing rdchiral nomenclature - difference between retro and forward perspective
+        # confusing rdchiral nomenclature - difference between retro and forward perspective
+        rdc_products_mol = rdc_products.reactants
+
         for atom in rdc_products_mol.GetAtoms():
             atom.SetAtomMapNum(rdc_products.idx_to_mapnum(atom.GetIdx()))
+
         mapped_product = Chem.MolToSmiles(rdc_products_mol)
 
         return mapped_product
@@ -511,6 +547,9 @@ class TemplateReactionMapper(ReactionMapper):
         """ """
         mapped_outcome = outcome_and_applied_smirk.get("outcome_mapped_smiles")
         applied_smirk = outcome_and_applied_smirk.get("applied_smirk")
+
+        if mapped_outcome is None or applied_smirk is None:
+            return {}
 
         tautomers_reactants = reaction_smiles_data["tautomers_reactants"]
         fragment_count_dict = reaction_smiles_data["fragment_count_reactants"]
@@ -858,16 +897,6 @@ class TemplateReactionMapper(ReactionMapper):
             if not self._verify_validity_of_mapping(canonicalized_k):
                 continue
 
-            applied_smirk_forward = (
-                v["parent_smirks"].split(">>")[1]
-                + ">>"
-                + v["parent_smirks"].split(">>")[0]
-            )
-
-            v["template_name"] = self._smirks_name_dictionary.get(
-                applied_smirk_forward, {}
-            ).get("name", "")
-
             if canonicalized_k not in deduplicated_mapped_outcomes:
                 deduplicated_mapped_outcomes[canonicalized_k] = [v]
             else:
@@ -880,27 +909,22 @@ class TemplateReactionMapper(ReactionMapper):
             selected_mapping = self._select_preferred_mapping(
                 deduplicated_mapped_outcomes
             )
-            return ReactionMapperResult(
-                original_smiles=original_smiles,
-                selected_mapping=selected_mapping,
-                possible_mappings=deduplicated_mapped_outcomes,
-                mapping_type=self._mapper_type,
-                mapping_score=None,
-                additional_info=[],
-            )
+        else:
+            selected_mapping = list(deduplicated_mapped_outcomes.keys())[0]
 
         return ReactionMapperResult(
             original_smiles=original_smiles,
-            selected_mapping=list(deduplicated_mapped_outcomes.keys())[0],
+            selected_mapping=selected_mapping,
             possible_mappings=deduplicated_mapped_outcomes,
             mapping_type=self._mapper_type,
             mapping_score=None,
             additional_info=[],
         )
 
-    def map_reaction(
-        self, reaction_smiles: str, return_mcs_result: bool = False
-    ) -> ReactionMapperResult | Tuple[ReactionMapperResult, ReactionMapperResult]:
+    def map_reaction_mcs_return(
+        self,
+        reaction_smiles: str,
+    ) -> Tuple[ReactionMapperResult, ReactionMapperResult]:
         """
         Map a reaction SMILES string using template-based atom mapping.
 
@@ -918,11 +942,9 @@ class TemplateReactionMapper(ReactionMapper):
         self._initialize_smirks_patterns()
 
         if not self._reaction_smiles_valid(reaction_smiles):
-            if return_mcs_result:
-                return self._return_default_mapping_dict(
-                    reaction_smiles
-                ), self._return_default_mapping_dict(reaction_smiles)
-            return self._return_default_mapping_dict(reaction_smiles)
+            return self._return_default_mapping_dict(
+                reaction_smiles
+            ), self._return_default_mapping_dict(reaction_smiles)
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
             reaction_smiles, canonicalize_tautomer=True
@@ -953,34 +975,45 @@ class TemplateReactionMapper(ReactionMapper):
             mapped_outcomes_smirks_dict, canonicalized_reaction_smiles, reaction_smiles
         )
         if not result:
-            if return_mcs_result:
-                return self._return_default_mapping_dict(reaction_smiles), mcs_result
-            return self._return_default_mapping_dict(reaction_smiles)
+            return self._return_default_mapping_dict(reaction_smiles), mcs_result
 
-        if return_mcs_result:
-            return result, mcs_result
+        return result, mcs_result
 
+    def map_reaction(
+        self, reaction_smiles: str, return_mcs_result: bool = False
+    ) -> ReactionMapperResult:
+        """
+        Map a reaction SMILES string using template-based atom mapping.
+
+        This is a convenience method that calls map_reaction_mcs_return and returns only the main mapping result.
+
+        Args:
+            reaction_smiles (str): Reaction SMILES to map.
+            return_mcs_result (bool): Whether to return the MCS mapping result.
+
+        Returns:
+            ReactionMapperResult: A mapping result containing the selected mapping and
+            related metadata. If the input is invalid or no unique valid mapping can be
+            produced, an "empty" default result is returned.
+        """
+        result, _ = self.map_reaction_mcs_return(reaction_smiles)
         return result
 
     def map_reactions(
-        self, reaction_list: List[str], return_mcs_results: bool = False
-    ) -> (
-        List[ReactionMapperResult]
-        | List[Tuple[ReactionMapperResult, ReactionMapperResult]]
-    ):
+        self,
+        reaction_list: List[str],
+    ) -> List[ReactionMapperResult]:
         """
         Map a list of reaction SMILES strings using this mapper.
 
         Args:
             reaction_list (List[str]): Reaction SMILES strings to map.
-            return_mcs_results (bool): Whether to return MCS mapping results.
 
         Returns:
             List[ReactionMapperResult]: Mapping results in the same order as the input.
-            Tuple[ReactionMapperResult, ReactionMapperResult]: Mapping results and MCS results in the same order as the input.
         """
 
         mapped_reactions = []
         for reaction in reaction_list:
-            mapped_reactions.append(self.map_reaction(reaction, return_mcs_results))
+            mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions

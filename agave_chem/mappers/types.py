@@ -14,6 +14,11 @@ class ReactionData(TypedDict):
 
 
 class InitializedSmirksPattern(TypedDict):
+    name: str
+    superclass_id: str
+    class_id: str
+    subclass_id: str
+    class_str: str
     products_smarts: List[Chem.Mol]
     reactants_smarts: List[Chem.Mol]
     rdc_rxn: rdc.rdchiralReaction
@@ -37,14 +42,6 @@ class SmirksPattern(TypedDict):
     superclass_id: Optional[int]
     class_id: Optional[int]
     subclass_id: Optional[int]
-
-
-class SmirksNameDict(TypedDict):
-    name: str
-    superclass_id: int | None
-    class_id: int | None
-    subclass_id: int | None
-    class_str: str
 
 
 class ReactionMapperResult(TypedDict):

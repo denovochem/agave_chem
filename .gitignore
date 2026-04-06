@@ -79,6 +79,9 @@
 !docs/reference.md
 !docs/stylesheets/extra.css
 
+!examples/
+!examples/example_notebook.ipynb
+
 !model_training/
 !model_training/albert_mapper_training.py
 !model_training/albert_mapper_supervised_training.py
