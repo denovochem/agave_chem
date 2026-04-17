@@ -38,6 +38,8 @@ class CustomTokenizer(PreTrainedTokenizer):
         mask_token: str = "[MASK]",
         cls_token: str = "[CLS]",
         sep_token: str = "[SEP]",
+        bos_token: str = "^",
+        eos_token: str = "$",
         **kwargs,
     ):
         special_tokens = {
@@ -46,6 +48,8 @@ class CustomTokenizer(PreTrainedTokenizer):
             "mask_token": mask_token,
             "cls_token": cls_token,
             "sep_token": sep_token,
+            "bos_token": bos_token,
+            "eos_token": eos_token,
         }
         for name, token in special_tokens.items():
             if token not in token_to_id:
@@ -63,6 +67,8 @@ class CustomTokenizer(PreTrainedTokenizer):
             mask_token=mask_token,
             cls_token=cls_token,
             sep_token=sep_token,
+            bos_token=bos_token,
+            eos_token=eos_token,
             **kwargs,
         )
 
@@ -184,11 +190,19 @@ class CustomTokenizer(PreTrainedTokenizer):
             "brackets": re.compile(r"(\[[^\]]*\])"),
             "2_ring_nums": re.compile(r"(%\d{2})"),
             "rxn_symbol": re.compile(r"(>>)"),
-            "arrow": re.compile(r"(->)"),
+            "arrow_forward": re.compile(r"(->)"),
+            "arrow_backward": re.compile(r"(<-)"),
             "brcl": re.compile(r"(Li|Na|Mg|Si|Ca|Cu|Ag|Pb|Br|Cl|>>)"),
         }
 
-        REGEXP_ORDER_RXN = ["brackets", "2_ring_nums", "arrow", "brcl", "rxn_symbol"]
+        REGEXP_ORDER_RXN = [
+            "brackets",
+            "2_ring_nums",
+            "arrow_forward",
+            "arrow_backward",
+            "brcl",
+            "rxn_symbol",
+        ]
 
         def split_by(reaction_smiles, regexps):
             if not regexps:

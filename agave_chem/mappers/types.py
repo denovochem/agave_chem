@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, TypedDict
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 
 from rdchiral import main as rdc
 from rdkit import Chem
@@ -25,6 +25,7 @@ class InitializedSmirksPattern(TypedDict):
     parent_smirks: str
     child_smirks: str
     template_name: str
+    priority: Tuple[int, int]
 
 
 class AppliedSmirkData(TypedDict):

@@ -1,4 +1,4 @@
-from typing import Dict, List, TypedDict
+from typing import List, TypedDict
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
@@ -22,7 +22,9 @@ def map_reactions_using_mappers(
     batch_size: int,
 ) -> List[AgaveChemMapperResult]:
     """ """
-    mappers_out_dict: Dict[str, AgaveChemMapperResult] = {}
+    all_mapper_results_by_reaction: List[List[ReactionMapperResult]] = [
+        [] for _ in reaction_list
+    ]
     identical_fragment_mapper = IdenticalFragmentMapper("identical_fragment_helper")
     for mapper in mappers_list:
         for i in range(0, len(reaction_list), batch_size):
@@ -31,30 +33,38 @@ def map_reactions_using_mappers(
                 identical_fragment_mapper.create_identical_fragments_mapping_list(chunk)
             )
             out = mapper.map_reactions(new_rxns)
-            for reaction, identical_fragments in zip(
-                out, identical_fragments_mapping_list
+            for j, (reaction, identical_fragments) in enumerate(
+                zip(out, identical_fragments_mapping_list)
             ):
-                if not reaction["selected_mapping"] or not identical_fragments:
-                    final_mapping = reaction["selected_mapping"]
-                else:
-                    final_mapping = identical_fragment_mapper.resolve_identical_fragments_mapping_list(
-                        [reaction["selected_mapping"]], [identical_fragments]
+                if reaction["selected_mapping"] and identical_fragments:
+                    reaction["selected_mapping"] = (
+                        identical_fragment_mapper.resolve_identical_fragments_mapping_list(
+                            [reaction["selected_mapping"]],
+                            [identical_fragments],
+                        )[0]
                     )
-                reaction["selected_mapping"] = final_mapping
-        mappers_out_dict[mapper.mapper_name] = {
-            "out": out,
-        }
 
-    for mapper_name, mapper_data in mappers_out_dict.items():
-        for reaction in mapper_data["out"]:
-            mappers_out_dict.append(
-                AgaveChemMapperResult(
-                    final_mapping=reaction["selected_mapping"],
-                    original_reaction=reaction["reaction"],
-                    mapper_results=mappers_out_dict[mapper_name]["out"],
-                )
+                all_mapper_results_by_reaction[i + j].append(reaction)
+
+    results: List[AgaveChemMapperResult] = []
+    for original_reaction, mapper_results in zip(
+        reaction_list, all_mapper_results_by_reaction
+    ):
+        final_mapping = ""
+        for mapper_result in reversed(mapper_results):
+            if mapper_result["selected_mapping"]:
+                final_mapping = mapper_result["selected_mapping"]
+                break
+
+        results.append(
+            AgaveChemMapperResult(
+                final_mapping=final_mapping,
+                original_reaction=original_reaction,
+                mapper_results=mapper_results,
             )
-    return mappers_out_dict
+        )
+
+    return results
 
 
 def map_reactions(
@@ -118,11 +128,11 @@ def map_reactions(
     if batch_size <= 0 or batch_size > 1000:
         raise ValueError("Invalid input: batch_size must be an integer between 1-1000.")
 
-    mappers_out_dict = map_reactions_using_mappers(
+    mapper_results = map_reactions_using_mappers(
         reaction_list, mappers_list, batch_size
     )
 
-    if not mappers_out_dict:
+    if not mapper_results:
         raise ValueError("Invalid input: batch_size must be an integer between 1-1000.")
 
-    return mappers_out_dict
+    return mapper_results

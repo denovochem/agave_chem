@@ -1,7 +1,8 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Dict, List, Optional, Set, Tuple
 
 from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.types import ReactionMapperResult
@@ -11,7 +12,7 @@ from agave_chem.utils.chem_utils import (
 from agave_chem.utils.logging_config import logger
 
 AtomProps = Tuple[int, ...]
-"""Immutable atom properties: (z, chg, arom, ring, h, d, chiral_type)."""
+"""Immutable atom properties: (z, chg, arom, ring, h, d)."""
 
 BondProps = Tuple[int, int]
 """Immutable bond properties: (bond_order_x10, stereo)."""
@@ -19,11 +20,12 @@ BondProps = Tuple[int, int]
 EnvKey = Tuple[int, int, int]
 """Environment key: (mol_idx, atom_idx, radius)."""
 
-Skeleton = List[Tuple[int, int, int]]
-"""Canonical bond-environment skeleton: [(begin_atom_idx, bond_idx, end_atom_idx), ...]."""
+Skeleton = List[Tuple[int, int, int, int, int]]
+"""Canonical bond-environment skeleton: [(begin_atom_idx, bond_idx, end_atom_idx, begin_dist, end_dist), ...]."""
 
-Fingerprint = Tuple[Tuple[AtomProps, BondProps, AtomProps], ...]
-"""Hashable, index-free encoding of a bond environment used for equality matching."""
+Fingerprint = Tuple[Tuple[int, AtomProps, BondProps, int, AtomProps], ...]
+"""Hashable, index-free encoding of a bond environment used for equality matching.
+Each entry: (begin_dist, begin_atom_props, bond_props, end_dist, end_atom_props)."""
 
 
 class MolPropertyCache:
@@ -52,7 +54,6 @@ class MolPropertyCache:
                     1 if a.IsInRing() else 0,
                     a.GetTotalNumHs(),
                     a.GetDegree(),
-                    int(a.GetChiralTag()),
                 )
             )
         self.bond_props: List[BondProps] = []
@@ -73,6 +74,15 @@ class MCSReactionMapper(ReactionMapper):
 
     def __init__(self, mapper_name: str, mapper_weight: float = 3):
         super().__init__("mcs", mapper_name, mapper_weight)
+        self._uncharger = rdMolStandardize.Uncharger()
+        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+
+    def _normalize_mol(self, mol: Chem.Mol) -> Chem.Mol:
+        """Neutralize charges and canonicalize tautomer for matching purposes."""
+        mol = Chem.RWMol(mol)  # work on a copy
+        mol = self._uncharger.uncharge(mol)
+        mol = self._tautomer_enumerator.Canonicalize(mol)
+        return mol
 
     @staticmethod
     def _compute_skeleton(mol: Chem.Mol, atom_idx: int, radius: int) -> Skeleton:
@@ -92,9 +102,10 @@ class MCSReactionMapper(ReactionMapper):
 
         Returns:
             Skeleton: Canonically ordered list of
-                ``(begin_atom_idx, bond_idx, end_atom_idx)`` referencing
-                parent-molecule indices.  Empty list when no bonds are found
-                within the given radius.
+                ``(begin_atom_idx, bond_idx, end_atom_idx, begin_dist, end_dist)``
+                referencing parent-molecule indices and BFS distances from the
+                root atom.  Empty list when no bonds are found within the given
+                radius.
         """
         bond_ids = Chem.rdmolops.FindAtomEnvironmentOfRadiusN(
             mol,
@@ -111,6 +122,17 @@ class MCSReactionMapper(ReactionMapper):
         for a in submol.GetAtoms():
             a.SetAtomMapNum(0)
         submol.GetAtomWithIdx(root_sub).SetAtomMapNum(1)
+
+        # BFS distances from root in the submol
+        dist: Dict[int, int] = {root_sub: 0}
+        queue = deque([root_sub])
+        while queue:
+            cur = queue.popleft()
+            for nb in submol.GetAtomWithIdx(cur).GetNeighbors():
+                nidx = nb.GetIdx()
+                if nidx not in dist:
+                    dist[nidx] = dist[cur] + 1
+                    queue.append(nidx)
 
         ranks = list(
             Chem.CanonicalRankAtoms(submol, breakTies=True, includeAtomMaps=True)
@@ -144,7 +166,9 @@ class MCSReactionMapper(ReactionMapper):
             p_begin = inv_amap[s_begin]
             p_end = inv_amap[s_end]
             pbond = mol.GetBondBetweenAtoms(p_begin, p_end)
-            skeleton.append((p_begin, pbond.GetIdx(), p_end))
+            skeleton.append(
+                (p_begin, pbond.GetIdx(), p_end, dist[s_begin], dist[s_end])
+            )
 
         return skeleton
 
@@ -169,16 +193,18 @@ class MCSReactionMapper(ReactionMapper):
             Fingerprint: Hashable nested tuple suitable for equality / hash-based
                 matching.
         """
-        parts: List[Tuple[AtomProps, BondProps, AtomProps]] = []
-        for begin_idx, bond_idx, end_idx in skeleton:
+        parts: List[Tuple[int, AtomProps, BondProps, int, AtomProps]] = []
+        for begin_idx, bond_idx, end_idx, begin_dist, end_dist in skeleton:
             parts.append(
                 (
+                    begin_dist,
                     cache.atom_props[begin_idx] + (cache.atom_map_nums[begin_idx],),
                     cache.bond_props[bond_idx],
+                    end_dist,
                     cache.atom_props[end_idx] + (cache.atom_map_nums[end_idx],),
                 )
             )
-        return tuple(parts)
+        return tuple(sorted(parts))
 
     def _build_skeletons_at_radius(
         self,
@@ -188,6 +214,7 @@ class MCSReactionMapper(ReactionMapper):
         skeletons: Dict[EnvKey, Skeleton],
         fingerprints: Dict[EnvKey, Fingerprint],
         atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+        skip_atoms: Optional[Set[Tuple[int, int]]] = None,
     ) -> None:
         """
         Compute skeletons and fingerprints for every atom in *mols* at a single
@@ -203,6 +230,10 @@ class MCSReactionMapper(ReactionMapper):
             atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Reverse index
                 mapping ``(mol_idx, atom_idx)`` to the set of ``EnvKey`` values
                 whose skeletons reference that atom.  Extended in place.
+            skip_atoms (Optional[Set[Tuple[int, int]]]): Atoms to skip, as
+                ``(mol_idx, atom_idx)`` pairs.  Populated by the caller with
+                atoms whose environment at a previous radius had no cross-side
+                fingerprint match.
 
         Returns:
             None: All three dicts are mutated in place.
@@ -213,11 +244,13 @@ class MCSReactionMapper(ReactionMapper):
             cache = caches[mol_idx]
             for atom in mol.GetAtoms():
                 aidx = atom.GetIdx()
+                if skip_atoms is not None and (mol_idx, aidx) in skip_atoms:
+                    continue
                 key: EnvKey = (mol_idx, aidx, radius)
                 skel = self._compute_skeleton(mol, aidx, radius)
                 skeletons[key] = skel
                 fingerprints[key] = self._compute_fingerprint(cache, skel)
-                for begin_idx, _, end_idx in skel:
+                for begin_idx, _, end_idx, _, _ in skel:
                     atom_to_entries[(mol_idx, begin_idx)].add(key)
                     atom_to_entries[(mol_idx, end_idx)].add(key)
 
@@ -226,7 +259,8 @@ class MCSReactionMapper(ReactionMapper):
         r_fps: Dict[EnvKey, Fingerprint],
         p_fps: Dict[EnvKey, Fingerprint],
         radius: int,
-        min_radius_to_anchor_new_mapping: int = 2,
+        min_radius_to_anchor_new_mapping: int = 3,
+        require_anchor: bool = False,
     ) -> List[Tuple[EnvKey, EnvKey]]:
         """
         Find reactant–product environment pairs with identical fingerprints at a
@@ -242,15 +276,24 @@ class MCSReactionMapper(ReactionMapper):
             min_radius_to_anchor_new_mapping (int): Below this radius, only
                 match environments that already contain at least one mapped
                 atom (i.e. at least one atom-map number ≠ 0).
+            require_anchor (bool): If True, only match environments that
+                contain at least one already-mapped atom, regardless of
+                radius.  Used during the extend phase to force anchored-only
+                matching at every radius level.
 
         Returns:
             List[Tuple[EnvKey, EnvKey]]: Pairs of
                 ``(reactant_key, product_key)`` whose fingerprints are equal.
         """
-        need_mapped_check = radius < min_radius_to_anchor_new_mapping
+        need_mapped_check = (
+            require_anchor or radius < min_radius_to_anchor_new_mapping - 1
+        )
 
         def _has_mapped_atom(fp: Fingerprint) -> bool:
-            for atom_begin, _, atom_end in fp:
+            for entry in fp:
+                # entry: (begin_dist, begin_atom_props, bond_props, end_dist, end_atom_props)
+                atom_begin = entry[1]
+                atom_end = entry[4]
                 if atom_begin[-1] != 0 or atom_end[-1] != 0:
                     return True
             return False
@@ -329,18 +372,16 @@ class MCSReactionMapper(ReactionMapper):
         r_a2e: Dict[Tuple[int, int], Set[EnvKey]] = defaultdict(set)
         p_a2e: Dict[Tuple[int, int], Set[EnvKey]] = defaultdict(set)
 
+        # Atoms whose environment at a previous radius had no cross-side
+        # fingerprint match and can be safely skipped at all subsequent radii.
+        r_skip: Set[Tuple[int, int]] = set()
+        p_skip: Set[Tuple[int, int]] = set()
+
         final_radius = min_radius
         for radius in range(min_radius, max_radius):
             final_radius = radius
 
-            self._build_skeletons_at_radius(
-                reactant_mols,
-                r_caches,
-                radius,
-                r_skeletons,
-                r_fps,
-                r_a2e,
-            )
+            # Products first, then reactants.
             self._build_skeletons_at_radius(
                 product_mols,
                 p_caches,
@@ -348,6 +389,16 @@ class MCSReactionMapper(ReactionMapper):
                 p_skeletons,
                 p_fps,
                 p_a2e,
+                skip_atoms=p_skip,
+            )
+            self._build_skeletons_at_radius(
+                reactant_mols,
+                r_caches,
+                radius,
+                r_skeletons,
+                r_fps,
+                r_a2e,
+                skip_atoms=r_skip,
             )
 
             matches = self._find_matches(
@@ -362,6 +413,24 @@ class MCSReactionMapper(ReactionMapper):
             if len(matches) == 0:
                 final_radius = radius - 1
                 break
+
+            # Prune atoms whose fingerprint at this radius had no match on
+            # the other side — they cannot match at any higher radius either.
+            p_fp_set: Set[Fingerprint] = set()
+            r_fp_set: Set[Fingerprint] = set()
+            for key, fp in p_fps.items():
+                if key[2] == radius and fp:
+                    p_fp_set.add(fp)
+            for key, fp in r_fps.items():
+                if key[2] == radius and fp:
+                    r_fp_set.add(fp)
+
+            for key, fp in r_fps.items():
+                if key[2] == radius and (not fp or fp not in p_fp_set):
+                    r_skip.add((key[0], key[1]))
+            for key, fp in p_fps.items():
+                if key[2] == radius and (not fp or fp not in r_fp_set):
+                    p_skip.add((key[0], key[1]))
 
         return r_skeletons, p_skeletons, r_fps, p_fps, r_a2e, p_a2e, final_radius
 
@@ -417,6 +486,7 @@ class MCSReactionMapper(ReactionMapper):
         p_fps: Dict[EnvKey, Fingerprint],
         r_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
         p_atom_to_entries: Dict[Tuple[int, int], Set[EnvKey]],
+        product_atom_source: Dict[Tuple[int, int], int],
         atom_map_num: int,
     ) -> int:
         """
@@ -426,6 +496,10 @@ class MCSReactionMapper(ReactionMapper):
         Updates molecule objects, property caches, and fingerprints in place.
         Deletes skeleton / fingerprint entries whose root is the newly mapped
         atom (at all radii) so they cannot match again.
+
+        Also enforces adjacency consistency: a mapping is rejected if the
+        product atom has an already-mapped neighbor whose mapping originated
+        from a different reactant molecule.
 
         Args:
             r_key (EnvKey): Reactant environment key ``(mol_idx, atom_idx, radius)``.
@@ -442,6 +516,10 @@ class MCSReactionMapper(ReactionMapper):
                 reverse index.
             p_atom_to_entries (Dict[Tuple[int, int], Set[EnvKey]]): Product
                 reverse index.
+            product_atom_source (Dict[Tuple[int, int], int]): Mapping from
+                ``(product_mol_idx, product_atom_idx)`` to the reactant
+                molecule index that the atom was mapped from.  Updated in
+                place on successful assignment.
             atom_map_num (int): The atom-map number to assign.
 
         Returns:
@@ -451,19 +529,27 @@ class MCSReactionMapper(ReactionMapper):
         r_mol_idx, r_atom_idx, _ = r_key
         p_mol_idx, p_atom_idx, _ = p_key
 
-        # Skip if the reactant root atom is already mapped
+        # Skip if either root atom is already mapped. Mapping must be assigned
+        # atomically to both sides to avoid creating a one-sided mapping state
+        # that can prevent downstream anchored matching.
         if reactant_mols[r_mol_idx].GetAtomWithIdx(r_atom_idx).GetAtomMapNum() != 0:
             return atom_map_num
-
-        # Assign on reactant mol
-        reactant_mols[r_mol_idx].GetAtomWithIdx(r_atom_idx).SetAtomMapNum(atom_map_num)
-
-        # Skip if the product root atom is already mapped
-        # (reactant mol was already modified — matches original behaviour)
         if product_mols[p_mol_idx].GetAtomWithIdx(p_atom_idx).GetAtomMapNum() != 0:
             return atom_map_num
 
-        # Assign on product mol
+        # Adjacency consistency: reject if any already-mapped neighbor of the
+        # product atom was mapped from a different reactant molecule.
+        p_atom = product_mols[p_mol_idx].GetAtomWithIdx(p_atom_idx)
+        for nb in p_atom.GetNeighbors():
+            nb_key = (p_mol_idx, nb.GetIdx())
+            if (
+                nb_key in product_atom_source
+                and product_atom_source[nb_key] != r_mol_idx
+            ):
+                return atom_map_num
+
+        # Assign on both molecules
+        reactant_mols[r_mol_idx].GetAtomWithIdx(r_atom_idx).SetAtomMapNum(atom_map_num)
         product_mols[p_mol_idx].GetAtomWithIdx(p_atom_idx).SetAtomMapNum(atom_map_num)
 
         # Update caches
@@ -497,6 +583,8 @@ class MCSReactionMapper(ReactionMapper):
             p_atom_to_entries,
         )
 
+        product_atom_source[(p_mol_idx, p_atom_idx)] = r_mol_idx
+
         return atom_map_num + 1
 
     def _assign_atom_map_nums(
@@ -515,8 +603,19 @@ class MCSReactionMapper(ReactionMapper):
         min_radius_to_anchor_new_mapping: int,
     ) -> Tuple[List[Chem.Mol], List[Chem.Mol]]:
         """
-        Walk from *final_radius* down to 1, assigning atom-map numbers to
-        matched reactant–product pairs at each level.
+        Assign atom-map numbers using an anchor-extend strategy.
+
+        The algorithm alternates between two phases:
+
+        1. **Extend phase** — scan all radii (high to low), only matching
+           environments that contain at least one already-mapped atom.  Repeat
+           the full sweep until no more anchored matches are found.
+        2. **New-anchor phase** — find one unanchored match at the highest
+           feasible radius (>= *min_radius_to_anchor_new_mapping*) and assign
+           it.  Return to the extend phase.
+
+        This ensures that each anchor site is fully propagated before a new
+        one is created, preventing gaps caused by split-source mapping.
 
         Args:
             reactant_mols (List[Chem.Mol]): Reactant molecule objects.
@@ -540,18 +639,27 @@ class MCSReactionMapper(ReactionMapper):
                 product molecule lists with atom-map numbers assigned.
         """
         atom_map_num = 1
-        for radius in range(final_radius, 0, -1):
-            matches = self._find_matches(
-                r_fps,
-                p_fps,
-                radius,
-                min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
-            )
-            num_matches = len(matches)
-            for _ in range(num_matches):
+        product_atom_source: Dict[Tuple[int, int], int] = {}
+
+        def _try_assign_first_viable(
+            matches: List[Tuple[EnvKey, EnvKey]],
+        ) -> bool:
+            """
+            Attempt to assign the first viable match from *matches*.
+
+            Args:
+                matches (List[Tuple[EnvKey, EnvKey]]): Candidate
+                    reactant-product environment pairs.
+
+            Returns:
+                bool: True if a mapping was successfully assigned.
+            """
+            nonlocal atom_map_num
+            for r_key, p_key in matches:
+                prev = atom_map_num
                 atom_map_num = self._assign_single_mapping(
-                    matches[0][0],
-                    matches[0][1],
+                    r_key,
+                    p_key,
                     reactant_mols,
                     product_mols,
                     r_caches,
@@ -562,15 +670,49 @@ class MCSReactionMapper(ReactionMapper):
                     p_fps,
                     r_atom_to_entries,
                     p_atom_to_entries,
+                    product_atom_source,
                     atom_map_num,
                 )
+                if atom_map_num > prev:
+                    return True
+            return False
+
+        while True:
+            # --- Extend phase: propagate from existing anchors ---
+            extended = True
+            while extended:
+                extended = False
+                for radius in range(final_radius, 0, -1):
+                    any_at_radius = True
+                    while any_at_radius:
+                        any_at_radius = False
+                        matches = self._find_matches(
+                            r_fps,
+                            p_fps,
+                            radius,
+                            min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
+                            require_anchor=True,
+                        )
+                        if matches and _try_assign_first_viable(matches):
+                            any_at_radius = True
+                            extended = True
+
+            # --- New-anchor phase: create one new unanchored mapping ---
+            new_anchor = False
+            for radius in range(final_radius, 0, -1):
                 matches = self._find_matches(
                     r_fps,
                     p_fps,
                     radius,
+                    min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
+                    require_anchor=False,
                 )
-                if not matches:
+                if matches and _try_assign_first_viable(matches):
+                    new_anchor = True
                     break
+
+            if not new_anchor:
+                break
 
         return reactant_mols, product_mols
 
@@ -708,5 +850,11 @@ class MCSReactionMapper(ReactionMapper):
         """
         mapped_reactions = []
         for reaction in reaction_list:
-            mapped_reactions.append(self.map_reaction(reaction))
+            mapped_reactions.append(
+                self.map_reaction(
+                    reaction,
+                    min_radius=min_radius,
+                    min_radius_to_anchor_new_mapping=min_radius_to_anchor_new_mapping,
+                )
+            )
         return mapped_reactions

@@ -82,3 +82,22 @@ def test_map_reactions_returns_results_in_same_order():
     assert results[0]["original_smiles"] == rxns[0]
     assert results[1]["original_smiles"] == rxns[1]
     assert results[2]["original_smiles"] == rxns[2]
+
+
+def test_map_reaction_branch_point_halogen_is_mapped_when_bonded_atom_is_mapped():
+    mapper = MCSReactionMapper(mapper_name="test")
+
+    rxn = "F.Nc1nc(Br)c(Br)cc1Br.O=N[O-].[Na+].c1ccncc1>>Fc1nc(Br)c(Br)cc1Br"
+    res = mapper.map_reaction(rxn)
+    mapped = res["selected_mapping"]
+    assert mapped
+
+    reactants, products = _split_rxn(mapped)
+    assert len(products) == 1
+
+    prod_mol = Chem.MolFromSmiles(products[0])
+    assert prod_mol is not None
+
+    br_atoms = [a for a in prod_mol.GetAtoms() if a.GetSymbol() == "Br"]
+    assert br_atoms
+    assert all(a.GetAtomMapNum() != 0 for a in br_atoms)

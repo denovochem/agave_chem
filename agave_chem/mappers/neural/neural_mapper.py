@@ -633,7 +633,7 @@ class NeuralReactionMapper(ReactionMapper):
         products_to_reactants_attn = out[
             reactants_start_index : reactants_end_index + 1, products_start_index:
         ].T  # products to reactants attention, transposed so indices align
-        avg_attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
+        avg_attn = reactants_to_products_attn
         return avg_attn
 
     def remove_non_atom_rows_and_columns(

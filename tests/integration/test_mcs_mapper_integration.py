@@ -20,7 +20,7 @@ def _iter_rxn_smiles_from_file(path: Path) -> List[str]:
     return rxns
 
 
-def _atom_signature(atom: Chem.Atom) -> Tuple[int, int, int, int, int, int, int]:
+def _atom_signature(atom: Chem.Atom) -> Tuple[int, int, int, int, int, int]:
     return (
         atom.GetAtomicNum(),
         atom.GetFormalCharge(),
@@ -28,14 +28,13 @@ def _atom_signature(atom: Chem.Atom) -> Tuple[int, int, int, int, int, int, int]
         1 if atom.IsInRing() else 0,
         atom.GetTotalNumHs(),
         atom.GetDegree(),
-        int(atom.GetChiralTag()),
     )
 
 
 def _mapping_dict_from_side(
     side_smiles: str,
-) -> Dict[int, tuple[int, int, int, int, int, int, int]]:
-    mapping: Dict[int, tuple[int, int, int, int, int, int, int]] = {}
+) -> Dict[int, tuple[int, int, int, int, int, int]]:
+    mapping: Dict[int, tuple[int, int, int, int, int, int]] = {}
     for frag in side_smiles.split("."):
         mol = Chem.MolFromSmiles(frag)
         assert mol is not None
@@ -98,5 +97,6 @@ def test_mcs_mapper_uspto_1k_reactions_sanity() -> None:
     assert num_mapped > 0
 
 
+## TODO: potentially add rdkit MCS check as well
 if __name__ == "__main__":
     test_mcs_mapper_uspto_1k_reactions_sanity()

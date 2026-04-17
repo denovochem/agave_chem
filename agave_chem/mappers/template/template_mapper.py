@@ -116,6 +116,18 @@ class TemplateReactionMapper(ReactionMapper):
 
         initialized_smirks_patterns: List[InitializedSmirksPattern] = []
         for pattern in smirks_patterns:
+            pattern_priority = pattern.get(
+                "priority", {"priority_class": None, "priority": None}
+            )
+
+            pattern_priority_tuple = (
+                pattern_priority.get("priority_class", 0),
+                pattern_priority.get("priority", 0),
+            )
+
+            if None in pattern_priority_tuple:
+                pattern_priority_tuple = (0, 0)
+
             for child_pattern in pattern.get("child_smirks", []):
                 reactants_smarts, products_smarts, rdc_rxn = (
                     self._initialize_template_data_from_child_patterns(child_pattern)
@@ -140,6 +152,7 @@ class TemplateReactionMapper(ReactionMapper):
                         parent_smirks=str(pattern.get("smirks", "")),
                         child_smirks=str(child_pattern),
                         template_name=str(pattern.get("name", "")),
+                        priority=pattern_priority_tuple,
                     )
                 )
 
@@ -276,16 +289,19 @@ class TemplateReactionMapper(ReactionMapper):
         """
         fragment_count_dict = {}
         for fragment_str in smiles.split("."):
-            if fragment_str not in fragment_count_dict:
-                fragment_count_dict[fragment_str] = 1
+            canonical_fragment_str = Chem.MolToSmiles(Chem.MolFromSmiles(fragment_str))
+            if canonical_fragment_str is None:
+                continue
+            if canonical_fragment_str not in fragment_count_dict:
+                fragment_count_dict[canonical_fragment_str] = 1
             else:
-                fragment_count_dict[fragment_str] += 1
+                fragment_count_dict[canonical_fragment_str] += 1
 
         return fragment_count_dict
 
     def _process_templates(
         self, reaction_smiles_data: ReactionData
-    ) -> Dict[str, InitializedSmirksPattern]:
+    ) -> Dict[str, List[InitializedSmirksPattern]]:
         """
         Apply template SMIRKS patterns to a reaction and collect mapped outcomes.
 
@@ -298,7 +314,7 @@ class TemplateReactionMapper(ReactionMapper):
             Dict[str, List]: A mapping from mapped outcome SMILES to a list of
             applied SMIRKS patterns.
         """
-        mapped_outcomes_smirks_dict: Dict[str, InitializedSmirksPattern] = {}
+        mapped_outcomes_smirks_dict: Dict[str, List[InitializedSmirksPattern]] = {}
 
         atom_mapped_product = self._get_mapped_product(reaction_smiles_data)
         outcomes_and_applied_smirks = self._apply_templates(reaction_smiles_data)
@@ -309,7 +325,12 @@ class TemplateReactionMapper(ReactionMapper):
                 reaction_smiles_data,
                 atom_mapped_product,
             )
-            mapped_outcomes_smirks_dict.update(result)
+
+            for mapped_smiles, smirks_list in result.items():
+                if mapped_smiles not in mapped_outcomes_smirks_dict:
+                    mapped_outcomes_smirks_dict[mapped_smiles] = smirks_list
+                else:
+                    mapped_outcomes_smirks_dict[mapped_smiles].extend(smirks_list)
 
         return mapped_outcomes_smirks_dict
 
@@ -370,6 +391,7 @@ class TemplateReactionMapper(ReactionMapper):
             reactants_smarts = template["reactants_smarts"]
             rdc_rxn = template["rdc_rxn"]
 
+            ## TODO: THESE SHOULD LOOK AT TAUTOMERS FOR MATCHES TOO
             product_mol_has_substruct_match = all(
                 any(
                     product_mol.HasSubstructMatch(products_smarts_fragment)
@@ -543,7 +565,7 @@ class TemplateReactionMapper(ReactionMapper):
         outcome_and_applied_smirk: AppliedSmirkData,
         reaction_smiles_data: ReactionData,
         atom_mapped_product: str,
-    ) -> Dict[str, InitializedSmirksPattern]:
+    ) -> Dict[str, List[InitializedSmirksPattern]]:
         """ """
         mapped_outcome = outcome_and_applied_smirk.get("outcome_mapped_smiles")
         applied_smirk = outcome_and_applied_smirk.get("applied_smirk")
@@ -582,13 +604,12 @@ class TemplateReactionMapper(ReactionMapper):
 
         spectators = []
         for ele, ele_count in fragment_count_dict.items():
-            canonicalized_ele = canonicalize_smiles(ele, canonicalize_tautomer=False)
             num_occurrences_mapped = unmapped_canonical_smiles_for_mapped_smiles.count(
-                canonicalized_ele
+                ele
             )
             dif_num_occurrences = ele_count - num_occurrences_mapped
             if dif_num_occurrences > 0:
-                spectators.extend([canonicalized_ele] * dif_num_occurrences)
+                spectators.extend([ele] * dif_num_occurrences)
 
         reactants = mapped_outcome.split(".")
         reactants_and_spectators = reactants + spectators
@@ -597,7 +618,7 @@ class TemplateReactionMapper(ReactionMapper):
             ".".join(reactants_and_spectators) + ">>" + atom_mapped_product
         )
 
-        return {finalized_reaction_smiles: applied_smirk}
+        return {finalized_reaction_smiles: [applied_smirk]}
 
     def _find_missing_fragments(
         self, mapped_outcome: str, unmapped_reactants: Dict[str, List[str]]
@@ -699,7 +720,7 @@ class TemplateReactionMapper(ReactionMapper):
         fragment_mapped_dict = {}
         for _, mapped_reactant_fragment in missing_fragments:
             fragment_found = False
-            for _, tautomer_list in unmapped_reactants.items():
+            for orig_tautomer, tautomer_list in unmapped_reactants.items():
                 for tautomer in tautomer_list:
                     if tautomer in unmapped_found_fragments:
                         continue
@@ -708,6 +729,25 @@ class TemplateReactionMapper(ReactionMapper):
 
                     if not out:
                         continue
+
+                    # Is this even needed if we just take all possible fragments in _handle_missing_fragments?
+                    if len(tautomer_list) > 1:
+                        mapped_enumerated_tautomers = list(
+                            self._tautomer_enumerator.Enumerate(Chem.MolFromSmiles(out))
+                        )
+                        for mapped_enumerated_tautomer in mapped_enumerated_tautomers:
+                            copy_mapped_enumerated_tautomer = Chem.Mol(
+                                mapped_enumerated_tautomer
+                            )
+                            [
+                                atom.SetAtomMapNum(0)
+                                for atom in copy_mapped_enumerated_tautomer.GetAtoms()
+                            ]
+                            if Chem.MolToSmiles(
+                                copy_mapped_enumerated_tautomer
+                            ) == Chem.MolToSmiles(Chem.MolFromSmiles(orig_tautomer)):
+                                out = Chem.MolToSmiles(mapped_enumerated_tautomer)
+                                break
 
                     fragment_found = True
 
@@ -741,6 +781,9 @@ class TemplateReactionMapper(ReactionMapper):
 
         match_indices = mol.GetSubstructMatches(pattern)
 
+        if not match_indices:
+            return None
+
         symmetry_class = {
             k: v
             for k, v in enumerate(
@@ -754,9 +797,6 @@ class TemplateReactionMapper(ReactionMapper):
                 for ele1, ele2 in zip(match_1, match_2):
                     if symmetry_class[ele1] != symmetry_class[ele2]:
                         symmetric = False
-
-        if not match_indices:
-            return None
 
         if len(match_indices) != 1 and not symmetric:
             return None
@@ -842,8 +882,28 @@ class TemplateReactionMapper(ReactionMapper):
         """
         selected_mapping = ""
         max_num_mapped_product_atoms = 0
+        highest_priority_class = (0, 0)
         for canonicalized_mapping, possible_mappings in possible_outcomes.items():
             for possible_mapping in possible_mappings:
+                mapping_priority = possible_mapping.get("priority", (0, 0))
+                if highest_priority_class[0] != 0 and mapping_priority[0] == 0:
+                    continue
+                if (
+                    mapping_priority[0] != 0
+                    and mapping_priority[0] > highest_priority_class[0]
+                ):
+                    highest_priority_class = mapping_priority
+                    selected_mapping = canonicalized_mapping
+                    continue
+                elif (
+                    mapping_priority[0] != 0
+                    and mapping_priority[0] == highest_priority_class[0]
+                    and mapping_priority[1] > highest_priority_class[1]
+                ):
+                    highest_priority_class = mapping_priority
+                    selected_mapping = canonicalized_mapping
+                    continue
+
                 mapping_num_fragments = len(possible_mapping["reactants_smarts"])
                 mapping_num_atoms = mapping_num_fragments
                 for mol in possible_mapping["reactants_smarts"]:
@@ -857,7 +917,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def _post_process_mapped_outcomes(
         self,
-        mapped_outcomes_smirks_dict: Dict[str, InitializedSmirksPattern],
+        mapped_outcomes_smirks_dict: Dict[str, List[InitializedSmirksPattern]],
         canonicalized_input_smiles: str,
         original_smiles: str,
     ) -> Optional[ReactionMapperResult]:
@@ -880,12 +940,14 @@ class TemplateReactionMapper(ReactionMapper):
         """
         deduplicated_mapped_outcomes: Dict[str, List[InitializedSmirksPattern]] = {}
         for k, v in mapped_outcomes_smirks_dict.items():
+            if not k:
+                continue
             canonicalized_k = canonicalize_atom_mapping(
                 canonicalize_reaction_smiles(
                     k, canonicalize_tautomer=False, remove_mapping=False
                 )
             )
-            if not k:
+            if not canonicalized_k:
                 continue
             if (
                 canonicalize_reaction_smiles(
@@ -898,9 +960,9 @@ class TemplateReactionMapper(ReactionMapper):
                 continue
 
             if canonicalized_k not in deduplicated_mapped_outcomes:
-                deduplicated_mapped_outcomes[canonicalized_k] = [v]
+                deduplicated_mapped_outcomes[canonicalized_k] = v
             else:
-                deduplicated_mapped_outcomes[canonicalized_k].append(v)
+                deduplicated_mapped_outcomes[canonicalized_k].extend(v)
 
         if len(deduplicated_mapped_outcomes) == 0:
             return None
@@ -930,7 +992,6 @@ class TemplateReactionMapper(ReactionMapper):
 
         Args:
             reaction_smiles (str): Reaction SMILES to map.
-            return_mcs_result (bool): Whether to return the MCS mapping result.
 
         Returns:
             ReactionMapperResult: A mapping result containing the selected mapping and
@@ -942,12 +1003,13 @@ class TemplateReactionMapper(ReactionMapper):
         self._initialize_smirks_patterns()
 
         if not self._reaction_smiles_valid(reaction_smiles):
-            return self._return_default_mapping_dict(
-                reaction_smiles
-            ), self._return_default_mapping_dict(reaction_smiles)
+            return (
+                self._return_default_mapping_dict(reaction_smiles),
+                self._return_default_mapping_dict(reaction_smiles),
+            )
 
         canonicalized_reaction_smiles = canonicalize_reaction_smiles(
-            reaction_smiles, canonicalize_tautomer=True
+            reaction_smiles, canonicalize_tautomer=False
         )
 
         unmapped_product_atom_islands = {}

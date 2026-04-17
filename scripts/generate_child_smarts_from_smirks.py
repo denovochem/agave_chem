@@ -144,7 +144,7 @@ def expand_all_brackets(input_string: str) -> List[str]:
     return results
 
 
-def verify_validity_of_template(template: str) -> bool:
+def verify_validity_of_template(template: str, parent_template: str) -> bool:
     """
     Verify the validity of a template by checking for:
 
@@ -180,6 +180,7 @@ def verify_validity_of_template(template: str) -> bool:
     for mol in reactant_mols:
         for atom in mol.GetAtoms():
             if atom.GetAtomMapNum() == 0:
+                logger.warning(f"Unmapped atom in reactant: {parent_template}")
                 continue
             if atom.GetAtomMapNum() in reactant_atom_maps_and_elements:
                 logger.warning(f"Duplicate atom mapping in reactant: {template}")
@@ -195,7 +196,9 @@ def verify_validity_of_template(template: str) -> bool:
             if atom.GetAtomMapNum() in seen_product_atoms:
                 seen_product_atoms.remove(atom.GetAtomMapNum())
             else:
-                logger.warning("Mapped reactant atom(s) not present in product")
+                logger.warning(
+                    f"Mapped reactant atom(s) not present in product: {template}"
+                )
                 return False
 
     if len(seen_product_atoms) != 0:
@@ -266,7 +269,7 @@ def initialize_template_data(
                 logger.warning(f"Error converting smirks to rdchiral reaction: {e}")
                 continue
 
-            if not verify_validity_of_template(smirk):
+            if not verify_validity_of_template(smirk, original_smirk):
                 continue
 
             rdc_info.append(
@@ -338,12 +341,19 @@ if __name__ == "__main__":
                 print(f"Error converting smirks to rdchiral reaction: {e}")
                 continue
 
-            if not verify_validity_of_template(smirk):
+            if not verify_validity_of_template(smirk, default_smirk_pattern["smirks"]):
                 continue
 
             filtered_smirks_list.append(smirk)
 
         default_smirk_pattern["child_smirks"] = filtered_smirks_list
+
+        default_smirk_pattern["superclass_id"] = (
+            default_smirk_pattern["superclass_id"] or 0
+        )
+        default_smirk_pattern["class_id"] = default_smirk_pattern["class_id"] or 0
+        default_smirk_pattern["subclass_id"] = default_smirk_pattern["subclass_id"] or 0
+
         default_smirk_pattern["class_str"] = (
             f"{default_smirk_pattern['superclass_id']}.{default_smirk_pattern['class_id']}.{default_smirk_pattern['subclass_id']}"
         )
