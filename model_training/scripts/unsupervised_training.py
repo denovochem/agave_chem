@@ -1,10 +1,23 @@
 import argparse
 import os
 import random
+import sys
+from pathlib import Path
 from typing import List, Optional, Sequence
 
 from rdkit import RDLogger
-from training_scripts.albert_mapper_training import TrainingConfig, main
+
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent.parent
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from model_training.albert_mapper_training import TrainingConfig, main
+
+from agave_chem.utils.chem_utils import canonicalize_reaction_smiles  # noqa: E402
+
+RDLogger.DisableLog("rdApp.*")  # type: ignore[attr-defined]
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -117,7 +130,6 @@ def main_cli(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     os.makedirs(args.save_dir, exist_ok=True)
-    RDLogger.DisableLog("rdApp.*")
 
     rxns = _read_and_canonicalize_rxns(
         path=args.training_data_file,

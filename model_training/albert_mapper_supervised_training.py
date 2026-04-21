@@ -10,14 +10,6 @@ import torch
 from rdkit import Chem
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
-from training_scripts.albert_mapper_training import (
-    MLMConfig,
-    ModelConfig,
-    TrainingConfig,
-    apply_mlm_masking,
-    build_albert_model,
-    resolve_protected_token_ids,
-)
 from transformers import (
     AlbertForMaskedLM,
     PreTrainedTokenizer,
@@ -25,9 +17,19 @@ from transformers import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-PARENT_DIR = BASE_DIR.parent
+REPO_ROOT = BASE_DIR.parent
 
-sys.path.append(str(PARENT_DIR))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from model_training.albert_mapper_training import (
+    MLMConfig,
+    ModelConfig,
+    TrainingConfig,
+    apply_mlm_masking,
+    build_albert_model,
+    resolve_protected_token_ids,
+)
 
 from agave_chem.mappers.neural.constants import (  # noqa: E402
     smiles_token_to_id_dict,
@@ -107,7 +109,7 @@ def build_attention_target_from_mapped_rxn_smiles(
             unmapped_reactant_atom_map_num += 1
 
     reactant_symmetry_groups = group_mappings_by_symmetry(reactant_mol)
-    product_symmetry_groups = group_mappings_by_symmetry(product_mol)
+    # product_symmetry_groups = group_mappings_by_symmetry(product_mol)
 
     symmetric_atom_token_indices_to_not_sink = []
     for reactant_symmetry_group in reactant_symmetry_groups:

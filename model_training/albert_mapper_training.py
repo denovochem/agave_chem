@@ -18,9 +18,10 @@ from transformers import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-PARENT_DIR = BASE_DIR.parent
+REPO_ROOT = BASE_DIR.parent
 
-sys.path.append(str(PARENT_DIR))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from agave_chem.mappers.neural.constants import (  # noqa: E402
     smiles_token_to_id_dict,
@@ -811,5 +812,5 @@ def main(
     trainer.train()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

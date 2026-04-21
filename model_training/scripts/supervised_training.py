@@ -2,14 +2,22 @@ import argparse
 import os
 import pickle
 import random
+import sys
+from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
-from training_scripts.albert_mapper_supervised_training import (
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent.parent
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from model_training.albert_mapper_supervised_training import (
     SupervisedConfig,
     build_attention_target_from_mapped_rxn_smiles,
     main_supervised,
 )
-from training_scripts.albert_mapper_training import CustomTokenizer, TrainingConfig
+from model_training.albert_mapper_training import CustomTokenizer, TrainingConfig
 
 from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
 
