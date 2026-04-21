@@ -810,7 +810,3 @@ def main(
         val_dataloader=val_dataloader,
     )
     trainer.train()
-
-
-if __name__ == "__main__":
-    main()
