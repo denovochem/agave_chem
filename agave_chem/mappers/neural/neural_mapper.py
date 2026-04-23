@@ -33,8 +33,8 @@ class StringInfoDict(TypedDict):
 class SupervisedConfig:
     """Configuration for supervised attention alignment training."""
 
-    target_layer: int = 9  # Which layer's attention to supervise
-    target_head: int = 5  # Which head's attention to supervise
+    target_layer: int = 11  # Which layer's attention to supervise
+    target_head: int = 7  # Which head's attention to supervise
 
     # Loss weighting for multitask learning
     mlm_loss_weight: float = 1.0
@@ -46,6 +46,13 @@ class SupervisedConfig:
 
     # Dense layer config
     use_residual: bool = True  # Initialize with identity for residual learning
+
+    # Head type: "attention" for AttentionAlignmentHead, "bilinear" for BilinearMappingHead
+    head_type: str = "bilinear"
+
+    # BilinearMappingHead config (only used when head_type == "bilinear")
+    bottleneck_size: int = 64
+    use_attention_residual: bool = True
 
 
 class AttentionAlignmentHead(torch.nn.Module):
@@ -85,6 +92,85 @@ class AttentionAlignmentHead(torch.nn.Module):
         return output
 
 
+class BilinearMappingHead(torch.nn.Module):
+    """
+    Sequence-length-invariant mapping head that learns task-specific Q/K
+    projections from transformer hidden states.
+
+    Computes mapping scores as a scaled bilinear product of projected hidden
+    states, optionally combined with a learned weighted fusion of multiple
+    attention heads as a residual signal.
+
+    Args:
+        hidden_size (int): Dimensionality of the transformer hidden states.
+        bottleneck_size (int): Dimensionality of the learned Q/K projections.
+        num_attention_heads (int): Number of attention heads in the transformer
+            (used for multi-head fusion when use_attention_residual is True).
+        use_attention_residual (bool): If True, combine bilinear scores with a
+            learned weighted average of all attention heads at the target layer.
+
+    Note:
+        When use_attention_residual is True, the bilinear contribution is gated
+        by a learned scalar initialized to 0.0. This means the model starts
+        from the pre-trained multi-head-fused attention behavior and gradually
+        learns corrections via the bilinear pathway during supervised training.
+    """
+
+    def __init__(
+        self,
+        hidden_size: int,
+        bottleneck_size: int = 64,
+        num_attention_heads: int = 8,
+        use_attention_residual: bool = True,
+    ):
+        super().__init__()
+        self.use_attention_residual = use_attention_residual
+        self.scale = bottleneck_size**-0.5
+
+        self.query_proj = torch.nn.Linear(hidden_size, bottleneck_size, bias=False)
+        self.key_proj = torch.nn.Linear(hidden_size, bottleneck_size, bias=False)
+
+        if use_attention_residual:
+            # Learnable weights over all heads (uniform after softmax at init)
+            self.head_weights = torch.nn.Parameter(torch.zeros(num_attention_heads))
+            # Gate for bilinear scores; starts at 0 so initial behaviour
+            # matches the fused pre-trained attention.
+            self.bilinear_gate = torch.nn.Parameter(torch.tensor(0.0))
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        all_head_attentions: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Compute mapping logits from hidden states and optional multi-head attention.
+
+        Args:
+            hidden_states (torch.Tensor): Hidden states from the target
+                transformer layer, shape (B, S, hidden_size).
+            all_head_attentions (torch.Tensor | None): Attention weights from
+                all heads at the target layer, shape (B, H, S, S). Required
+                when use_attention_residual is True.
+
+        Returns:
+            torch.Tensor: Mapping logits of shape (B, S, S).
+        """
+        q = self.query_proj(hidden_states)  # (B, S, bottleneck)
+        k = self.key_proj(hidden_states)  # (B, S, bottleneck)
+        bilinear_scores = torch.bmm(q, k.transpose(1, 2)) * self.scale  # (B, S, S)
+
+        if self.use_attention_residual and all_head_attentions is not None:
+            weights = torch.softmax(self.head_weights, dim=0)  # (H,)
+            fused_attn = torch.einsum(
+                "bhij,h->bij", all_head_attentions, weights
+            )  # (B, S, S)
+            mapping_logits = fused_attn + self.bilinear_gate * bilinear_scores
+        else:
+            mapping_logits = bilinear_scores
+
+        return mapping_logits
+
+
 class AlbertWithAttentionAlignment(torch.nn.Module):
     """
     Wrapper around AlbertForMaskedLM that adds supervised attention alignment.
@@ -109,11 +195,20 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         # Enable attention output
         self.base_model.config.output_attentions = True
 
-        # Attention alignment head
-        self.attention_head = AttentionAlignmentHead(
-            seq_length=max_length,
-            use_residual=supervised_config.use_residual,
-        )
+        # Mapping head
+        if supervised_config.head_type == "bilinear":
+            self.base_model.config.output_hidden_states = True
+            self.bilinear_head = BilinearMappingHead(
+                hidden_size=self.base_model.config.hidden_size,
+                bottleneck_size=supervised_config.bottleneck_size,
+                num_attention_heads=self.base_model.config.num_attention_heads,
+                use_attention_residual=supervised_config.use_attention_residual,
+            )
+        else:
+            self.attention_head = AttentionAlignmentHead(
+                seq_length=max_length,
+                use_residual=supervised_config.use_residual,
+            )
 
         # Optionally freeze base model
         if supervised_config.freeze_base_model:
@@ -140,12 +235,14 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
                 - attention_logits: Predicted attention (B, S, S)
         """
         # Forward through base model with attention output
+        use_bilinear = self.supervised_config.head_type == "bilinear"
         outputs = self.base_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             labels=labels,
             output_attentions=True,
+            output_hidden_states=use_bilinear,
         )
 
         result = {}
@@ -155,18 +252,23 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         if mlm_loss is not None:
             result["mlm_loss"] = mlm_loss
 
-        # Extract attention from target layer/head
-        # attentions is tuple of (batch, num_heads, seq_len, seq_len) per layer
-        attentions = outputs.attentions
+        # Compute mapping logits via the appropriate head
         target_layer = self.supervised_config.target_layer
-        target_head = self.supervised_config.target_head
+        attentions = outputs.attentions
 
-        # Get attention from specified layer and head
-        layer_attention = attentions[target_layer]  # (B, H, S, S)
-        head_attention = layer_attention[:, target_head, :, :]  # (B, S, S)
+        if use_bilinear:
+            # Use output of target layer (richer than input, includes attn+FFN)
+            hidden_states = outputs.hidden_states[target_layer + 1]  # (B, S, H)
+            layer_attention = attentions[target_layer]  # (B, num_heads, S, S)
+            attention_logits = self.bilinear_head(
+                hidden_states, layer_attention
+            )  # (B, S, S)
+        else:
+            target_head = self.supervised_config.target_head
+            layer_attention = attentions[target_layer]  # (B, H, S, S)
+            head_attention = layer_attention[:, target_head, :, :]  # (B, S, S)
+            attention_logits = self.attention_head(head_attention)  # (B, S, S)
 
-        # Pass through learnable head
-        attention_logits = self.attention_head(head_attention)  # (B, S, S)
         result["attention_logits"] = attention_logits
 
         # Compute attention alignment loss
@@ -204,26 +306,15 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
 
         Args:
             logits: (B, S, S) predicted attention scores
-            targets: (B, S, S) one-hot target attention
+            targets: (B, S, S) target attention distributions (one-hot or soft)
             mask: (B, S) binary mask, 1 where loss should be computed
 
         Returns:
             Scalar loss value
         """
-        batch_size, seq_len, _ = logits.shape
-
-        # Convert one-hot targets to class indices
-        # targets: (B, S, S) -> target_indices: (B, S)
-        target_indices = targets.argmax(dim=-1)  # (B, S)
-
-        # Reshape for cross entropy: (B*S, S) and (B*S,)
-        logits_flat = logits.view(-1, seq_len)  # (B*S, S)
-        targets_flat = target_indices.view(-1)  # (B*S,)
-
-        # Compute per-position cross entropy
-        loss_per_position = torch.nn.functional.cross_entropy(
-            logits_flat, targets_flat, reduction="none"
-        )  # (B*S,)
+        # Soft cross-entropy: generalises to both one-hot and smooth targets
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)  # (B, S, S)
+        loss_per_position = -(targets * log_probs).sum(dim=-1).view(-1)  # (B*S,)
 
         # Apply mask
         if mask is not None:
@@ -249,21 +340,30 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         token_type_ids: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
+        use_bilinear = self.supervised_config.head_type == "bilinear"
         outputs = self.base_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             output_attentions=True,
+            output_hidden_states=use_bilinear,
             return_dict=True,
         )
 
+        target_layer = self.supervised_config.target_layer
         attentions = outputs.attentions
-        layer_attention = attentions[self.supervised_config.target_layer]  # (B,H,S,S)
-        head_attention = layer_attention[
-            :, self.supervised_config.target_head, :, :
-        ]  # (B,S,S)
 
-        attention_logits = self.attention_head(head_attention)  # (B,S,S)
+        if use_bilinear:
+            hidden_states = outputs.hidden_states[target_layer + 1]
+            layer_attention = attentions[target_layer]
+            attention_logits = self.bilinear_head(hidden_states, layer_attention)
+        else:
+            layer_attention = attentions[target_layer]  # (B,H,S,S)
+            head_attention = layer_attention[
+                :, self.supervised_config.target_head, :, :
+            ]  # (B,S,S)
+            attention_logits = self.attention_head(head_attention)  # (B,S,S)
+
         attention_probs = torch.softmax(attention_logits, dim=-1)  # (B,S,S)
         return attention_probs
 
@@ -938,8 +1038,8 @@ class NeuralReactionMapper(ReactionMapper):
     def map_reaction(
         self,
         rxn_smiles: str,
-        layer: int = 9,
-        head: int = 0,
+        layer: int = 11,
+        head: int = 7,
         sequence_max_length: int = 256,
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,

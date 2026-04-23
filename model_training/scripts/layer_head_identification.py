@@ -1,20 +1,31 @@
 import argparse
 import random
+import sys
+from pathlib import Path
 from typing import List, Optional, Sequence, Set, Tuple
 
 import torch
 from transformers import AlbertForMaskedLM
 
-from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent.parent
+
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
 from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
     AlbertWithAttentionAlignment,
 )
-from model_training.albert_mapper_supervised_training import (
+from model_training.albert_mapper_supervised_training import (  # noqa: E402
     SupervisedAtomMappingDataset,
     SupervisedConfig,
     evaluate_supervised_attention_loss,
 )
-from model_training.albert_mapper_training import CustomTokenizer, MLMConfig
+from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+    CustomTokenizer,
+    MLMConfig,
+)
 
 
 def _parse_int_list(values: Optional[Sequence[int]]) -> Optional[List[int]]:
@@ -88,9 +99,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Text file with one reaction per line.",
     )
 
-    parser.add_argument("--train-pct", type=float, default=0.95)
+    parser.add_argument("--train-pct", type=float, default=0.99)
     parser.add_argument("--shuffle", action="store_true")
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=42)
 
     parser.add_argument("--max-length", type=int, default=256)
 

@@ -23,7 +23,7 @@
   "output_attentions": true,
   "pad_token_id": 0,
   "tie_word_embeddings": true,
-  "transformers_version": "5.4.0",
+  "transformers_version": "5.5.4",
   "type_vocab_size": 2,
   "vocab_size": 1024
 }

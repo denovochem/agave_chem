@@ -13,9 +13,11 @@ REPO_ROOT = BASE_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training.albert_mapper_training import TrainingConfig, main
-
 from agave_chem.utils.chem_utils import canonicalize_reaction_smiles  # noqa: E402
+from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+    TrainingConfig,
+    main,
+)
 
 RDLogger.DisableLog("rdApp.*")  # type: ignore[attr-defined]
 

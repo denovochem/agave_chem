@@ -1,6 +1,5 @@
 import argparse
 import os
-import pickle
 import random
 import sys
 from pathlib import Path
@@ -12,28 +11,25 @@ REPO_ROOT = BASE_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training.albert_mapper_supervised_training import (
+from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
+from model_training.albert_mapper_supervised_training import (  # noqa: E402
     SupervisedConfig,
     build_attention_target_from_mapped_rxn_smiles,
     main_supervised,
 )
-from model_training.albert_mapper_training import CustomTokenizer, TrainingConfig
+from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+    CustomTokenizer,
+    TrainingConfig,
+)
 
-from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
 
-
-def _load_rxns_from_pickle(path: str, mapping_key: str) -> List[str]:
-    with open(path, "rb") as handle:
-        raw_data = pickle.load(handle)
-
+def _read_lines(path: str) -> List[str]:
     rxns: List[str] = []
-    for item in raw_data:
-        if isinstance(item, dict):
-            rxns.append(item[mapping_key])
-        else:
-            raise TypeError(
-                "Expected pickled data to be a sequence of dicts; got non-dict element"
-            )
+    with open(path, "r") as handle:
+        for line in handle:
+            s = line.strip()
+            if s:
+                rxns.append(s)
     return rxns
 
 
@@ -85,12 +81,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--training-data-file",
         required=True,
-        help="Pickle file containing a sequence of dicts with mapped reactions.",
-    )
-    parser.add_argument(
-        "--mapping-key",
-        default="selected_mapping",
-        help='Key in each pickle dict to extract the mapped reaction string (default: "selected_mapping").',
+        help="Text file with one mapped reaction SMILES per line.",
     )
     parser.add_argument(
         "--save-dir",
@@ -107,7 +98,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--logging-steps", type=int, default=100)
     parser.add_argument("--seed", type=int, default=42)
 
-    parser.add_argument("--train-pct", type=float, default=0.95)
+    parser.add_argument("--train-pct", type=float, default=0.99)
     parser.add_argument("--shuffle", action="store_true")
 
     parser.add_argument(
@@ -132,7 +123,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     os.makedirs(args.save_dir, exist_ok=True)
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
-    rxns = _load_rxns_from_pickle(args.training_data_file, mapping_key=args.mapping_key)
+    rxns = _read_lines(args.training_data_file)
     rxns_train, rxns_val = _split_data(
         rxns=rxns,
         train_pct=args.train_pct,

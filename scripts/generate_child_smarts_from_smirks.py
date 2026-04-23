@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from rdchiral import main as rdc
 from rdkit import Chem
 
-from agave_chem.mappers.types import InitializedSmirksPattern, SmirksPattern
 from agave_chem.utils.logging_config import logger
 
 
@@ -206,89 +205,6 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
         return False
 
     return True
-
-
-def initialize_template_data(
-    named_reactions: List[SmirksPattern],
-) -> List[InitializedSmirksPattern]:
-    """
-    Initialize reaction template data by processing SMIRKS patterns from named reactions.
-
-    This function takes a list of named reactions, reverses their SMIRKS patterns,
-    expands them recursively, and creates RDChiral reaction objects for further processing.
-
-    Args:
-        named_reactions (list): List of dictionaries containing named reaction information.
-                                Each dictionary should have a 'smirks' key.
-
-    Returns:
-        list: List of lists, where each inner list contains:
-                [0] - List of product SMARTS molecules
-                [1] - List of reactant SMARTS molecules
-                [2] - RDChiral reaction object
-                [3] - Parent SMIRKS
-                [4] - Child SMIRKS
-    """
-    all_smirks: Dict[str, List[str]] = {}
-    for reaction in named_reactions:
-        smirks_list = []
-        smirks = (
-            reaction["smirks"].split(">>")[1] + ">>" + reaction["smirks"].split(">>")[0]
-        )
-
-        if len(expand_all_brackets(smirks)) < 100:
-            smirks_list.extend(expand_all_brackets(smirks))
-
-        if smirks in all_smirks:
-            existing_patterns = all_smirks[smirks]
-            existing_patterns.extend(smirks_list)
-            all_smirks[smirks] = sorted(list(set(existing_patterns)))
-        else:
-            all_smirks[smirks] = sorted(list(set(smirks_list)))
-
-    rdc_info = []
-    for original_smirk, expanded_smirk_list in all_smirks.items():
-        for smirk in expanded_smirk_list:
-            products_smarts = [
-                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[0].split(".")
-            ]
-
-            if None in products_smarts:
-                continue
-
-            reactants_smarts = [
-                Chem.MolFromSmarts(smarts) for smarts in smirk.split(">>")[1].split(".")
-            ]
-
-            if None in reactants_smarts:
-                continue
-
-            try:
-                rdc_rxn = rdc.rdchiralReaction(smirk)
-            except Exception as e:
-                logger.warning(f"Error converting smirks to rdchiral reaction: {e}")
-                continue
-
-            if not verify_validity_of_template(smirk, original_smirk):
-                continue
-
-            rdc_info.append(
-                InitializedSmirksPattern(
-                    name=str(reaction["name"]),
-                    products_smarts=products_smarts,
-                    reactants_smarts=reactants_smarts,
-                    rdc_rxn=rdc_rxn,
-                    parent_smirks=str(original_smirk),
-                    child_smirks=str(smirk),
-                    template_name=str(reaction["name"]),
-                    superclass_id=str(reaction["superclass_id"]),
-                    class_id=str(reaction["class_id"]),
-                    subclass_id=str(reaction["subclass_id"]),
-                    class_str=f"{reaction['superclass_id']}.{reaction['class_id']}.{reaction['subclass_id']}",
-                )
-            )
-
-    return rdc_info
 
 
 def class_str_key(d: Dict[str, Any]) -> Tuple[int, ...]:

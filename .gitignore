@@ -83,7 +83,7 @@
 !examples/example_notebook.ipynb
 
 !model_training/
-!model_training/albert_mapper_training.py
+!model_training/albert_mapper_unuspervised_training.py
 !model_training/albert_mapper_supervised_training.py
 !model_training/scripts/
 !model_training/scripts/unsupervised_training.py

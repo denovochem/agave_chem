@@ -5,7 +5,7 @@ This module provides comprehensive scoring metrics for atom-to-atom
 mappings based on the criteria used in RDTool.
 """
 
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, List, Set, Tuple
 
 from rdkit import Chem
 
@@ -103,27 +103,106 @@ class MappingScorer:
             "ring_changes": ring_weight,
         }
 
-    def score_mapping(
-        self,
-        reactants: List[Chem.Mol],
-        products: List[Chem.Mol],
-        mapping: FrozenSet[AtomMapping],
-        bond_changes: Optional[List[BondChange]] = None,
-    ) -> MappingScore:
+    def _parse_mapped_reaction_smiles(
+        self, atom_mapped_rxn_smiles: str
+    ) -> Tuple[List[Chem.Mol], List[Chem.Mol], FrozenSet[AtomMapping]]:
         """
-        Compute comprehensive score for a mapping.
+        Parse an atom-mapped reaction SMILES into reactants, products, and atom mappings.
 
         Args:
-            reactants: List of reactant molecules
-            products: List of product molecules
-            mapping: Set of atom mappings
-            bond_changes: Pre-computed bond changes (optional)
+            atom_mapped_rxn_smiles: Atom-mapped reaction SMILES string
+                (e.g., "[CH3:1][OH:2]>>[CH3:1][O:2][H:3]")
+
+        Returns:
+            Tuple of (reactant_mols, product_mols, atom_mapping_set)
+
+        Raises:
+            ValueError: If the SMILES is invalid, contains duplicate map numbers,
+                or a mapped reactant atom has no corresponding product atom.
+        """
+        parts = atom_mapped_rxn_smiles.strip().split(">>")
+        if len(parts) != 2:
+            raise ValueError(f"Invalid reaction SMILES: {atom_mapped_rxn_smiles}")
+
+        reactant_smiles_list = [s for s in parts[0].split(".") if s]
+        product_smiles_list = [s for s in parts[1].split(".") if s]
+
+        reactants = [Chem.MolFromSmiles(s) for s in reactant_smiles_list]
+        products = [Chem.MolFromSmiles(s) for s in product_smiles_list]
+
+        for i, mol in enumerate(reactants):
+            if mol is None:
+                raise ValueError(
+                    f"Could not parse reactant SMILES: {reactant_smiles_list[i]}"
+                )
+        for i, mol in enumerate(products):
+            if mol is None:
+                raise ValueError(
+                    f"Could not parse product SMILES: {product_smiles_list[i]}"
+                )
+
+        # Build map number -> (mol_idx, atom_idx) for reactants
+        reactant_map_dict: Dict[int, Tuple[int, int]] = {}
+        for mol_idx, mol in enumerate(reactants):
+            for atom in mol.GetAtoms():
+                map_num = atom.GetAtomMapNum()
+                if map_num > 0:
+                    if map_num in reactant_map_dict:
+                        raise ValueError(
+                            f"Duplicate atom map number {map_num} in reactants"
+                        )
+                    reactant_map_dict[map_num] = (mol_idx, atom.GetIdx())
+
+        # Build map number -> (mol_idx, atom_idx) for products
+        product_map_dict: Dict[int, Tuple[int, int]] = {}
+        for mol_idx, mol in enumerate(products):
+            for atom in mol.GetAtoms():
+                map_num = atom.GetAtomMapNum()
+                if map_num > 0:
+                    if map_num in product_map_dict:
+                        raise ValueError(
+                            f"Duplicate atom map number {map_num} in products"
+                        )
+                    product_map_dict[map_num] = (mol_idx, atom.GetIdx())
+
+        # Create mappings by matching map numbers
+        mapping_set: Set[AtomMapping] = set()
+        for map_num, (r_mol_idx, r_atom_idx) in reactant_map_dict.items():
+            if map_num not in product_map_dict:
+                continue
+                # raise ValueError(
+                #     f"Mapped reactant atom {map_num} not found in products"
+                # )
+            p_mol_idx, p_atom_idx = product_map_dict[map_num]
+            mapping_set.add(
+                AtomMapping(
+                    reactant_mol_idx=r_mol_idx,
+                    reactant_atom_idx=r_atom_idx,
+                    product_mol_idx=p_mol_idx,
+                    product_atom_idx=p_atom_idx,
+                )
+            )
+
+        return reactants, products, frozenset(mapping_set)
+
+    def score_mapping(
+        self,
+        atom_mapped_rxn_smiles: str,
+    ) -> MappingScore:
+        """
+        Compute comprehensive score for an atom-mapped reaction SMILES.
+
+        Args:
+            atom_mapped_rxn_smiles: Atom-mapped reaction SMILES string
+                (e.g., "[CH3:1][OH:2]>>[CH3:1][O:2][H:3]")
 
         Returns:
             MappingScore object with all metrics
         """
-        if bond_changes is None:
-            bond_changes = self.compute_bond_changes(reactants, products, mapping)
+        reactants, products, mapping = self._parse_mapped_reaction_smiles(
+            atom_mapped_rxn_smiles
+        )
+        bond_changes = self.compute_bond_changes(reactants, products, mapping)
 
         # Count bond changes by type
         num_formed = sum(

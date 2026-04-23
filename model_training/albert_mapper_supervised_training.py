@@ -22,15 +22,6 @@ REPO_ROOT = BASE_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training.albert_mapper_training import (
-    MLMConfig,
-    ModelConfig,
-    TrainingConfig,
-    apply_mlm_masking,
-    build_albert_model,
-    resolve_protected_token_ids,
-)
-
 from agave_chem.mappers.neural.constants import (  # noqa: E402
     smiles_token_to_id_dict,
     token_atom_identity_dict,
@@ -43,6 +34,14 @@ from agave_chem.mappers.neural.tokenizer import CustomTokenizer  # noqa: E402
 from agave_chem.utils.chem_utils import (  # noqa: E402
     randomize_reaction_smiles,
     remove_reaction_smiles_atom_mapping,
+)
+from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+    MLMConfig,
+    ModelConfig,
+    TrainingConfig,
+    apply_mlm_masking,
+    build_albert_model,
+    resolve_protected_token_ids,
 )
 
 # ============================================================
@@ -78,6 +77,7 @@ def build_attention_target_from_mapped_rxn_smiles(
     token_atom_identity_dict: Optional[Dict[str, int]] = None,
     randomize_mapped_rxn_smiles: bool = True,
     attn_sink_non_mapped_atoms: bool = True,
+    smooth_symmetric_targets: bool = False,
 ) -> Tuple[np.ndarray, str]:
 
     if token_atom_identity_dict is None:
@@ -109,7 +109,7 @@ def build_attention_target_from_mapped_rxn_smiles(
             unmapped_reactant_atom_map_num += 1
 
     reactant_symmetry_groups = group_mappings_by_symmetry(reactant_mol)
-    # product_symmetry_groups = group_mappings_by_symmetry(product_mol)
+    product_symmetry_groups = group_mappings_by_symmetry(product_mol)
 
     symmetric_atom_token_indices_to_not_sink = []
     for reactant_symmetry_group in reactant_symmetry_groups:
@@ -132,6 +132,7 @@ def build_attention_target_from_mapped_rxn_smiles(
 
     pattern = r":(\d+)\]$"
     matching_tokens_dict: dict[str, list[int]] = {}
+    token_index_to_mapnum: dict[int, int] = {}
 
     non_atom_token_indices = []
     atom_token_indices_to_sink = []
@@ -144,6 +145,7 @@ def build_attention_target_from_mapped_rxn_smiles(
         key = m.group()  # e.g. ":12]"
         matching_tokens_dict.setdefault(key, []).append(i)
         mapnum = int(m.group()[1:-1])
+        token_index_to_mapnum[i] = mapnum
         if (
             mapnum >= 600
             and mapnum <= 800
@@ -172,8 +174,62 @@ def build_attention_target_from_mapped_rxn_smiles(
 
     n = len(tokens)
     attn_target = np.zeros((n, n), dtype=np.float32)
-    for src, dst in index_attn_dict.items():
-        attn_target[src, dst] = 1.0
+
+    if smooth_symmetric_targets:
+        arrow_index = tokens.index(">>")
+
+        reactant_sym_lookup: dict[int, list[int]] = {}
+        for group in reactant_symmetry_groups:
+            for mn in group:
+                reactant_sym_lookup[mn] = group
+
+        product_sym_lookup: dict[int, list[int]] = {}
+        for group in product_symmetry_groups:
+            for mn in group:
+                product_sym_lookup[mn] = group
+
+        # Map numbers present in matching_tokens_dict, split by side
+        mapnum_to_reactant_token: dict[int, int] = {}
+        mapnum_to_product_token: dict[int, int] = {}
+        for key, indices in matching_tokens_dict.items():
+            mn = int(key[1:-1])
+            for idx in indices:
+                if idx < arrow_index:
+                    mapnum_to_reactant_token[mn] = idx
+                else:
+                    mapnum_to_product_token[mn] = idx
+
+        for src, dst in index_attn_dict.items():
+            dst_mapnum = token_index_to_mapnum.get(dst)
+            if dst_mapnum is None:
+                attn_target[src, dst] = 1.0
+                continue
+
+            if src < arrow_index:
+                # Reactant row: spread over symmetric product atoms
+                sym_group = product_sym_lookup.get(dst_mapnum, [dst_mapnum])
+                sym_indices = [
+                    mapnum_to_product_token[m]
+                    for m in sym_group
+                    if m in mapnum_to_product_token
+                ]
+            else:
+                # Product row: spread over symmetric reactant atoms
+                sym_group = reactant_sym_lookup.get(dst_mapnum, [dst_mapnum])
+                sym_indices = [
+                    mapnum_to_reactant_token[m]
+                    for m in sym_group
+                    if m in mapnum_to_reactant_token
+                ]
+
+            if not sym_indices:
+                sym_indices = [dst]
+            weight = 1.0 / len(sym_indices)
+            for sym_idx in sym_indices:
+                attn_target[src, sym_idx] = weight
+    else:
+        for src, dst in index_attn_dict.items():
+            attn_target[src, dst] = 1.0
 
     if not attn_sink_non_mapped_atoms:
         return attn_target, unmapped_rxn_smiles
@@ -204,6 +260,7 @@ class SupervisedAtomMappingDataset(Dataset):
         use_random_smiles: bool = True,
         use_mlm_masking: bool = True,
         protected_tokens: Set[str] | None = None,
+        smooth_symmetric_targets: bool = True,
     ):
         self.texts = list(texts)
         self.tokenizer = tokenizer
@@ -211,6 +268,7 @@ class SupervisedAtomMappingDataset(Dataset):
         self.max_length = max_length
         self.use_random_smiles = use_random_smiles
         self.use_mlm_masking = use_mlm_masking
+        self.smooth_symmetric_targets = smooth_symmetric_targets
 
         special_token_ids = set(tokenizer.all_special_ids)
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
@@ -227,6 +285,7 @@ class SupervisedAtomMappingDataset(Dataset):
             mapped_rxn_smiles=mapped_text,
             token_atom_identity_dict=token_atom_identity_dict,
             randomize_mapped_rxn_smiles=self.use_random_smiles,
+            smooth_symmetric_targets=self.smooth_symmetric_targets,
         )
 
         encoding = self.tokenizer(
