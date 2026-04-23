@@ -38,8 +38,10 @@ from agave_chem.utils.chem_utils import (  # noqa: E402
 from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
     MLMConfig,
     ModelConfig,
+    SpanMLMConfig,
     TrainingConfig,
     apply_mlm_masking,
+    apply_span_mlm_masking,
     build_albert_model,
     resolve_protected_token_ids,
 )
@@ -261,6 +263,8 @@ class SupervisedAtomMappingDataset(Dataset):
         use_mlm_masking: bool = True,
         protected_tokens: Set[str] | None = None,
         smooth_symmetric_targets: bool = True,
+        masking_mode: str = "span",
+        span_mlm_config: SpanMLMConfig | None = None,
     ):
         self.texts = list(texts)
         self.tokenizer = tokenizer
@@ -269,6 +273,13 @@ class SupervisedAtomMappingDataset(Dataset):
         self.use_random_smiles = use_random_smiles
         self.use_mlm_masking = use_mlm_masking
         self.smooth_symmetric_targets = smooth_symmetric_targets
+
+        if masking_mode not in ("random", "span"):
+            raise ValueError(
+                f"masking_mode must be 'random' or 'span', got '{masking_mode}'"
+            )
+        self.masking_mode = masking_mode
+        self.span_mlm_config = span_mlm_config or SpanMLMConfig()
 
         special_token_ids = set(tokenizer.all_special_ids)
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
@@ -301,12 +312,21 @@ class SupervisedAtomMappingDataset(Dataset):
         token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
 
         if self.use_mlm_masking:
-            masked_input_ids, labels = apply_mlm_masking(
-                input_ids=input_ids,
-                tokenizer=self.tokenizer,
-                mlm_config=self.mlm_config,
-                special_token_ids=self.protected_token_ids,
-            )
+            if self.masking_mode == "span":
+                masked_input_ids, labels = apply_span_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    span_mlm_config=self.span_mlm_config,
+                    reaction_smiles=unmapped_text,
+                    special_token_ids=self.protected_token_ids,
+                )
+            else:
+                masked_input_ids, labels = apply_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    mlm_config=self.mlm_config,
+                    special_token_ids=self.protected_token_ids,
+                )
         else:
             masked_input_ids = input_ids
             labels = [-100] * len(input_ids)
@@ -727,14 +747,24 @@ def main_supervised(
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=256,
+        max_length=384,
+        masking_mode="span",
+        span_mlm_config=SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        ),
     )
     val_dataset = SupervisedAtomMappingDataset(
         texts=val_texts,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=256,
+        max_length=384,
+        masking_mode="span",
+        span_mlm_config=SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        ),
     )
 
     # --- Dataloaders ---

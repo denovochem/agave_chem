@@ -754,7 +754,7 @@ class MLMDataset(Dataset):
         use_random_smiles=True,
         use_canonical_smiles=False,
         protected_tokens: Set[str] | None = None,
-        masking_mode: str = "random",
+        masking_mode: str = "span",
         span_mlm_config: SpanMLMConfig | None = None,
     ):
         self.texts = texts
@@ -1159,14 +1159,24 @@ def main(
         tokenizer,
         mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=256,
+        max_length=384,
+        masking_mode="span",
+        span_mlm_config=SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        ),
     )
     val_dataset = MLMDataset(
         val_texts,
         tokenizer,
         mlm_config,
         protected_tokens={"^", "$", ".", ">>"},
-        max_length=256,
+        max_length=384,
+        masking_mode="span",
+        span_mlm_config=SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        ),
     )
 
     train_dataloader = DataLoader(
