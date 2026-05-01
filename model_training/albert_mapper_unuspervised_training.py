@@ -753,6 +753,8 @@ class MLMDataset(Dataset):
         max_length: int = 256,
         use_random_smiles=True,
         use_canonical_smiles=False,
+        randomize_tautomer_pct: float = 0.10,
+        canonicalize_mapped_rxn_smiles_pct: float = 0.05,
         protected_tokens: Set[str] | None = None,
         masking_mode: str = "span",
         span_mlm_config: SpanMLMConfig | None = None,
@@ -784,6 +786,9 @@ class MLMDataset(Dataset):
         if use_random_smiles:
             self._use_random_smiles = True
 
+        self.randomize_tautomer_pct = randomize_tautomer_pct
+        self.canonicalize_mapped_rxn_smiles_pct = canonicalize_mapped_rxn_smiles_pct
+
         # Build the set of protected token IDs (see section 3)
         special_token_ids = set(tokenizer.all_special_ids)
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
@@ -796,7 +801,21 @@ class MLMDataset(Dataset):
         text = self.texts[idx]
 
         if self._use_random_smiles:
-            text = randomize_reaction_smiles(text)
+            if random.random() > self.canonicalize_mapped_rxn_smiles_pct:
+                if random.random() > self.randomize_tautomer_pct:
+                    text = randomize_reaction_smiles(
+                        text,
+                        remove_mapping=False,
+                        randomize_tautomer=False,
+                    )
+                else:
+                    text = randomize_reaction_smiles(
+                        text, remove_mapping=False, randomize_tautomer=True
+                    )
+            else:
+                text = canonicalize_reaction_smiles(
+                    text, remove_mapping=False, canonicalize_tautomer=True
+                )
 
         if self._use_canonical_smiles:
             text = canonicalize_reaction_smiles(text)

@@ -551,7 +551,7 @@ class NeuralReactionMapper(ReactionMapper):
             tokens = tokens[:real_len]
 
         # IMPORTANT: keep downstream behavior identical by returning log-attn
-        return torch.log(attn)[1:-1, 1:-1].numpy(), tokens
+        return torch.log(attn).numpy(), tokens
 
     def get_reactants_products_dict(
         self,
@@ -580,7 +580,7 @@ class NeuralReactionMapper(ReactionMapper):
         non_atom_tokens: List[int] = []
 
         found_reaction_symbol = False
-        for i, token in enumerate(tokens[1:-1]):
+        for i, token in enumerate(tokens):
             if token == ">>":
                 found_reaction_symbol = True
                 non_atom_tokens.append(i)
@@ -652,16 +652,23 @@ class NeuralReactionMapper(ReactionMapper):
         ] = -1e6  # Set attention logits for product tokens to other product tokens to very small value
         for i in string_info_dict[
             "non_atom_tokens"
+        ][
+            :-1
         ]:  # Set attention logits for reactant or product tokens to non-atom tokens to very small value
             attn[i] = -1e6
             attn[:, i] = -1e6
+
         for token_indices in string_info_dict[
             "atom_tokens_dict"
         ].values():  # Set attention logits for reactant and product tokens of different atom numbers to very small value
             idx = np.asarray(token_indices, dtype=np.int64)
+            last = attn.shape[0] - 1
+            idx = idx[idx != last]  # protect last row/column from mask
 
             diff_atom_mask = np.ones(attn.shape[1], dtype=bool)
             diff_atom_mask[idx] = False
+            diff_atom_mask[last] = False  # protect last row/column from mask
+
             attn[np.ix_(idx, diff_atom_mask)] = -1e6
             attn[np.ix_(diff_atom_mask, idx)] = -1e6
 
@@ -691,6 +698,8 @@ class NeuralReactionMapper(ReactionMapper):
         ] = 0  # Set attention probability for product tokens to other product tokens to 0
         for i in string_info_dict[
             "non_atom_tokens"
+        ][
+            :-1
         ]:  # Set attention probability for reactant or product tokens to non-atom tokens to 0
             probs[i] = 0
             probs[:, i] = 0
@@ -733,7 +742,7 @@ class NeuralReactionMapper(ReactionMapper):
         products_to_reactants_attn = out[
             reactants_start_index : reactants_end_index + 1, products_start_index:
         ].T  # products to reactants attention, transposed so indices align
-        avg_attn = reactants_to_products_attn
+        avg_attn = (products_to_reactants_attn + reactants_to_products_attn) / 2
         return avg_attn
 
     def remove_non_atom_rows_and_columns(

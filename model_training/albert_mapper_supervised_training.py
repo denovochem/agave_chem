@@ -32,6 +32,7 @@ from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer  # noqa: E402
 from agave_chem.utils.chem_utils import (  # noqa: E402
+    canonicalize_reaction_smiles,
     randomize_reaction_smiles,
     remove_reaction_smiles_atom_mapping,
 )
@@ -78,8 +79,10 @@ def build_attention_target_from_mapped_rxn_smiles(
     mapped_rxn_smiles: str,
     token_atom_identity_dict: Optional[Dict[str, int]] = None,
     randomize_mapped_rxn_smiles: bool = True,
+    randomize_tautomer_pct: float = 0.10,
+    canonicalize_mapped_rxn_smiles_pct: float = 0.05,
     attn_sink_non_mapped_atoms: bool = True,
-    smooth_symmetric_targets: bool = False,
+    smooth_symmetric_targets: bool = True,
 ) -> Tuple[np.ndarray, str]:
 
     if token_atom_identity_dict is None:
@@ -123,14 +126,31 @@ def build_attention_target_from_mapped_rxn_smiles(
     )
 
     if randomize_mapped_rxn_smiles:
-        new_mapped_rxn_smiles = randomize_reaction_smiles(
-            new_mapped_rxn_smiles, remove_mapping=False
-        )
+        if random.random() > canonicalize_mapped_rxn_smiles_pct:
+            if random.random() > randomize_tautomer_pct:
+                new_mapped_rxn_smiles = randomize_reaction_smiles(
+                    new_mapped_rxn_smiles,
+                    remove_mapping=False,
+                    randomize_tautomer=False,
+                )
+            else:
+                new_mapped_rxn_smiles = randomize_reaction_smiles(
+                    new_mapped_rxn_smiles, remove_mapping=False, randomize_tautomer=True
+                )
+        else:
+            new_mapped_rxn_smiles = canonicalize_reaction_smiles(
+                new_mapped_rxn_smiles, remove_mapping=False, canonicalize_tautomer=True
+            )
 
     tokens = tokenizer.preprocess_sentence_reaction_smiles(
         new_mapped_rxn_smiles
     ).split()
+
     unmapped_rxn_smiles = remove_reaction_smiles_atom_mapping(new_mapped_rxn_smiles)
+
+    unmapped_tokens = tokenizer.preprocess_sentence_reaction_smiles(
+        unmapped_rxn_smiles
+    ).split()
 
     pattern = r":(\d+)\]$"
     matching_tokens_dict: dict[str, list[int]] = {}
@@ -138,8 +158,8 @@ def build_attention_target_from_mapped_rxn_smiles(
 
     non_atom_token_indices = []
     atom_token_indices_to_sink = []
-    for i, token in enumerate(tokens):
-        if token_atom_identity_dict.get(token) == 0:
+    for i, [token, unmapped_token] in enumerate(zip(tokens, unmapped_tokens)):
+        if token_atom_identity_dict.get(unmapped_token) == 0:
             non_atom_token_indices.append(i)
         m = re.search(pattern, token)
         if not m:
@@ -180,26 +200,53 @@ def build_attention_target_from_mapped_rxn_smiles(
     if smooth_symmetric_targets:
         arrow_index = tokens.index(">>")
 
-        reactant_sym_lookup: dict[int, list[int]] = {}
+        reactant_sym_lookup: Dict[int, List[int]] = {}
         for group in reactant_symmetry_groups:
             for mn in group:
                 reactant_sym_lookup[mn] = group
 
-        product_sym_lookup: dict[int, list[int]] = {}
+        product_sym_lookup: Dict[int, List[int]] = {}
         for group in product_symmetry_groups:
             for mn in group:
                 product_sym_lookup[mn] = group
 
-        # Map numbers present in matching_tokens_dict, split by side
+        # Map numbers for ALL atom tokens, split by side
         mapnum_to_reactant_token: dict[int, int] = {}
         mapnum_to_product_token: dict[int, int] = {}
-        for key, indices in matching_tokens_dict.items():
-            mn = int(key[1:-1])
-            for idx in indices:
-                if idx < arrow_index:
-                    mapnum_to_reactant_token[mn] = idx
-                else:
-                    mapnum_to_product_token[mn] = idx
+        for idx, mn in token_index_to_mapnum.items():
+            if idx < arrow_index:
+                mapnum_to_reactant_token[mn] = idx
+            else:
+                mapnum_to_product_token[mn] = idx
+
+        # Give unmapped symmetric atoms the same target as their matched counterpart
+        for group in reactant_symmetry_groups:
+            ref_dst = None
+            for mn in group:
+                tok = mapnum_to_reactant_token.get(mn)
+                if tok is not None and tok in index_attn_dict:
+                    ref_dst = index_attn_dict[tok]
+                    break
+            if ref_dst is None:
+                continue
+            for mn in group:
+                tok = mapnum_to_reactant_token.get(mn)
+                if tok is not None and tok not in index_attn_dict:
+                    index_attn_dict[tok] = ref_dst
+
+        for group in product_symmetry_groups:
+            ref_dst = None
+            for mn in group:
+                tok = mapnum_to_product_token.get(mn)
+                if tok is not None and tok in index_attn_dict:
+                    ref_dst = index_attn_dict[tok]
+                    break
+            if ref_dst is None:
+                continue
+            for mn in group:
+                tok = mapnum_to_product_token.get(mn)
+                if tok is not None and tok not in index_attn_dict:
+                    index_attn_dict[tok] = ref_dst
 
         for src, dst in index_attn_dict.items():
             dst_mapnum = token_index_to_mapnum.get(dst)
