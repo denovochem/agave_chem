@@ -1,5 +1,6 @@
 import json
 from importlib.resources import files
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from rdchiral import main as rdc
@@ -160,6 +161,17 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
     """
     reactant_smarts = template.split(">>")[0]
     product_smarts = template.split(">>")[1]
+
+    if (
+        "." in reactant_smarts
+        and not reactant_smarts.startswith("(")
+        and not reactant_smarts.endswith(")")
+    ):
+        logger.warning(
+            f"Multi-component reactant SMARTS is not wrapped in parentheses: {template}"
+        )
+        return False
+
     reactant_mols = [
         Chem.MolFromSmarts(smarts) for smarts in reactant_smarts.split(".")
     ]
@@ -180,7 +192,7 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
         for atom in mol.GetAtoms():
             if atom.GetAtomMapNum() == 0:
                 logger.warning(f"Unmapped atom in reactant: {parent_template}")
-                continue
+                return False
             if atom.GetAtomMapNum() in reactant_atom_maps_and_elements:
                 logger.warning(f"Duplicate atom mapping in reactant: {template}")
             if atom.GetAtomMapNum() not in product_atom_maps_and_elements:
@@ -216,12 +228,16 @@ def class_str_key(d: Dict[str, Any]) -> Tuple[int, ...]:
 
 
 if __name__ == "__main__":
-    SMIRKS_PATTERNS_FILE = files("agave_chem.datafiles.smirks_patterns").joinpath(
-        "smirks_patterns.json"
-    )
+    SMIRKS_DIR = files("agave_chem.datafiles.smirks_patterns")
+
     default_smirks_patterns = []
-    with SMIRKS_PATTERNS_FILE.open("r") as f:
-        default_smirks_patterns = json.load(f)
+    for filename in (
+        "smirks_patterns.json",
+        "name_reactions.json",
+        "nuc_sub_reactions.json",
+    ):
+        with SMIRKS_DIR.joinpath(filename).open("r") as f:
+            default_smirks_patterns.extend(json.load(f))
 
     default_smirks_with_children = []
     for default_smirk_pattern in default_smirks_patterns:
@@ -278,9 +294,12 @@ if __name__ == "__main__":
 
     records_sorted = sorted(default_smirks_with_children, key=class_str_key)
 
-    with open(
-        "/home/csnbritt/projects/denovochem_projects/agave_chem/agave_chem/datafiles/smirks_patterns/smirks_patterns_with_children.json",
-        "w",
-        encoding="utf-8",
-    ) as f:
+    OUTPUT_FILE = (
+        Path(__file__).resolve().parent.parent
+        / "agave_chem"
+        / "datafiles"
+        / "smirks_patterns"
+        / "smirks_patterns_with_children.json"
+    )
+    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
         json.dump(records_sorted, f, indent=2, ensure_ascii=False)

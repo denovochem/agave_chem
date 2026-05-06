@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 
 from rdchiral import main as rdc
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 
 
 class ReactionData(TypedDict):
@@ -11,6 +11,8 @@ class ReactionData(TypedDict):
     tautomers_reactants: Dict[str, List[str]]
     fragment_count_reactants: Dict[str, int]
     unmapped_product_atom_islands: Dict[int, Set[int]]
+    product_mol_fps: List[DataStructs.ExplicitBitVect]
+    reactant_mol_fps: List[DataStructs.ExplicitBitVect]
 
 
 class InitializedSmirksPattern(TypedDict):
@@ -21,6 +23,8 @@ class InitializedSmirksPattern(TypedDict):
     class_str: str
     products_smarts: List[Chem.Mol]
     reactants_smarts: List[Chem.Mol]
+    products_fps: List[DataStructs.ExplicitBitVect]
+    reactants_fps: List[DataStructs.ExplicitBitVect]
     rdc_rxn: rdc.rdchiralReaction
     parent_smirks: str
     child_smirks: str

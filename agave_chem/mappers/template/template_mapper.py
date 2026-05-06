@@ -4,7 +4,8 @@ from importlib.resources import files
 from typing import Dict, List, Optional, Set, Tuple
 
 from rdchiral import main as rdc
-from rdkit import Chem
+from rdkit import Chem, DataStructs
+from rdkit.Chem import PatternFingerprint
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
@@ -148,6 +149,12 @@ class TemplateReactionMapper(ReactionMapper):
                         class_str=str(pattern.get("class_str", "")),
                         products_smarts=products_smarts,
                         reactants_smarts=reactants_smarts,
+                        products_fps=[
+                            PatternFingerprint(frag) for frag in products_smarts
+                        ],
+                        reactants_fps=[
+                            PatternFingerprint(frag) for frag in reactants_smarts
+                        ],
                         rdc_rxn=rdc_rxn,
                         parent_smirks=str(pattern.get("smirks", "")),
                         child_smirks=str(child_pattern),
@@ -226,19 +233,23 @@ class TemplateReactionMapper(ReactionMapper):
         if unmapped_product_atom_islands is None:
             unmapped_product_atom_islands = {}
 
+        product_mols = [
+            Chem.MolFromSmiles(product_str) for product_str in products_str.split(".")
+        ]
+        reactant_mols = [
+            Chem.MolFromSmiles(reactant_str)
+            for reactant_str in reactants_str.split(".")
+        ]
+
         return ReactionData(
-            products_mols=[
-                Chem.MolFromSmiles(product_str)
-                for product_str in products_str.split(".")
-            ],
-            reactants_mols=[
-                Chem.MolFromSmiles(reactant_str)
-                for reactant_str in reactants_str.split(".")
-            ],
+            products_mols=product_mols,
+            reactants_mols=reactant_mols,
             rdc_products=rdc.rdchiralReactants(products_str),
             tautomers_reactants=self._enumerate_tautomer_smiles(reactants_str),
             fragment_count_reactants=self._get_fragment_count_dict(reactants_str),
             unmapped_product_atom_islands=unmapped_product_atom_islands,
+            product_mol_fps=[PatternFingerprint(mol) for mol in product_mols],
+            reactant_mol_fps=[PatternFingerprint(mol) for mol in reactant_mols],
         )
 
     def _enumerate_tautomer_smiles(self, smiles: str) -> Dict[str, List[str]]:
@@ -300,7 +311,7 @@ class TemplateReactionMapper(ReactionMapper):
         return fragment_count_dict
 
     def _process_templates(
-        self, reaction_smiles_data: ReactionData
+        self, reaction_smiles_data: ReactionData, apply_multiple_smirks: bool = False
     ) -> Dict[str, List[InitializedSmirksPattern]]:
         """
         Apply template SMIRKS patterns to a reaction and collect mapped outcomes.
@@ -317,20 +328,54 @@ class TemplateReactionMapper(ReactionMapper):
         mapped_outcomes_smirks_dict: Dict[str, List[InitializedSmirksPattern]] = {}
 
         atom_mapped_product = self._get_mapped_product(reaction_smiles_data)
-        outcomes_and_applied_smirks = self._apply_templates(reaction_smiles_data)
+        outcomes_and_applied_smirks = self._apply_templates(
+            reaction_smiles_data, apply_multiple_smirks=apply_multiple_smirks
+        )
 
+        successfully_processed_reactants: Dict[str, str] = {}
+        unsuccessfully_processed_reactants = []
         for outcome_and_applied_smirk in outcomes_and_applied_smirks:
+            if (
+                outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                in unsuccessfully_processed_reactants
+            ):
+                continue
+
+            if (
+                outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                in successfully_processed_reactants
+            ):
+                good_reaction_smiles = successfully_processed_reactants[
+                    outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                ]
+
+                mapped_outcomes_smirks_dict[good_reaction_smiles].extend(
+                    [outcome_and_applied_smirk.get("applied_smirk")]
+                )
+                continue
+
             result = self._process_single_outcome(
                 outcome_and_applied_smirk,
                 reaction_smiles_data,
                 atom_mapped_product,
             )
 
+            if not result:
+                unsuccessfully_processed_reactants.append(
+                    outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                )
+
             for mapped_smiles, smirks_list in result.items():
                 if mapped_smiles not in mapped_outcomes_smirks_dict:
                     mapped_outcomes_smirks_dict[mapped_smiles] = smirks_list
+                    successfully_processed_reactants[
+                        outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                    ] = mapped_smiles
                 else:
                     mapped_outcomes_smirks_dict[mapped_smiles].extend(smirks_list)
+                    successfully_processed_reactants[
+                        outcome_and_applied_smirk.get("outcome_mapped_smiles")
+                    ] = mapped_smiles
 
         return mapped_outcomes_smirks_dict
 
@@ -364,7 +409,7 @@ class TemplateReactionMapper(ReactionMapper):
         self,
         reaction_smiles_data: ReactionData,
         num_smirks_applied: int = 0,
-        apply_multiple_smirks: bool = True,
+        apply_multiple_smirks: bool = False,
         num_smirks_to_apply: int = 1,
     ) -> List[AppliedSmirkData]:
         """ """
@@ -374,6 +419,8 @@ class TemplateReactionMapper(ReactionMapper):
         unmapped_product_atom_islands = reaction_smiles_data[
             "unmapped_product_atom_islands"
         ]
+        product_mol_fps = reaction_smiles_data["product_mol_fps"]
+        reactant_mol_fps = reaction_smiles_data["reactant_mol_fps"]
 
         # rdchiral uses 1-based indexing, but rdkit uses 0-based indexing
         # so we need another dictionary specifically for rdchiral
@@ -382,75 +429,121 @@ class TemplateReactionMapper(ReactionMapper):
             for key, value in unmapped_product_atom_islands.items()
         }
 
+        has_islands = bool(unmapped_product_atom_islands)
+
+        def _fragment_fits_some_island(
+            product_mols: List[Chem.Mol],
+            products_smarts_fragment: Chem.Mol,
+        ) -> bool:
+            """
+            Check whether a SMARTS fragment has any overlap with an unmapped island.
+            We can't do a full subset check because the SMARTS for the template
+            may be overspecified, and include atoms that aren't actually changing in the
+            reaction, and thus *are* mapped with the MCS mapper.
+
+            Args:
+                product_mols (List[Chem.Mol]): List of product mols.
+                products_smarts_fragment (Chem.Mol): SMARTS query fragment used to find
+                    substructure matches in the product molecules.
+
+            Returns:
+                bool: True if any substructure match has any overlap with an unmapped island;
+                otherwise False.
+            """
+            for mol in product_mols:
+                matches = mol.GetSubstructMatches(products_smarts_fragment)
+                matches_set = [set(match) for match in matches]
+                for match_set in matches_set:
+                    for island in unmapped_product_atom_islands.values():
+                        if match_set & island:
+                            return True
+            return False
+
+        def _matching_island_ids(
+            unmapped_product_atom_islands_for_rdchiral: Dict[int, Set[int]],
+            outcome_atom_map_indices: List[int],
+        ) -> List[int]:
+            """
+            Find island IDs that contain any atom map indices of a given outcome.
+            Can't do a full subset check for similar reasons as in
+            _fragment_fits_some_island.
+
+            Args:
+                unmapped_product_atom_islands_for_rdchiral (Dict[int, Set[int]]): A dictionary
+                    mapping island IDs to sets of atom map indices for unmapped atoms in
+                    the product molecules (1-based indexing for rdchiral).
+                outcome_atom_map_indices (List[int]): A list of atom map indices for
+                    a reaction outcome.
+
+            Returns:
+                List[int]: A list of island IDs where any atom map indices of the
+                    outcome are contained.
+            """
+            return [
+                island_id
+                for island_id, island in unmapped_product_atom_islands_for_rdchiral.items()
+                if set(outcome_atom_map_indices) & island
+            ]
+
         outcomes_and_applied_smirks = []
 
         if self._initialized_smirks_patterns is None:
             raise ValueError("SMIRKS patterns were not initialized correctly.")
+
         for template in self._initialized_smirks_patterns:
             products_smarts = template["products_smarts"]
             reactants_smarts = template["reactants_smarts"]
+            products_fps = template["products_fps"]
+            reactants_fps = template["reactants_fps"]
             rdc_rxn = template["rdc_rxn"]
 
             ## TODO: THESE SHOULD LOOK AT TAUTOMERS FOR MATCHES TOO
-            product_mol_has_substruct_match = all(
-                any(
-                    product_mol.HasSubstructMatch(products_smarts_fragment)
-                    for product_mol in product_mols
-                )
-                for products_smarts_fragment in products_smarts
-            )
 
-            if not product_mol_has_substruct_match:
+            # Fast fingerprint pre-screen: eliminates templates whose required
+            # structural bits are absent from the molecule FPs before running
+            # the more expensive substructure search.
+            if not all(
+                any(
+                    DataStructs.AllProbeBitsMatch(q_fp, mol_fp)
+                    for mol_fp in product_mol_fps
+                )
+                for q_fp in products_fps
+            ):
                 continue
 
-            reactant_mol_has_substruct_match = all(
+            if not all(
                 any(
-                    reactant_mol.HasSubstructMatch(reactant_smarts_fragment)
-                    for reactant_mol in reactant_mols
+                    DataStructs.AllProbeBitsMatch(q_fp, mol_fp)
+                    for mol_fp in reactant_mol_fps
                 )
-                for reactant_smarts_fragment in reactants_smarts
-            )
-
-            if not reactant_mol_has_substruct_match:
+                for q_fp in reactants_fps
+            ):
                 continue
 
-            if not unmapped_product_atom_islands:
-                template_applies_to_unmapped_product_atoms = True
+            # When islands exist, _fragment_fits_some_island subsumes the plain
+            # substruct-match check (empty matches → no island overlap → False),
+            # avoiding a second round of substructure searches.
+            if has_islands:
+                product_check_passes = all(
+                    _fragment_fits_some_island(product_mols, frag)
+                    for frag in products_smarts
+                )
+
             else:
-
-                def _fragment_fits_some_island(
-                    products_smarts_fragment: Chem.Mol,
-                ) -> bool:
-                    """
-                    Check whether a SMARTS fragment has any overlap with an unmapped island.
-                    We can't do a full subset check because the SMARTS for the template
-                    may be overspecified, and include atoms that aren't actually changing in the
-                    reaction, and thus *are* mapped with the MCS mapper.
-
-                    Args:
-                        products_smarts_fragment (Chem.Mol): SMARTS query fragment used to find
-                            substructure matches in the product molecules.
-
-                    Returns:
-                        bool: True if any substructure match has any overlap with an unmapped island;
-                        otherwise False.
-                    """
-
-                    for mol in product_mols:
-                        matches = mol.GetSubstructMatches(products_smarts_fragment)
-                        matches_set = [set(match) for match in matches]
-                        for match_set in matches_set:
-                            for island in unmapped_product_atom_islands.values():
-                                if match_set & island:
-                                    return True
-                    return False
-
-                template_applies_to_unmapped_product_atoms = all(
-                    _fragment_fits_some_island(products_smarts_fragment)
-                    for products_smarts_fragment in products_smarts
+                product_check_passes = all(
+                    any(mol.HasSubstructMatch(frag) for mol in product_mols)
+                    for frag in products_smarts
                 )
 
-            if not template_applies_to_unmapped_product_atoms:
+            if not product_check_passes:
+                continue
+
+            reactant_check_passes = all(
+                any(mol.HasSubstructMatch(frag) for mol in reactant_mols)
+                for frag in reactants_smarts
+            )
+
+            if not reactant_check_passes:
                 continue
 
             try:
@@ -458,61 +551,35 @@ class TemplateReactionMapper(ReactionMapper):
                     rdc_rxn, rdc_products, return_mapped=True
                 )
 
-                if unmapped_product_atom_islands:
+                for k, v in outcomes_dict.items():
+                    matching_ids = []
+                    if has_islands:
+                        matching_ids = _matching_island_ids(
+                            unmapped_product_atom_islands_for_rdchiral, v[1]
+                        )
 
-                    def _matching_island_ids(v: Tuple[str, List[int]]) -> List[int]:
-                        """
-                        Find island IDs that contain any atom map indices of a given outcome.
-                        Can't do a full subset check for similar reasons as in
-                        _fragment_fits_some_island.
+                    if not matching_ids:
+                        continue
 
-                        Args:
-                            v (Tuple[str, List[int]]): A tuple where the second element is a list
-                                of atom map indices for a reaction outcome.
-
-                        Returns:
-                            List[int]: A list of island IDs where any atom map indices of the
-                                outcome are contained.
-                        """
-                        return [
-                            island_id
-                            for island_id, island in unmapped_product_atom_islands_for_rdchiral.items()
-                            if set(v[1]) & island
-                        ]
-
-                    for k, v in outcomes_dict.items():
-                        matching_island_ids = _matching_island_ids(v)
-                        if not matching_island_ids:
-                            continue
-
-                        for matching_island_id in matching_island_ids:
-                            outcomes_and_applied_smirks.append(
-                                AppliedSmirkData(
-                                    outcome_unmapped_smiles=k,
-                                    outcome_mapped_smiles=v[0],
-                                    outcome_atom_map_indices=v[1],
-                                    applied_smirk=template,
-                                    outcome_to_island_id=matching_island_id,
-                                    num_smirks_applied=num_smirks_applied + 1,
-                                )
-                            )
-
-                else:
-                    for k, v in outcomes_dict.items():
+                    for island_id in matching_ids:
                         outcomes_and_applied_smirks.append(
                             AppliedSmirkData(
                                 outcome_unmapped_smiles=k,
                                 outcome_mapped_smiles=v[0],
                                 outcome_atom_map_indices=v[1],
                                 applied_smirk=template,
-                                outcome_to_island_id=None,
+                                outcome_to_island_id=island_id,
                                 num_smirks_applied=num_smirks_applied + 1,
                             )
                         )
 
+                        # if not Chem.MolFromSmiles(k):
+                        #     print("%", template["name"])
+                        #     print(k, rdc_products.reactant_smiles)
+                        #     print("##############################")
+
             except Exception as e:
                 logger.warning(f"Error applying templates: {e}")
-                pass
 
         if not apply_multiple_smirks:
             return outcomes_and_applied_smirks
@@ -984,8 +1051,7 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
     def map_reaction_mcs_return(
-        self,
-        reaction_smiles: str,
+        self, reaction_smiles: str, apply_multiple_smirks: bool = False
     ) -> Tuple[ReactionMapperResult, ReactionMapperResult]:
         """
         Map a reaction SMILES string using template-based atom mapping.
@@ -1030,7 +1096,7 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
         mapped_outcomes_smirks_dict = self._process_templates(
-            reaction_data,
+            reaction_data, apply_multiple_smirks=apply_multiple_smirks
         )
 
         result = self._post_process_mapped_outcomes(
