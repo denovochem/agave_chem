@@ -1,0 +1,39 @@
+{
+  "priority_class": {
+    "allowed_values": [1, 2, 3],
+    "higher_wins": true,
+    "meaning": {
+      "1": {
+        "label": "generic",
+        "description": "Most generic patterns (broad transformations with minimal context). Example: chlorination."
+      },
+      "2": {
+        "label": "functional_group_specific",
+        "description": "More specific patterns that define a functional group / substrate context. Example: chlorination involving an acid chloride (or other defined functional group context)."
+      },
+      "3": {
+        "label": "reagent_specific",
+        "description": "Most specific patterns that explicitly encode a reagent driving the reaction. Example: chlorination with POCl5 / POCl3 / SOCl2."
+      }
+    }
+  },
+  "priority": {
+    "allowed_values": [1, 2, 3, 4, 5],
+    "higher_wins": true,
+    "meaning": {
+      "5": "Highest within-class preference (use when you strongly believe this template should win tie-breaks).",
+      "4": "High preference.",
+      "3": "Medium / default preference.",
+      "2": "Low preference.",
+      "1": "Lowest preference (use for weak/ambiguous templates, e.g., solvents/salts acting like reagents)."
+    }
+  },
+  "selection_rule": {
+    "sort_keys_high_to_low": ["priority_class", "priority"],
+    "null_handling": {
+      "priority_class": "treat_null_as_1",
+      "priority": "treat_null_as_3"
+    },
+    "tie_breaker": "file_order"
+  }
+}

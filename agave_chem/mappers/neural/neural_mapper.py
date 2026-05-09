@@ -880,7 +880,7 @@ class NeuralReactionMapper(ReactionMapper):
             list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
             for mol in reactants_mols
         ]
-        products_mols_canonical = [
+        _ = [
             list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
             for mol in products_mols
         ]
@@ -1049,7 +1049,7 @@ class NeuralReactionMapper(ReactionMapper):
         rxn_smiles: str,
         layer: int = 11,
         head: int = 7,
-        sequence_max_length: int = 256,
+        sequence_max_length: int = 512,
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = False,

@@ -56,3 +56,9 @@ class ReactionMapperResult(TypedDict):
     mapping_type: str
     mapping_score: Any
     additional_info: List[Dict[str, Any]]
+
+
+class AgaveChemMapperResult(TypedDict):
+    final_mapping: str
+    original_reaction: str
+    mapper_results: List[ReactionMapperResult]

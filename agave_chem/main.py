@@ -1,4 +1,4 @@
-from typing import List, TypedDict
+from typing import List
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
@@ -6,14 +6,8 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import AgaveChemMapperResult, ReactionMapperResult
 from agave_chem.utils.logging_config import logger
-
-
-class AgaveChemMapperResult(TypedDict):
-    final_mapping: str
-    original_reaction: str
-    mapper_results: List[ReactionMapperResult]
 
 
 def map_reactions_using_mappers(
