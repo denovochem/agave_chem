@@ -37,7 +37,7 @@ from agave_chem.mappers.neural.constants import (  # noqa: E402
     smiles_token_to_id_dict,
     token_atom_identity_dict,
 )
-from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
+from agave_chem.mappers.neural.model import (  # noqa: E402
     AlbertWithAttentionAlignment,
     SupervisedConfig,
 )

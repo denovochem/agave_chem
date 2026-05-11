@@ -13,10 +13,6 @@ REPO_ROOT = BASE_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
-from agave_chem.mappers.neural.neural_mapper import (  # noqa: E402
-    AlbertWithAttentionAlignment,
-)
 from model_training.albert_mapper_supervised_training import (  # noqa: E402
     SupervisedAtomMappingDataset,
     SupervisedConfig,
@@ -25,6 +21,11 @@ from model_training.albert_mapper_supervised_training import (  # noqa: E402
 from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
     CustomTokenizer,
     MLMConfig,
+)
+
+from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
+from agave_chem.mappers.neural.model import (  # noqa: E402
+    AlbertWithAttentionAlignment,
 )
 
 

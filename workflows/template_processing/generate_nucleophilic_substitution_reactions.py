@@ -859,6 +859,78 @@ def generate_name(
     return f"NucSub {nu.name} at {center.name} ({lg.name} LG)"
 
 
+def classify_rxno(
+    center: ElectrophilicCenter,
+    lg: LeavingGroup,
+    nu: Nucleophile,
+) -> str:
+    """
+    Assign the most specific RXNO ontology term for a nucleophilic substitution
+    pattern based on the electrophilic center, leaving group, and nucleophile.
+
+    The decision tree maps directly onto the metadata already encoded in
+    ``center.name``, ``nu.tags``, and ``lg.tags``, requiring no additional
+    SMARTS parsing.  When no specific term applies the function falls back to
+    ``RXNO:0000331`` (substitution step), which is the correct RXNO parent for
+    SN2, epoxide/aziridine ring-opening, and sulfonylation reactions that lack
+    dedicated ontology entries.
+
+    Args:
+        center (ElectrophilicCenter): The electrophilic center template.
+        lg (LeavingGroup): The leaving group fragment.
+        nu (Nucleophile): The nucleophile definition.
+
+    Returns:
+        str: An RXNO term identifier string (e.g. ``"RXNO:0000331"``),
+            representing the most specific applicable classification.
+    """
+    # SNAr — aromatic substitution step
+    if center.name == "SNAr aromatic":
+        return "RXNO:0000332"
+
+    # Nucleophilic acyl substitution
+    if center.name == "acyl (carbonyl)":
+        if "N_nuc" in nu.tags:
+            return "RXNO:0000357"  # N-acylation to amide
+        if "O_nuc" in nu.tags:
+            return "RXNO:0000360"  # O-acylation to ester
+
+    # Chloroformate/carbonate — carbamate and carbonate synthesis
+    if center.name == "chloroformate/carbonate":
+        if "N_nuc" in nu.tags:
+            return "RXNO:0000359"  # N-acylation to carbamate
+        if "O_nuc" in nu.tags:
+            return "RXNO:0000360"  # O-acylation to ester
+
+    # Finkelstein: halide ↔ halide exchange
+    if "halide_nuc" in nu.tags and "halide" in lg.tags:
+        return "RXNO:0000155"
+
+    # Arbuzov: P nucleophile + alkyl halide or sulfonate
+    if "P_nuc" in nu.tags:
+        return "RXNO:0000060"
+
+    # Gabriel synthesis: phthalimide anion
+    if "phthalimide" in nu.name:
+        return "RXNO:0000103"
+
+    # Williamson ether synthesis: O nucleophile + alkyl halide/sulfonate
+    if "O_nuc" in nu.tags and ("halide" in lg.tags or "sulfonate" in lg.tags):
+        return "RXNO:0000090"
+
+    # N-alkylation specifics at sp3/benzylic/allylic/propargylic centres
+    if "N_nuc" in nu.tags:
+        if "aniline" in nu.name:
+            return "RXNO:0000341"  # aniline N-alkylation
+        if "amide" in nu.name or "sulfonamide" in nu.name:
+            return "RXNO:0000340"  # amide N-alkylation
+        if "heterocyclic_N" in nu.tags:
+            return "RXNO:0000345"  # heteroaryl N-alkylation
+
+    # Generic fallback: sp3 SN2, epoxide/aziridine opening, sulfonylation, etc.
+    return "RXNO:0000331"
+
+
 # ---------------------------------------------------------------------------
 # 4.  Main enumeration
 # ---------------------------------------------------------------------------
@@ -892,7 +964,7 @@ def enumerate_nuc_sub_smirks() -> List[Dict]:
         seen_smirks.add(smirks)
         patterns.append(
             {
-                "class_id": None,
+                "rxno_classification": [{"rxno_id": classify_rxno(center, lg, nu)}],
                 "name": generate_name(center, lg, nu),
                 "priority": {"priority_class": None, "priority": None},
                 "smirks": smirks,
