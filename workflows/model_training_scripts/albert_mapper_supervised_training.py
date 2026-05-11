@@ -22,7 +22,7 @@ REPO_ROOT = BASE_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+from model_training_scripts.albert_mapper_unuspervised_training import (  # noqa: E402
     MLMConfig,
     ModelConfig,
     SpanMLMConfig,
@@ -186,7 +186,8 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     atom_token_indices_to_sink = []
     for i, [token, unmapped_token] in enumerate(zip(tokens, unmapped_tokens)):
         if token_atom_identity_dict.get(unmapped_token) == 0:
-            non_atom_token_indices.append(i)
+            if unmapped_token not in ["^", "$"]:
+                non_atom_token_indices.append(i)
         m = re.search(pattern, token)
         if not m:
             continue

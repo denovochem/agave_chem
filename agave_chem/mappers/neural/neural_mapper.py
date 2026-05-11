@@ -164,7 +164,9 @@ class BilinearMappingHead(torch.nn.Module):
             fused_attn = torch.einsum(
                 "bhij,h->bij", all_head_attentions, weights
             )  # (B, S, S)
-            mapping_logits = fused_attn + self.bilinear_gate * bilinear_scores
+            # Convert to log-probability space
+            log_fused_attn = torch.log(fused_attn.clamp(min=1e-9))
+            mapping_logits = log_fused_attn + self.bilinear_gate * bilinear_scores
         else:
             mapping_logits = bilinear_scores
 
@@ -183,7 +185,7 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         self,
         base_model: AlbertForMaskedLM,
         supervised_config: SupervisedConfig,
-        max_length: int = 256,
+        max_length: int = 512,
     ):
         super().__init__()
         self.base_model = base_model
@@ -275,7 +277,7 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         attention_loss = None
         if attention_target is not None:
             attention_loss = self._compute_attention_loss(
-                attention_logits, attention_target, attention_loss_mask
+                attention_logits, attention_target, attention_loss_mask, attention_mask
             )
             result["attention_loss"] = attention_loss
 
@@ -300,21 +302,45 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         logits: torch.Tensor,
         targets: torch.Tensor,
         mask: torch.Tensor | None,
+        attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
-        Compute cross-entropy loss for attention alignment.
+        Compute token-level KL divergence loss for attention alignment.
+
+        KL(p || q) = H(p, q) - H(p), where p is the target distribution and q
+        is the predicted distribution. Compared to soft cross-entropy H(p, q),
+        this subtracts the (constant w.r.t. parameters) target entropy H(p) so
+        that the loss floor is 0 for every position, including symmetric atoms
+        whose targets are uniform over k positions (where H(p) = log(k)).
+        Gradients w.r.t. model parameters are identical to soft cross-entropy.
+
+        Padding columns are excluded from the softmax normalization via the
+        attention_mask so that the loss is invariant to MAX_LENGTH / padding.
 
         Args:
             logits: (B, S, S) predicted attention scores
             targets: (B, S, S) target attention distributions (one-hot or soft)
             mask: (B, S) binary mask, 1 where loss should be computed
+            attention_mask: (B, S) token mask (1 = real, 0 = padding). When
+                provided, padding columns are set to -inf before log_softmax.
 
         Returns:
             Scalar loss value
         """
-        # Soft cross-entropy: generalises to both one-hot and smooth targets
+        if attention_mask is not None:
+            # Broadcast (B, S) → (B, 1, S) to mask padding columns in every row
+            col_pad_mask = (attention_mask == 0).unsqueeze(1)  # (B, 1, S)
+            logits = logits.masked_fill(col_pad_mask, float("-inf"))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)  # (B, S, S)
-        loss_per_position = -(targets * log_probs).sum(dim=-1).view(-1)  # (B*S,)
+        # Guard against 0 * (-inf) = NaN at masked padding columns
+        cross_entropy = -(
+            torch.where(targets > 0, targets * log_probs, torch.zeros_like(targets))
+        ).sum(dim=-1)  # (B, S)
+        target_log = torch.where(
+            targets > 0, torch.log(targets), torch.zeros_like(targets)
+        )
+        target_entropy = -(targets * target_log).sum(dim=-1)  # (B, S)
+        loss_per_position = (cross_entropy - target_entropy).view(-1)  # (B*S,)
 
         # Apply mask
         if mask is not None:
@@ -372,7 +398,7 @@ def load_neural_albert_model(
     checkpoint_dir: str,
     device: torch.device,
     use_supervised: bool,
-    max_length: int = 256,
+    max_length: int = 512,
     supervised_config: SupervisedConfig | None = None,
 ) -> torch.nn.Module:
     checkpoint_dir = str(checkpoint_dir)
@@ -412,7 +438,7 @@ class NeuralReactionMapper(ReactionMapper):
         checkpoint_path: Optional[str] = None,
         use_supervised: bool = True,
         supervised_config: SupervisedConfig | None = None,
-        sequence_max_length: int = 256,
+        sequence_max_length: int = 512,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -477,7 +503,7 @@ class NeuralReactionMapper(ReactionMapper):
         text: str,
         layer: int,
         head: int,
-        max_length: int = 256,
+        max_length: int = 512,
         trim_padding: bool = True,
     ) -> Tuple[np.ndarray, List[str]]:
         """
@@ -742,8 +768,8 @@ class NeuralReactionMapper(ReactionMapper):
         products_to_reactants_attn = out[
             reactants_start_index : reactants_end_index + 1, products_start_index:
         ].T  # products to reactants attention, transposed so indices align
-        avg_attn = (products_to_reactants_attn + reactants_to_products_attn) / 2
-        return avg_attn
+        # avg_attn = reactants_to_products_attn
+        return reactants_to_products_attn, products_to_reactants_attn
 
     def remove_non_atom_rows_and_columns(
         self, attn: np.ndarray, string_info_dict: StringInfoDict
@@ -777,7 +803,26 @@ class NeuralReactionMapper(ReactionMapper):
 
         return attn
 
-    def get_duplicate_indices(self, list_of_lists: list) -> Dict[int, List[int]]:
+    def get_duplicate_indices(
+        self, list_of_lists: List[List[int]]
+    ) -> Dict[int, List[int]]:
+        """
+        Find indices of duplicate values across a list of sublists using globally
+        offset indices.
+
+        For each element, returns a mapping to all other elements in the same
+        sublist that share the same value. Elements without duplicates are omitted.
+
+        Args:
+            list_of_lists (List[List[int]]): A list of sublists, where each sublist
+                contains integer values (e.g., canonical atom ranks per molecule).
+
+        Returns:
+            Dict[int, List[int]]: A dictionary mapping each globally-offset index
+                to a list of other globally-offset indices within the same sublist
+                that share the same value. Only indices with at least one duplicate
+                are included.
+        """
         result = {}
         offset = 0
 
@@ -798,6 +843,131 @@ class NeuralReactionMapper(ReactionMapper):
 
         return result
 
+    def _build_atom_dict(
+        self, mols: List[Chem.Mol]
+    ) -> Tuple[Dict[int, Chem.Atom], Dict[int, List[Tuple[int, List[int]]]]]:
+        """
+        Build a global atom dictionary and neighbor dictionary from a list of molecules.
+
+        Iterates over each molecule in order, assigning globally unique atom indices
+        that are contiguous across all molecules. Neighbors are stored as
+        (global_atom_index, atom_feature_vector) pairs.
+
+        Args:
+            mols (List[Chem.Mol]): A list of RDKit molecule objects to process.
+
+        Returns:
+            Tuple[Dict[int, Chem.Atom], Dict[int, List[Tuple[int, List[int]]]]]:
+                - First dict: Maps global atom index to its RDKit Atom object.
+                - Second dict: Maps global atom index to a list of
+                  (global_neighbor_index, encoded_neighbor) tuples for each
+                  neighboring atom.
+        """
+        atom_dict: Dict[int, Chem.Atom] = {}
+        atom_dict_neighbors: Dict[int, List[Tuple[int, List[int]]]] = {}
+        global_atom_num = 0
+        for mol in mols:
+            mol_atom_dict: Dict[int, Chem.Atom] = {}
+            mol_idx_to_atom_num: Dict[int, int] = {}
+            for atom in mol.GetAtoms():
+                mol_atom_dict[global_atom_num] = atom
+                mol_idx_to_atom_num[atom.GetIdx()] = global_atom_num
+                global_atom_num += 1
+            for atom_num, atom in mol_atom_dict.items():
+                atom_dict_neighbors[atom_num] = [
+                    (
+                        mol_idx_to_atom_num[neighbor.GetIdx()],
+                        self._encode_atom(neighbor),
+                    )
+                    for neighbor in atom.GetNeighbors()
+                ]
+            atom_dict.update(mol_atom_dict)
+        return atom_dict, atom_dict_neighbors
+
+    def _get_symmetric_atom_indices(self, mols: List[Chem.Mol]) -> Dict[int, List[int]]:
+        """
+        Identify sets of topologically equivalent atoms across a list of molecules.
+
+        All molecules are combined into a single disconnected graph via
+        Chem.CombineMols before ranking, so that canonical ranks are assigned
+        globally. This means two atoms are considered symmetric if they are
+        topologically equivalent either within the same molecule (intra-molecular
+        symmetry, e.g., ortho carbons in benzene) or across identical fragment
+        molecules (inter-molecular symmetry, e.g., corresponding atoms in two
+        identical benzaldehyde reactants).
+
+        Args:
+            mols (List[Chem.Mol]): A list of RDKit molecule objects.
+
+        Returns:
+            Dict[int, List[int]]: A mapping from each globally-offset atom index
+                to a list of other globally-offset atom indices that are
+                topologically equivalent. Only atoms with at least one symmetric
+                partner are included.
+        """
+        if not mols:
+            return {}
+        combined = mols[0]
+        for mol in mols[1:]:
+            combined = Chem.CombineMols(combined, mol)
+        ranks = list(Chem.rdmolfiles.CanonicalRankAtoms(combined, breakTies=False))
+        return self.get_duplicate_indices([ranks])
+
+    def _apply_symmetric_attention(
+        self,
+        attn: np.ndarray,
+        symmetric_indices: Dict[int, List[int]],
+        axis: int,
+    ) -> np.ndarray:
+        """
+        Sum attention scores for topologically equivalent (symmetric) atoms.
+
+        For each group of symmetric atoms, replaces each member's attention slice
+        (row or column) with the summed values across the group. This prevents
+        symmetric atoms from receiving artificially low attention scores caused by
+        probability mass being split equally among equivalent positions.
+
+        Sums are computed from the input array before any modifications are applied,
+        ensuring groups do not double-count one another.
+
+        Args:
+            attn (np.ndarray): Attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            symmetric_indices (Dict[int, List[int]]): Output of
+                _get_symmetric_atom_indices — maps each atom index to its
+                symmetric partners.
+            axis (int): Axis along which to aggregate. Use 1 for reactant atoms
+                (columns) and 0 for product atoms (rows).
+
+        Returns:
+            np.ndarray: A copy of attn with symmetric atom slices replaced by
+                their group sum. The original array is not modified.
+        """
+        identical_groups: List[Tuple[int, ...]] = list(
+            {tuple(sorted([k] + v)) for k, v in symmetric_indices.items()}
+        )
+
+        result = attn.copy()
+        new_val_mapping: Dict[int, np.ndarray] = {}
+        for group in identical_groups:
+            idx = list(group)
+            if axis == 1:
+                summed = np.sum(attn[:, idx], axis=1)
+                for i in idx:
+                    new_val_mapping[i] = summed
+            else:
+                summed = np.sum(attn[idx, :], axis=0)
+                for i in idx:
+                    new_val_mapping[i] = summed
+
+        for i, val in new_val_mapping.items():
+            if axis == 1:
+                result[:, i] = val
+            else:
+                result[i, :] = val
+
+        return result
+
     def assign_atom_maps(
         self,
         rxn_smiles: str,
@@ -808,14 +978,46 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
     ) -> Tuple[str, float]:
-        """ """
+        """
+        Assign atom-to-atom map numbers to a reaction SMILES using a pre-computed
+        attention matrix.
+
+        Handles symmetric atoms in both reactants and products by summing their
+        attention contributions, preventing artificially low confidence scores
+        caused by equivalent atoms splitting probability mass.
+
+        Args:
+            rxn_smiles (str): Unmapped reaction SMILES string of the form
+                "reactants>>products".
+            attn (np.ndarray): Attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            one_to_one_correspondence (bool): If True, enforces a one-to-one
+                assignment using greedy selection of the global attention maximum.
+                If False, assigns each product atom independently to its
+                highest-attention reactant atom.
+            adjacent_atom_multiplier (float): Multiplier applied to attention
+                scores of atoms neighboring an already-mapped pair.
+            identical_adjacent_atom_multiplier (float): Additional multiplier
+                applied when a neighboring pair shares the same atom encoding.
+            reactants_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Maps
+                global reactant atom indices to existing atom map numbers, used
+                to anchor partially pre-mapped reactions.
+            products_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Maps
+                global product atom indices to existing atom map numbers, used
+                to anchor partially pre-mapped reactions.
+
+        Returns:
+            Tuple[str, float]:
+                - Mapped reaction SMILES string with atom map numbers assigned.
+                - Confidence score computed as the product of per-atom assignment
+                  probabilities.
+        """
         if not reactants_atom_idx_to_orig_mapping:
             reactants_atom_idx_to_orig_mapping = {}
         if not products_atom_idx_to_orig_mapping:
             products_atom_idx_to_orig_mapping = {}
 
         reactants_str, products_str = self._split_reaction_components(rxn_smiles)
-
         reactants_mols = [
             Chem.MolFromSmiles(reactant) for reactant in reactants_str.split(".")
         ]
@@ -823,45 +1025,12 @@ class NeuralReactionMapper(ReactionMapper):
             Chem.MolFromSmiles(product) for product in products_str.split(".")
         ]
 
-        reactants_atom_dict = {}
-        reactants_atom_dict_neighbors = {}
-        reactant_atom_num = 0
-        for mol in reactants_mols:
-            mol_reactants_atom_dict = {}
-            mol_idx_to_atom_num = {}
-            for atom in mol.GetAtoms():
-                mol_reactants_atom_dict[reactant_atom_num] = atom
-                mol_idx_to_atom_num[atom.GetIdx()] = reactant_atom_num
-                reactant_atom_num += 1
-            for atom_reactant_atom_num, atom in mol_reactants_atom_dict.items():
-                reactants_atom_dict_neighbors[atom_reactant_atom_num] = [
-                    (
-                        mol_idx_to_atom_num[neighbor.GetIdx()],
-                        self._encode_atom(neighbor),
-                    )
-                    for neighbor in atom.GetNeighbors()
-                ]
-            reactants_atom_dict.update(mol_reactants_atom_dict)
-
-        products_atom_dict = {}
-        products_atom_dict_neighbors = {}
-        product_atom_num = 0
-        for mol in products_mols:
-            mol_products_atom_dict = {}
-            mol_idx_to_atom_num = {}
-            for atom in mol.GetAtoms():
-                mol_products_atom_dict[product_atom_num] = atom
-                mol_idx_to_atom_num[atom.GetIdx()] = product_atom_num
-                product_atom_num += 1
-            for atom_product_atom_num, atom in mol_products_atom_dict.items():
-                products_atom_dict_neighbors[atom_product_atom_num] = [
-                    (
-                        mol_idx_to_atom_num[neighbor.GetIdx()],
-                        self._encode_atom(neighbor),
-                    )
-                    for neighbor in atom.GetNeighbors()
-                ]
-            products_atom_dict.update(mol_products_atom_dict)
+        reactants_atom_dict, reactants_atom_dict_neighbors = self._build_atom_dict(
+            reactants_mols
+        )
+        products_atom_dict, products_atom_dict_neighbors = self._build_atom_dict(
+            products_mols
+        )
 
         products_orig_mapping_to_idx = {
             value: key
@@ -874,42 +1043,32 @@ class NeuralReactionMapper(ReactionMapper):
             if value != 0
         }
 
-        orig_attn = attn.copy()
+        (reactants_to_products_attn, products_to_reactants_attn) = attn
+        attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
 
-        reactants_mols_canonical = [
-            list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
-            for mol in reactants_mols
-        ]
-        _ = [
-            list(Chem.rdmolfiles.CanonicalRankAtoms(mol, breakTies=False))
-            for mol in products_mols
-        ]
+        orig_reactants_to_products_attn = reactants_to_products_attn.copy()
+        orig_products_to_reactants_attn = products_to_reactants_attn.copy()
 
-        reactants_symmetric_atom_indices = self.get_duplicate_indices(
-            reactants_mols_canonical
+        reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
+        products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
+        # print(orig_attn)
+        orig_reactants_to_products_attn = self._apply_symmetric_attention(
+            orig_reactants_to_products_attn, reactants_symmetric_indices, axis=1
         )
-        # products_symmetric_atom_indices = self.get_duplicate_indices(products_mols_canonical)
+        orig_products_to_reactants_attn = self._apply_symmetric_attention(
+            orig_products_to_reactants_attn, products_symmetric_indices, axis=0
+        )
 
-        reactants_identical_atoms_indices = []
-        for k, v in reactants_symmetric_atom_indices.items():
-            reactants_identical_atoms_indices.append(tuple(sorted([k] + v)))
+        # print(orig_reactants_to_products_attn)
+        # print("~~~~~~~~~~~~~~~~~~")
+        # print(orig_products_to_reactants_attn)
 
-        reactants_identical_atoms_indices = list(set(reactants_identical_atoms_indices))
+        orig_attn = (
+            orig_reactants_to_products_attn + orig_products_to_reactants_attn
+        ) / 2
 
-        symmetric_atom_new_val_mapping = {}
-        for symmetric_atoms in reactants_identical_atoms_indices:
-            summed_vals = np.sum(
-                orig_attn[
-                    :,
-                    symmetric_atoms,
-                ],
-                axis=1,
-            )
-            for val in symmetric_atoms:
-                symmetric_atom_new_val_mapping[val] = summed_vals
-
-        for k, v in symmetric_atom_new_val_mapping.items():
-            orig_attn[:, k] = v
+        # print("~~~~~~~~~~~~~~~~~~")
+        # print(orig_attn)
 
         assignment_probs = []
         if one_to_one_correspondence:
@@ -922,7 +1081,6 @@ class NeuralReactionMapper(ReactionMapper):
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
                     assignment_probs.append(1.0)
-
                 else:
                     highest_attn_score = attn.max()
                     highest_attn_score_indices = np.where(attn == highest_attn_score)
@@ -936,7 +1094,6 @@ class NeuralReactionMapper(ReactionMapper):
                         orig_attn[row_highest_attn, col_highest_attn]
                     )
 
-                # Update neighbors
                 for (
                     product_atom_idx,
                     product_atom_env,
@@ -1107,20 +1264,32 @@ class NeuralReactionMapper(ReactionMapper):
             logger.warning("Sequence too long")
             return default_mapping_dict
 
+        # print(attn)
         string_info_dict = self.get_reactants_products_dict(tokens)
         attn_probs, _ = self.mask_attn_matrix(attn, string_info_dict)
-        attn = self.average_attn_scores(
-            attn_probs,
-            string_info_dict["reactants_start_index"],
-            string_info_dict["reactants_end_index"],
-            string_info_dict["products_start_index"],
+        # print(attn_probs)
+        reactants_to_products_attn, products_to_reactants_attn = (
+            self.average_attn_scores(
+                attn_probs,
+                string_info_dict["reactants_start_index"],
+                string_info_dict["reactants_end_index"],
+                string_info_dict["products_start_index"],
+            )
+        )
+        # print(attn)
+
+        reactants_to_products_attn = self.remove_non_atom_rows_and_columns(
+            reactants_to_products_attn, string_info_dict
+        )
+        products_to_reactants_attn = self.remove_non_atom_rows_and_columns(
+            products_to_reactants_attn, string_info_dict
         )
 
-        attn = self.remove_non_atom_rows_and_columns(attn, string_info_dict)
+        # print(attn)
 
         mapped_rxn_smiles, confidence = self.assign_atom_maps(
             rxn_smiles,
-            attn,
+            (reactants_to_products_attn, products_to_reactants_attn),
             one_to_one_correspondence=one_to_one_correspondence,
             adjacent_atom_multiplier=adjacent_atom_multiplier,
             identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
@@ -1141,14 +1310,18 @@ class NeuralReactionMapper(ReactionMapper):
         )
 
     def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
-        """ """
+        """
+        Map a list of reaction SMILES strings using the neural mapper.
+
+        Args:
+            reaction_list (List[str]): A list of unmapped reaction SMILES strings.
+
+        Returns:
+            List[ReactionMapperResult]: A list of mapping results, one per input
+                reaction. Failed mappings return a result with an empty
+                selected_mapping.
+        """
         mapped_reactions = []
         for reaction in reaction_list:
             mapped_reactions.append(self.map_reaction(reaction))
         return mapped_reactions
-
-
-## things to check:
-# attention averaging works? Set as variable
-# run mapping on large number of reactions, make sure it's consistent (all product atoms mapped, atom map numbers unique, atoms map to reactant atoms of same atom number, etc.)
-# neighborhood multiplier? More sophisticated neighborhood multiplier
