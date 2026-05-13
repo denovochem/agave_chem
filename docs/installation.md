@@ -14,7 +14,13 @@ All dependencies are declared in `requirements.txt` and are installed automatica
 
 ## Installation Option #1: Use pip (recommended)
 
-Install AgaveChem with pip directly from the GitHub repo:
+Install AgaveChem from PyPi:
+
+```bash
+pip install agave_chem
+```
+
+Or install AgaveChem with pip directly from the GitHub repo:
 
 ```bash
 pip install git+https://github.com/denovochem/agave_chem.git

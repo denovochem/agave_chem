@@ -1,5 +1,5 @@
 # AgaveChem
-[![PyPI version](https://badge.fury.io/py/rdchiral-plus.svg)](https://badge.fury.io/py/rdchiral-plus)
+[![PyPI version](https://badge.fury.io/py/agave-chem.svg)](https://badge.fury.io/py/agave-chem)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://gitHub.com/denovochem/agave_chem/graphs/commit-activity)
 [![License](https://img.shields.io/github/license/denovochem/agave_chem)](https://github.com/denovochem/agave_chem/blob/main/LICENSE)
 [![Run Tests](https://img.shields.io/github/actions/workflow/status/denovochem/agave_chem/tests.yml?logo=github&logoColor=%23ffffff&label=tests)](https://github.com/denovochem/agave_chem/actions/workflows/tests.yml)
@@ -50,7 +50,13 @@ The primary contribution is a supervised ALBERT-based neural mapper trained with
 
 ## Installation
 
-Install AgaveChem with pip directly from this repo:
+Install AgaveChem from PyPi:
+
+```bash
+pip install agave_chem
+```
+
+Or install AgaveChem with pip directly from this repo:
 
 ```bash
 pip install git+https://github.com/denovochem/agave_chem.git

@@ -14,7 +14,13 @@ The primary contribution is a supervised ALBERT-based neural mapper trained with
 
 ## Installation
 
-Install AgaveChem with pip directly from this repo:
+Install AgaveChem from PyPi:
+
+```bash
+pip install agave_chem
+```
+
+Or install AgaveChem with pip directly from this repo:
 
 ```bash
 pip install git+https://github.com/denovochem/agave_chem.git
