@@ -60,6 +60,7 @@ class CustomTokenizer(PreTrainedTokenizer):
 
         self._token_to_id = token_to_id
         self._id_to_token = id_to_token or {v: k for k, v in token_to_id.items()}
+        self._unk_str: str = unk_token
 
         super().__init__(
             unk_token=unk_token,
@@ -105,7 +106,7 @@ class CustomTokenizer(PreTrainedTokenizer):
             raw_tokens = list(text)
 
         return [
-            token if token in self._token_to_id else self.unk_token
+            token if token in self._token_to_id else self._unk_str
             for token in raw_tokens
         ]
 
@@ -113,7 +114,7 @@ class CustomTokenizer(PreTrainedTokenizer):
         return self._token_to_id.get(token, self._token_to_id[self.unk_token])
 
     def _convert_id_to_token(self, index: int) -> str:
-        return self._id_to_token.get(index, self.unk_token)
+        return self._id_to_token.get(index, self._unk_str)
 
     def convert_tokens_to_string(self, tokens: List[str]) -> str:
         """

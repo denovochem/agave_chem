@@ -30,8 +30,6 @@
 !agave_chem/datafiles/__init__.py
 !agave_chem/datafiles/smirks_patterns/
 !agave_chem/datafiles/smirks_patterns/__init__.py
-!agave_chem/datafiles/smirks_patterns/reaction_classes.json
-!agave_chem/datafiles/smirks_patterns/smirks_patterns.json
 !agave_chem/datafiles/smirks_patterns/smirks_patterns_with_children.json
 !agave_chem/datafiles/models/
 !agave_chem/datafiles/models/__init__.py
@@ -64,6 +62,7 @@
 !agave_chem/mappers/neural/neural_mapper.py
 !agave_chem/mappers/neural/constants.py
 !agave_chem/mappers/neural/tokenizer.py
+!agave_chem/mappers/neural/model.py
 
 !agave_chem/utils/
 !agave_chem/utils/__init__.py
@@ -82,16 +81,37 @@
 !examples/
 !examples/example_notebook.ipynb
 
-!model_training/
-!model_training/albert_mapper_unuspervised_training.py
-!model_training/albert_mapper_supervised_training.py
-!model_training/scripts/
-!model_training/scripts/unsupervised_training.py
-!model_training/scripts/supervised_training.py
-!model_training/scripts/layer_head_identification.py
+!workflows/
 
-!scripts/
-!scripts/generate_child_smarts_from_smirks.py
+!workflows/benchmarking/
+!workflows/benchmarking/benchmark.py
+!workflows/benchmarking/gold_reactions.txt
+!workflows/benchmarking/gold_reactions_filtered.txt
+!workflows/benchmarking/localmapper_gold_reactions_filtered_results.txt
+!workflows/benchmarking/rxnmapper_gold_reactions_filtered_results.txt
+
+!workflows/data/
+
+!workflows/model_training_scripts/
+!workflows/model_training_scripts/albert_mapper_unuspervised_training.py
+!workflows/model_training_scripts/albert_mapper_supervised_training.py
+!workflows/model_training_scripts/unsupervised_training.py
+!workflows/model_training_scripts/supervised_training.py
+!workflows/model_training_scripts/layer_head_identification.py
+
+!workflows/template_processing/
+!workflows/template_processing/generate_child_smarts_from_smirks.py
+!workflows/template_processing/generate_nucleophilic_substitution_reactions.py
+!workflows/template_processing/data/
+!workflows/template_processing/data/name_reactions.json
+!workflows/template_processing/data/nuc_sub_reactions.json
+!workflows/template_processing/data/priority_classes.json
+!workflows/template_processing/data/reaction_classes.json
+!workflows/template_processing/data/rxno_ontology.json
+!workflows/template_processing/data/smirks_patterns.json
+
+!workflows/training_data_generation/
+!workflows/training_data_generation/map_reactions.py
 
 !tests/
 !tests/unit/
@@ -99,3 +119,9 @@
 !tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
+
+!manuscript/
+!manuscript/images/
+!manuscript/images/*.png
+!manuscript/manuscript.tex
+!manuscript/manuscript.pdf
