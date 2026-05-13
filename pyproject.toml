@@ -35,7 +35,12 @@ zip-safe = false
 where = ["."]
 
 [tool.setuptools.package-data]
-agave_chem = ["datafiles/*.json", "datafiles/albert_model/*.json", "datafiles/albert_model/*.safetensors"]
+agave_chem = [
+    "datafiles/models/supervised_albert_model/*.json",
+    "datafiles/models/supervised_albert_model/*.safetensors",
+    "datafiles/models/supervised_albert_model/*.pt",
+    "datafiles/smirks_patterns/*.json",
+]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
