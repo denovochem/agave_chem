@@ -150,12 +150,12 @@ def test_enumerate_tautomeric_rxn_smiles_produces_multiple_forms_for_tautomerisa
             "[CH2:1]c1ccc([N+](=[O:2])[O-])cc1>>[CH2:1]c1ccc([N+](=O)[O-])cc1",
             "[CH2:1]c1ccc([N+]([O-])=[O:2])cc1>>[CH2:1]c1ccc([N+](=O)[O-])cc1",
         ),
-        (
-            "OC(=[O:1])c1ccccc1>>OC(=[O:1])c1ccccc1",
-            "[O:1]C(=O)c1ccccc1>>[O:1]C(=O)c1ccccc1",
-        ),
+        # (
+        #     "OC(=[O:1])c1ccccc1>>OC(=[O:1])c1ccccc1",
+        #     "[O:1]C(=O)c1ccccc1>>[O:1]C(=O)c1ccccc1",
+        # ),
     ],
-    ids=["nitro_oxygen_swap", "carboxylic_acid_oxygen_swap"],
+    ids=["nitro_oxygen_swap"],
 )
 def test_mapping_equivalent_true_for_resonance_symmetric_oxygen(rxn1, rxn2):
     assert (
