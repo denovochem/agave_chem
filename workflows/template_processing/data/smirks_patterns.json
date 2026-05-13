@@ -2706,8 +2706,8 @@
         "class_id": 1,
         "name": "Acyl chloride with ammonia to amide",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 4
         },
         "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl].[N;H3;D0;+0:5]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H2;D1;+0:5]",
         "subclass_id": 1,
@@ -2723,8 +2723,8 @@
         "class_id": 5,
         "name": "Acyl chloride with primary amine to amide (Schotten-Baumann)",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 4
         },
         "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl].[#7;H2;!$(N[O,N]);D1;+0:6]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H1;D2;+0:6]",
         "subclass_id": 3,
@@ -2740,8 +2740,8 @@
         "class_id": 1,
         "name": "Acyl chloride with primary amine to imide",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 4
         },
         "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl].[*:5]-[C;H0;D3;+0:6](=[O;H0;D1;+0:7])-[Cl].[#7;H2;D1;+0:8]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H0;D1;+0:8]-[C;H0;D3;+0:6](=[O;H0;D1;+0:7])-[*:5]",
         "subclass_id": 1,
@@ -2757,8 +2757,8 @@
         "class_id": 1,
         "name": "Acyl chloride with secondary amine to amide",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 4
         },
         "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Cl].[#7;H1;D2;+0:6]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H0;D3;+0:6]",
         "subclass_id": 1,
@@ -6954,6 +6954,23 @@
     },
     {
         "class_id": 6,
+        "name": "Sulfanyl to sulfinyl_COOOH",
+        "priority": {
+            "priority_class": 2,
+            "priority": 5
+        },
+        "smirks": "[#6;+0:1]-[S;H0;D2;+0:2]-[#6;+0:3].[C;H0;D3;+0](=[O;H0;D1;+0])-[O;H0;D2;+0]-[OH;D1;+0:4]>>[#6;+0:1]-[S;H0;D3;+0:2](=[O;H0;D1;+0:4])-[#6;+0:3]",
+        "subclass_id": 1,
+        "subsubclass_id": null,
+        "superclass_id": 10,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000012"
+            }
+        ]
+    },
+    {
+        "class_id": 6,
         "name": "Reduction of primary amides to amines",
         "priority": {
             "priority_class": null,
@@ -9723,6 +9740,41 @@
             }
         ]
     },
+
+    {
+        "class_id": 3,
+        "name": "Ester to carboxylate ring opening - water",
+        "priority": {
+            "priority_class": 2,
+            "priority": 3
+        },
+        "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H2;D0;+0:4]>>[C;D3;H0;+0:3](-[O-;H0;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
+        "subclass_id": 1,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000433"
+            }
+        ]
+    },
+    {
+        "class_id": 3,
+        "name": "Ester to carboxylate ring opening - hydroxide",
+        "priority": {
+            "priority_class": 2,
+            "priority": 5
+        },
+        "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O-;H0;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
+        "subclass_id": 1,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000433"
+            }
+        ]
+    },
     {
         "class_id": 3,
         "name": "Ester hydrolysis - water",
@@ -9748,6 +9800,41 @@
             "priority": 5
         },
         "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0]-[*].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5]",
+        "subclass_id": 2,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000433"
+            }
+        ]
+    },
+
+    {
+        "class_id": 3,
+        "name": "Ester hydrolysis ring opening - water",
+        "priority": {
+            "priority_class": 2,
+            "priority": 3
+        },
+        "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H2;D0;+0:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
+        "subclass_id": 2,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000433"
+            }
+        ]
+    },
+    {
+        "class_id": 3,
+        "name": "Ester hydrolysis ring opening - hydroxide",
+        "priority": {
+            "priority_class": 2,
+            "priority": 5
+        },
+        "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,

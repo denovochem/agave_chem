@@ -1,6 +1,8 @@
 import json
-from collections import deque
+import re
+from collections import defaultdict, deque
 from importlib.resources import files
+from itertools import product as iterproduct
 from typing import Dict, List, Optional, Set, Tuple
 
 from rdchiral import main as rdc
@@ -23,6 +25,92 @@ from agave_chem.utils.chem_utils import (
     canonicalize_smiles,
 )
 from agave_chem.utils.logging_config import logger
+
+
+def _offset_map_nums(smirks: str, offset: int) -> str:
+    return re.sub(
+        r":(\d+)",
+        lambda m: (
+            f":{m.group(1)}"
+            if int(m.group(1)) >= 900
+            else f":{int(m.group(1)) + offset}"
+        ),
+        smirks,
+    )
+
+
+def _combine_child_smirks(smirks_list: List[str]) -> str:
+    products_parts: List[str] = []
+    reactants_parts: List[str] = []
+    for i, smirks in enumerate(smirks_list):
+        adjusted = _offset_map_nums(smirks, (i + 1) * 100)
+        prod, reac = adjusted.split(">>")
+        products_parts.append(prod)
+        reactants_parts.append(reac)
+    return f"{'.'.join(products_parts)}>>{'.'.join(reactants_parts)}"
+
+
+def _make_composite_smirks_pattern(
+    patterns: List[InitializedSmirksPattern],
+    combined_smirks: str,
+    combined_rxn: rdc.rdchiralReaction,
+) -> InitializedSmirksPattern:
+    """
+    Merge multiple InitializedSmirksPattern objects into a single composite pattern.
+
+    Combines the name fields of all constituent patterns into a joined string
+    (e.g. "Esterification + Boc Deprotection") while forwarding the priority,
+    superclass_id, and SMIRKS/RDChiral data from the highest-priority pattern.
+    All SMARTS fragments and fingerprints are concatenated so that atom-count
+    tiebreaking in _select_preferred_mapping reflects the full template set.
+
+    Args:
+        patterns (List[InitializedSmirksPattern]): The constituent single-island
+            patterns that were combined, in island order.
+        combined_smirks (str): The merged child SMIRKS string produced by
+            _combine_child_smirks for this combination.
+        combined_rxn (rdc.rdchiralReaction): The rdchiral reaction object
+            constructed from combined_smirks.
+
+    Returns:
+        InitializedSmirksPattern: A single composite pattern whose name fields
+        are joined from all constituents and whose priority, SMARTS, and
+        fingerprints reflect the full combination.
+    """
+
+    if not patterns:
+        raise ValueError(
+            "_make_composite_smirks_pattern requires at least one pattern."
+        )
+
+    def _join_unique(field: str) -> str:
+        seen: Set[str] = set()
+        parts = []
+        for p in patterns:
+            val = p[field]  # type: ignore[literal-required]
+            if val not in seen:
+                seen.add(val)
+                parts.append(val)
+        return " + ".join(parts)
+
+    primary = max(patterns, key=lambda p: p["priority"])
+
+    return InitializedSmirksPattern(
+        name=_join_unique("name"),
+        template_name=_join_unique("template_name"),
+        superclass_id=primary["superclass_id"],
+        class_id=_join_unique("class_id"),
+        subclass_id=_join_unique("subclass_id"),
+        class_str=_join_unique("class_str"),
+        products_smarts=[frag for p in patterns for frag in p["products_smarts"]],
+        reactants_smarts=[frag for p in patterns for frag in p["reactants_smarts"]],
+        products_fps=[fp for p in patterns for fp in p["products_fps"]],
+        reactants_fps=[fp for p in patterns for fp in p["reactants_fps"]],
+        rdc_rxn=combined_rxn,
+        parent_smirks="",
+        child_smirks=combined_smirks,
+        priority=primary["priority"],
+    )
 
 
 class TemplateReactionMapper(ReactionMapper):
@@ -313,7 +401,10 @@ class TemplateReactionMapper(ReactionMapper):
         return fragment_count_dict
 
     def _apply_templates_and_collect_outcomes(
-        self, reaction_smiles_data: ReactionData, apply_multiple_smirks: bool = False
+        self,
+        reaction_smiles_data: ReactionData,
+        apply_multiple_smirks: bool = True,
+        num_smirks_to_apply: int = 2,
     ) -> Dict[str, List[InitializedSmirksPattern]]:
         """
         Apply template SMIRKS patterns to a reaction and collect mapped outcomes.
@@ -323,6 +414,7 @@ class TemplateReactionMapper(ReactionMapper):
                 products, and precomputed helper structures used for template
                 application.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
+            num_smirks_to_apply (int): The number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             Dict[str, List[InitializedSmirksPattern]]: A mapping from mapped outcome SMILES to a list of
@@ -332,7 +424,9 @@ class TemplateReactionMapper(ReactionMapper):
 
         atom_mapped_product = self._generate_mapped_product_smiles(reaction_smiles_data)
         outcomes_and_applied_smirks = self._apply_templates(
-            reaction_smiles_data, apply_multiple_smirks=apply_multiple_smirks
+            reaction_smiles_data,
+            apply_multiple_smirks=apply_multiple_smirks,
+            num_smirks_to_apply=num_smirks_to_apply,
         )
 
         successfully_processed_reactants: Dict[str, str] = {}
@@ -596,7 +690,7 @@ class TemplateReactionMapper(ReactionMapper):
         outcomes: List[AppliedSmirkData] = []
         try:
             _, outcomes_dict = rdc.rdchiralRun(
-                rdc_rxn, rdc_products, return_mapped=True
+                rdc_rxn, rdc_products, return_mapped=True, combine_enantiomers=False
             )
 
             for k, v in outcomes_dict.items():
@@ -628,12 +722,136 @@ class TemplateReactionMapper(ReactionMapper):
 
         return outcomes
 
+    def _find_multi_smirks_outcomes(
+        self,
+        single_island_outcomes: List[AppliedSmirkData],
+        all_island_ids: Set[int],
+        rdc_products: rdc.rdchiralReactants,
+        unmapped_product_atom_islands_for_rdchiral: Dict[int, Set[int]],
+        max_combinations: int = 500,
+    ) -> List[AppliedSmirkData]:
+        """
+        Generate combined multi-SMIRKS outcomes by merging child SMIRKS patterns from
+        single-island outcomes across all unmapped product atom islands.
+
+        For each combination of one outcome per island, the corresponding child SMIRKS
+        are combined into a single multi-reaction SMIRKS (with atom map numbers offset
+        by multiples of 100 to prevent collisions) and applied to the original product
+        via rdchiral. Outcomes that share the same child_smirks for a given island are
+        deduplicated before combining to reduce redundant rdchiral calls. Each rdchiral
+        outcome is validated to confirm its changed atom indices intersect every island,
+        discarding results where the combined template only fired on a subset of islands.
+
+        Args:
+            single_island_outcomes (List[AppliedSmirkData]): Outcomes from single-template
+                applications, each associated with exactly one island via outcome_to_island_id.
+            all_island_ids (Set[int]): The complete set of unmapped product atom island IDs
+                that must all be covered.
+            rdc_products (rdc.rdchiralReactants): The rdchiral reactants object for the
+                original product, reused for each combined SMIRKS application.
+            unmapped_product_atom_islands_for_rdchiral (Dict[int, Set[int]]): Mapping from
+                island ID to sets of 1-based atom indices used to validate that each outcome
+                covers every island.
+            max_combinations (int): Maximum number of template combinations to attempt
+                before stopping, to prevent combinatorial explosion.
+
+        Returns:
+            List[AppliedSmirkData]: Combined outcomes where num_smirks_applied equals
+            the number of islands and outcome_to_island_id is None. Returns an empty list
+            if any island has no applicable templates or all combinations fail.
+        """
+        if not all_island_ids:
+            return []
+
+        by_island: Dict[int, List[AppliedSmirkData]] = defaultdict(list)
+        seen_per_island_smirks: Dict[int, Set[str]] = defaultdict(set)
+        seen_per_island_reactants: Dict[int, Set[str]] = defaultdict(set)
+
+        for outcome in single_island_outcomes:
+            iid = outcome["outcome_to_island_id"]
+            if iid not in all_island_ids:
+                continue
+            child_smirks = outcome["applied_smirk"]["child_smirks"]
+            unmapped_reactants = outcome["outcome_unmapped_smiles"]
+            if (
+                child_smirks not in seen_per_island_smirks[iid]
+                and unmapped_reactants not in seen_per_island_reactants[iid]
+            ):
+                seen_per_island_smirks[iid].add(child_smirks)
+                seen_per_island_reactants[iid].add(unmapped_reactants)
+                by_island[iid].append(outcome)
+
+        if not all(by_island[iid] for iid in all_island_ids):
+            return []
+
+        multi_outcomes: List[AppliedSmirkData] = []
+        island_order = sorted(all_island_ids)
+
+        num_applied_templates = 0
+        for n, combo in enumerate(
+            iterproduct(*[by_island[iid] for iid in island_order])
+        ):
+            if n >= max_combinations:
+                logger.warning(
+                    "max_combinations cap reached in _find_multi_smirks_outcomes"
+                )
+                break
+
+            combined_smirks = _combine_child_smirks(
+                [o["applied_smirk"]["child_smirks"] for o in combo]
+            )
+
+            try:
+                combined_rxn = rdc.rdchiralReaction(combined_smirks)
+                _, outcomes_dict = rdc.rdchiralRun(
+                    combined_rxn,
+                    rdc_products,
+                    return_mapped=True,
+                    combine_enantiomers=False,
+                )
+            except Exception as e:
+                logger.warning(f"Error applying combined SMIRKS: {e}")
+                continue
+
+            num_applied_templates += len(outcomes_dict)
+            if num_applied_templates > max_combinations:
+                logger.warning(
+                    "max_combinations cap reached in _find_multi_smirks_outcomes"
+                )
+                break
+
+            composite = _make_composite_smirks_pattern(
+                [o["applied_smirk"] for o in combo],
+                combined_smirks,
+                combined_rxn,
+            )
+
+            for k, v in outcomes_dict.items():
+                outcome_indices = set(v[1])
+                if not all(
+                    outcome_indices & unmapped_product_atom_islands_for_rdchiral[iid]
+                    for iid in all_island_ids
+                ):
+                    continue
+                multi_outcomes.append(
+                    AppliedSmirkData(
+                        outcome_unmapped_smiles=k,
+                        outcome_mapped_smiles=v[0],
+                        outcome_atom_map_indices=list(v[1]),
+                        applied_smirk=composite,
+                        outcome_to_island_id=None,
+                        num_smirks_applied=len(combo),
+                    )
+                )
+
+        return multi_outcomes
+
     def _apply_templates(
         self,
         reaction_smiles_data: ReactionData,
         num_smirks_applied: int = 0,
-        apply_multiple_smirks: bool = False,
-        num_smirks_to_apply: int = 1,
+        apply_multiple_smirks: bool = True,
+        num_smirks_to_apply: int = 2,
     ) -> List[AppliedSmirkData]:
         """
         Apply all initialized SMIRKS templates to a reaction and collect mapped outcomes.
@@ -682,6 +900,9 @@ class TemplateReactionMapper(ReactionMapper):
 
         outcomes_and_applied_smirks = []
 
+        if num_smirks_to_apply < len(unmapped_product_atom_islands_for_rdchiral):
+            return outcomes_and_applied_smirks
+
         for template in self._initialized_smirks_patterns:
             ## TODO: Check for tautomer matches?
 
@@ -716,9 +937,17 @@ class TemplateReactionMapper(ReactionMapper):
         if not apply_multiple_smirks:
             return outcomes_and_applied_smirks
 
-        ## TODO: Implement recursive application of SMIRKS for multiple applications
+        if len(unmapped_product_atom_islands_for_rdchiral) == 1:
+            return outcomes_and_applied_smirks
 
-        return outcomes_and_applied_smirks
+        multi_outcomes = self._find_multi_smirks_outcomes(
+            single_island_outcomes=outcomes_and_applied_smirks,
+            all_island_ids=set(unmapped_product_atom_islands.keys()),
+            rdc_products=rdc_products,
+            unmapped_product_atom_islands_for_rdchiral=unmapped_product_atom_islands_for_rdchiral,
+        )
+
+        return multi_outcomes
 
     def _remove_spectator_mappings(self, smiles: str) -> str:
         """
@@ -1185,23 +1414,26 @@ class TemplateReactionMapper(ReactionMapper):
         for canonicalized_mapping, possible_mappings in possible_outcomes.items():
             for possible_mapping in possible_mappings:
                 mapping_priority = possible_mapping.get("priority", (0, 0))
-                if highest_priority_class[0] != 0 and mapping_priority[0] == 0:
-                    continue
-                if (
-                    mapping_priority[0] != 0
-                    and mapping_priority[0] > highest_priority_class[0]
-                ):
-                    highest_priority_class = mapping_priority
-                    selected_mapping = canonicalized_mapping
-                    continue
-                elif (
-                    mapping_priority[0] != 0
-                    and mapping_priority[0] == highest_priority_class[0]
-                    and mapping_priority[1] > highest_priority_class[1]
-                ):
-                    highest_priority_class = mapping_priority
-                    selected_mapping = canonicalized_mapping
-                    continue
+
+                if highest_priority_class[0] != 0 or mapping_priority[0] != 0:
+                    if highest_priority_class[0] > mapping_priority[0]:
+                        continue
+                    if (
+                        highest_priority_class[0] == mapping_priority[0]
+                        and highest_priority_class[1] > mapping_priority[1]
+                    ):
+                        continue
+                    if highest_priority_class[0] < mapping_priority[0]:
+                        highest_priority_class = mapping_priority
+                        selected_mapping = canonicalized_mapping
+                        continue
+                    if (
+                        highest_priority_class[0] == mapping_priority[0]
+                        and mapping_priority[1] > highest_priority_class[1]
+                    ):
+                        highest_priority_class = mapping_priority
+                        selected_mapping = canonicalized_mapping
+                        continue
 
                 mapping_num_fragments = len(possible_mapping["reactants_smarts"])
                 mapping_num_atoms = mapping_num_fragments
@@ -1212,6 +1444,7 @@ class TemplateReactionMapper(ReactionMapper):
                 if max_num_mapped_product_atoms < mapping_num_atoms:
                     selected_mapping = canonicalized_mapping
                     max_num_mapped_product_atoms = mapping_num_atoms
+
         return selected_mapping
 
     def _filter_and_deduplicate_outcomes(
@@ -1297,7 +1530,10 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
     def map_reaction_with_mcs_optimization(
-        self, reaction_smiles: str, apply_multiple_smirks: bool = False
+        self,
+        reaction_smiles: str,
+        apply_multiple_smirks: bool = True,
+        num_smirks_to_apply: int = 2,
     ) -> Tuple[ReactionMapperResult, ReactionMapperResult]:
         """
         Map a reaction SMILES string using template-based atom mapping with optimization
@@ -1306,6 +1542,7 @@ class TemplateReactionMapper(ReactionMapper):
         Args:
             reaction_smiles (str): Reaction SMILES to map.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
+            num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             Tuple[ReactionMapperResult, ReactionMapperResult]: A tuple containing the template-based
@@ -1341,7 +1578,9 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
         mapped_outcomes_smirks_dict = self._apply_templates_and_collect_outcomes(
-            reaction_data, apply_multiple_smirks=apply_multiple_smirks
+            reaction_data,
+            apply_multiple_smirks=apply_multiple_smirks,
+            num_smirks_to_apply=num_smirks_to_apply,
         )
 
         result = self._filter_and_deduplicate_outcomes(
@@ -1353,7 +1592,10 @@ class TemplateReactionMapper(ReactionMapper):
         return result, mcs_result
 
     def map_reaction(
-        self, reaction_smiles: str, return_mcs_result: bool = False
+        self,
+        reaction_smiles: str,
+        apply_multiple_smirks: bool = True,
+        num_smirks_to_apply: int = 2,
     ) -> ReactionMapperResult:
         """
         Map a reaction SMILES string using template-based atom mapping.
@@ -1362,25 +1604,32 @@ class TemplateReactionMapper(ReactionMapper):
 
         Args:
             reaction_smiles (str): Reaction SMILES to map.
-            return_mcs_result (bool): Whether to return the MCS mapping result.
+            apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
+            num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             ReactionMapperResult: A mapping result containing the selected mapping and
             related metadata. If the input is invalid or no unique valid mapping can be
             produced, an "empty" default result is returned.
         """
-        result, _ = self.map_reaction_with_mcs_optimization(reaction_smiles)
+        result, _ = self.map_reaction_with_mcs_optimization(
+            reaction_smiles, apply_multiple_smirks, num_smirks_to_apply
+        )
         return result
 
     def map_reactions(
         self,
         reaction_list: List[str],
+        apply_multiple_smirks: bool = True,
+        num_smirks_to_apply: int = 2,
     ) -> List[ReactionMapperResult]:
         """
         Map a list of reaction SMILES strings using this mapper.
 
         Args:
             reaction_list (List[str]): Reaction SMILES strings to map.
+            apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
+            num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             List[ReactionMapperResult]: Mapping results in the same order as the input.
@@ -1388,5 +1637,7 @@ class TemplateReactionMapper(ReactionMapper):
 
         mapped_reactions = []
         for reaction in reaction_list:
-            mapped_reactions.append(self.map_reaction(reaction))
+            mapped_reactions.append(
+                self.map_reaction(reaction, apply_multiple_smirks, num_smirks_to_apply)
+            )
         return mapped_reactions

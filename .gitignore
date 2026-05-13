@@ -121,5 +121,7 @@
 !tests/integration/test_*.py
 
 !manuscript/
+!manuscript/images/
+!manuscript/images/*.png
 !manuscript/manuscript.tex
 !manuscript/manuscript.pdf

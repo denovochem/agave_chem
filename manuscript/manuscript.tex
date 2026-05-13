@@ -52,10 +52,13 @@ Expert Template and Maximum Common Substructure Ground Truth}}
   reactant and product atoms in a reaction SMILES---is a prerequisite for
   reaction template extraction, retrosynthetic analysis, reaction
   classification, and the training of synthesis prediction models.
-  Computational approaches to AAM broadly divide into classical
-  graph-matching algorithms, which are interpretable but scale poorly to
-  complex reactions, and neural mappers, typically trained via unsupervised
-  methods on large corpora of unlabeled reaction SMILES.
+  Computational approaches to AAM broadly divide into graph-based
+  substructure-matching algorithms, which are interpretable but scale
+  poorly to complex reactions; template-based methods, which apply curated reaction
+  rules to establish atom correspondence within known reaction classes but
+  are limited by the coverage of their rule base; and neural mappers,
+  typically trained via unsupervised methods on large corpora of unlabeled
+  reaction SMILES.
   While neural methods can achieve strong overall accuracy, an unsupervised
   objective has no mechanism to explicitly penalize incorrect
   correspondences, leading to systematic errors on reactions with high
@@ -117,9 +120,14 @@ prediction~\cite{Schwaller2019} and are used in reaction classification
 workflows~\cite{Schneider2016}.  Despite its ubiquity as a dependency,
 producing accurate and complete atom maps at scale remains difficult.
 
-\todo[inline]{Insert AAM example.}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{images/intro_aam_example.png}
+  \caption{Example of atom-atom mapping (AAM) for a chemical reaction.}
+  \label{fig:aam-example-intro}
+\end{figure}
 
-\paragraph{Classical approaches.}
+\paragraph{Graph-based approaches.}
 Early mapping methods relied on heuristic graph matching.  INDIGO and
 related tools use atom-invariant scoring and integer programming to find
 optimal correspondences~\cite{Weininger1989}.  While these approaches
@@ -130,6 +138,14 @@ reaction databases.  The benchmarking study of
 \citet{Lin2020} systematically evaluated several classical and
 hybrid mappers and identified substantial failure rates on USPTO reactions,
 motivating the development of data-driven alternatives.
+
+\paragraph{Template-based approaches.}
+Another class of AAM approaches assigns atom correspondences by matching
+curated reaction SMIRKS or rule-based templates that encode the
+mechanistic transformation directly.  NameRxn~\cite{NameRxn} (NextMove
+Software) classifies reactions against a large rule base of known
+mechanisms and named transformations, establishing atom-level
+correspondences as an inherent byproduct of the template match.
 
 \paragraph{Neural approaches.}
 Schwaller et al.~\cite{Schwaller2021} demonstrated that Transformer
@@ -353,6 +369,13 @@ scales poorly to multi-fragment reactions---it uses a bond-radius environment
 fingerprinting scheme that identifies invariant atoms efficiently and naturally
 parameterizes how close to the reactive center the mapping is permitted to
 extend.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{images/mcs_partial_map.png}
+  \caption{Example of partial atom-atom mapping (AAM) for a chemical reaction using the MCS mapper.}
+  \label{fig:mcs-partial-map}
+\end{figure}
 
 \paragraph{Environment fingerprints.}
 For each atom $a$ in a molecule and each integer radius $r$, the mapper
@@ -934,6 +957,11 @@ license at \url{https://github.com/denovochem/agave_chem}.
   Development of a Novel Fingerprint for Chemical Reactions and Its
   Application to Large-Scale Reaction Classification and Similarity.
   \emph{J.\ Chem.\ Inf.\ Model.} \textbf{2016}, \emph{56}(1), 161--172.
+
+  \bibitem{NameRxn}
+  NextMove Software.
+  NameRxn: Expert System for Named Reaction Identification and Classification.
+  \url{https://www.nextmovesoftware.com/namerxn.html}.
 
   \bibitem{Weininger1989}
   Indigo Toolkit.

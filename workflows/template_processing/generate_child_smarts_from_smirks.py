@@ -154,22 +154,13 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
 
     Args:
         template (str): The template to verify, in the format "reactant_smarts>>product_smarts"
+        parent_template (str): The parent template, in the format "reactant_smarts>>product_smarts"
 
     Returns:
         bool: True if the template is valid, False otherwise
     """
     reactant_smarts = template.split(">>")[0]
     product_smarts = template.split(">>")[1]
-
-    if (
-        "." in reactant_smarts
-        and not reactant_smarts.startswith("(")
-        and not reactant_smarts.endswith(")")
-    ):
-        logger.warning(
-            f"Multi-component reactant SMARTS is not wrapped in parentheses: {template}"
-        )
-        return False
 
     reactant_mols = [
         Chem.MolFromSmarts(smarts) for smarts in reactant_smarts.split(".")
