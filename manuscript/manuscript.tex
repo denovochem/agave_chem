@@ -454,6 +454,16 @@ map correctly captures bond-breaking and bond-forming events---not merely the
 invariant substructure.  This makes template-produced maps the highest-quality
 ground truth in the pipeline.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{images/template_map.png}
+  \caption{Example of atom-atom mapping (AAM) for a chemical reaction using the template mapper, in this case
+  using the template "Gribble Indole Reduction; Indole reduction to indoline (NaBH3CN/TFA)".}
+  \label{fig:template-map}
+\end{figure}
+
+\todo[inline]{display a template reaction record}
+
 \paragraph{Template library.}
 Templates were assembled from three sources: (1) the Rxn-INSIGHT library of
 named reaction patterns~\cite{Probst2022}; (2) templates extracted from the
@@ -528,7 +538,7 @@ An outcome is rejected if any fragment cannot be matched or resolved.
 Valid outcomes are canonicalized and deduplicated.  Each candidate is
 cross-checked by stripping its atom-map numbers and verifying that the
 resulting reaction SMILES is identical to the canonicalized input reaction,
-ensuring the template did not introduce extraneous or missing atoms.  If
+ensuring the template did not introduce or remove atoms.  If
 multiple distinct valid outcomes remain after deduplication, the preferred
 mapping is selected first by template priority class, then by intra-class
 priority, and finally---when no explicit priority is set---by the total atom
@@ -696,7 +706,7 @@ improvements.
 Roundtrip consistency---extracting a template from a mapped reaction
 SMILES and re-applying it to the product to recover the expected
 reactants---is used to quantify correctness.  \texttt{rdchiral\_plus}
-reduces incorrect roundtrips by 90\% compared to rdchiral and by 94\%
+reduces incorrect roundtrips by 96\% compared to rdchiral and by 98\%
 compared to rdchiral\_cpp.  \Cref{tab:rdchiral} summarizes the
 comparison.
 
@@ -711,9 +721,9 @@ comparison.
     \toprule
     \textbf{Library} & \textbf{Incorrect roundtrips (\%)} & \textbf{Reduction vs.\ rdchiral\_plus} \\
     \midrule
-    rdchiral         & \textit{TBD}                       & $-$96\%                                \\
-    rdchiral\_cpp    & \textit{TBD}                       & $-$98\%                                \\
-    rdchiral\_plus   & \textit{TBD}                       & ---                                    \\
+    rdchiral         & 1.59\%                          & $-$96\%                                \\
+    rdchiral\_cpp    & 2.64\%                          & $-$98\%                                \\
+    rdchiral\_plus   & 0.06\%                          & ---                                    \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -771,6 +781,7 @@ where the model assigns only a small number of atoms incorrectly.
     GraphormerMapper~\cite{Nugmanov2022} & \textit{TBD}              & \textit{TBD}           \\
     \midrule
     AgaveChem (neural)                   & \textbf{\textit{TBD}}     & \textbf{\textit{TBD}}  \\
+    AgaveChem (combined)                 & \textbf{\textit{TBD}}     & \textbf{\textit{TBD}}  \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -867,16 +878,15 @@ represents a natural direction for future investigation.
 \todo[inline]{Further improvements to AgaveChem app - reranking, scoring, extensible mapping.}
 
 % ---------------------------------------------------------------
-\section*{Acknowledgements}
-\todo[inline]{Add acknowledgements.}
-
-% ---------------------------------------------------------------
 \section*{Data and Software Availability}
 
 AgaveChem is released as an open-source Python library under the MIT
 license at \url{https://github.com/denovochem/agave_chem}.
 \texttt{rdchiral\_plus} is available at
 \url{https://github.com/denovochem/rdchiral_plus}.
+Remapped versions of the USPTO-50K and USPTO-Full benchmark datasets,
+produced using the AgaveChem deterministic mapping pipeline, are available at
+\url{https://PLACEHOLDER\_URL}.
 \todo[inline]{Add data availability statement for the training set
   and benchmark reactions.}
 
