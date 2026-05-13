@@ -1003,7 +1003,7 @@ class AlbertTrainer:
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
-        self.model.to(self.device)
+        torch.nn.Module.to(self.model, self.device)
 
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)

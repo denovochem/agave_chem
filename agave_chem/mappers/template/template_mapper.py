@@ -898,7 +898,7 @@ class TemplateReactionMapper(ReactionMapper):
         if self._initialized_smirks_patterns is None:
             raise ValueError("SMIRKS patterns were not initialized correctly.")
 
-        outcomes_and_applied_smirks = []
+        outcomes_and_applied_smirks: List[AppliedSmirkData] = []
 
         if num_smirks_to_apply < len(unmapped_product_atom_islands_for_rdchiral):
             return outcomes_and_applied_smirks

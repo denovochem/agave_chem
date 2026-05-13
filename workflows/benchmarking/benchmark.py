@@ -1,7 +1,7 @@
 import time
 
 import networkx as nx
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdChemReactions
 
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.neural.neural_mapper import NeuralReactionMapper
@@ -15,7 +15,7 @@ expert_mapper = TemplateReactionMapper("expert_default")
 
 def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
     # RDKit parses reaction SMILES via ReactionFromSmarts(useSmiles=True)
-    rxn = AllChem.ReactionFromSmarts(rxn_smiles, useSmiles=True)
+    rxn = rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
     G = nx.Graph()
 
     def add_side(mols, side_label):
@@ -114,8 +114,6 @@ with open(
 mapped_count = 0
 identical_count = 0
 total_start = time.time()
-incorrect_smirks = []
-correct_smirks = []
 
 for i, gold_reaction in enumerate(gold_reactions):
     identical = None

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Optional, Tuple, TypedDict, cast
 
 import numpy as np
 import torch
@@ -38,12 +38,16 @@ def load_neural_albert_model(
     use_supervised: bool,
     max_length: int = 512,
     supervised_config: SupervisedConfig | None = None,
-) -> torch.nn.Module:
+) -> AlbertForMaskedLM | AlbertWithAttentionAlignment:
     checkpoint_dir = str(checkpoint_dir)
-    base_model = AlbertForMaskedLM.from_pretrained(
-        checkpoint_dir,
-        attn_implementation="eager",
-    ).to(device)
+    base_model = cast(
+        AlbertForMaskedLM,
+        AlbertForMaskedLM.from_pretrained(
+            checkpoint_dir,
+            attn_implementation="eager",
+        ),
+    )
+    torch.nn.Module.to(base_model, device)
 
     if not use_supervised:
         return base_model
@@ -174,8 +178,7 @@ class NeuralReactionMapper(ReactionMapper):
         token_type_ids = token_type_ids.to(self._device)
 
         with torch.no_grad():
-            if self._use_supervised:
-                # self._model is AlbertWithAttentionAlignment
+            if isinstance(self._model, AlbertWithAttentionAlignment):
                 attn_probs = self._model.predict_attention_probs(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
@@ -183,7 +186,6 @@ class NeuralReactionMapper(ReactionMapper):
                 )  # (B,S,S)
                 attn = attn_probs[0].detach().cpu()  # (S,S)
             else:
-                # self._model is AlbertForMaskedLM
                 outputs = self._model(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
@@ -708,7 +710,7 @@ class NeuralReactionMapper(ReactionMapper):
 
         reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
         products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
-        # print(orig_attn)
+
         orig_reactants_to_products_attn = self._apply_symmetric_attention(
             orig_reactants_to_products_attn, reactants_symmetric_indices, axis=1
         )
@@ -716,16 +718,9 @@ class NeuralReactionMapper(ReactionMapper):
             orig_products_to_reactants_attn, products_symmetric_indices, axis=0
         )
 
-        # print(orig_reactants_to_products_attn)
-        # print("~~~~~~~~~~~~~~~~~~")
-        # print(orig_products_to_reactants_attn)
-
         orig_attn = (
             orig_reactants_to_products_attn + orig_products_to_reactants_attn
         ) / 2
-
-        # print("~~~~~~~~~~~~~~~~~~")
-        # print(orig_attn)
 
         assignment_probs = []
         if one_to_one_correspondence:
@@ -921,10 +916,9 @@ class NeuralReactionMapper(ReactionMapper):
             logger.warning("Sequence too long")
             return default_mapping_dict
 
-        # print(attn)
         string_info_dict = self.get_reactants_products_dict(tokens)
         attn_probs, _ = self.mask_attn_matrix(attn, string_info_dict)
-        # print(attn_probs)
+
         reactants_to_products_attn, products_to_reactants_attn = (
             self.get_aligned_attn_scores(
                 attn_probs,
@@ -933,7 +927,6 @@ class NeuralReactionMapper(ReactionMapper):
                 string_info_dict["products_start_index"],
             )
         )
-        # print(attn)
 
         reactants_to_products_attn = self.remove_non_atom_rows_and_columns(
             reactants_to_products_attn, string_info_dict
@@ -941,8 +934,6 @@ class NeuralReactionMapper(ReactionMapper):
         products_to_reactants_attn = self.remove_non_atom_rows_and_columns(
             products_to_reactants_attn, string_info_dict
         )
-
-        # print(attn)
 
         mapped_rxn_smiles, confidence = self.assign_atom_maps(
             rxn_smiles,
