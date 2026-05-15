@@ -1,7 +1,6 @@
 import time
 
-import networkx as nx
-from rdkit.Chem import rdChemReactions
+import numpy as np
 
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.neural.neural_mapper import NeuralReactionMapper
@@ -13,94 +12,53 @@ neural_mapper = NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=
 expert_mapper = TemplateReactionMapper("expert_default")
 
 
-def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
-    # RDKit parses reaction SMILES via ReactionFromSmarts(useSmiles=True)
-    rxn = rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
-    G = nx.Graph()
+def calculate_metrics(y_true, y_probs, threshold=0.5):
+    # Ensure inputs are numpy arrays
+    y_true = np.array(y_true)
+    y_probs = np.array(y_probs)
 
-    def add_side(mols, side_label):
-        atom_nodes = {}  # (frag_i, atom_i) -> node_id
-        for frag_i, mol in enumerate(mols):
-            for atom in mol.GetAtoms():
-                a_i = atom.GetIdx()
-                node_id = (side_label, frag_i, a_i)
-                atom_nodes[(frag_i, a_i)] = node_id
-                G.add_node(
-                    node_id,
-                    Z=atom.GetAtomicNum(),
-                    side=side_label,
-                    # frag=frag_i,
-                    # you can add more invariants if you want:
-                    charge=atom.GetFormalCharge(),
-                    aromatic=atom.GetIsAromatic(),
-                )
-            for bond in mol.GetBonds():
-                a = (side_label, frag_i, bond.GetBeginAtomIdx())
-                b = (side_label, frag_i, bond.GetEndAtomIdx())
-                G.add_edge(a, b, kind="bond", order=int(bond.GetBondTypeAsDouble()))
-        return mols
+    # Convert probabilities to binary predictions based on threshold
+    y_pred = (y_probs >= threshold).astype(int)
 
-    r_mols = [rxn.GetReactantTemplate(i) for i in range(rxn.GetNumReactantTemplates())]
-    p_mols = [rxn.GetProductTemplate(i) for i in range(rxn.GetNumProductTemplates())]
+    # True Positives, True Negatives, False Positives, False Negatives
+    tp = np.sum((y_pred == 1) & (y_true == 1))
+    tn = np.sum((y_pred == 0) & (y_true == 0))
+    fp = np.sum((y_pred == 1) & (y_true == 0))
+    fn = np.sum((y_pred == 0) & (y_true == 1))
 
-    add_side(r_mols, "R")
-    add_side(p_mols, "P")
+    # Basic Metrics
+    accuracy = (tp + tn) / len(y_true)
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    f1_score = (
+        2 * (precision * recall) / (precision + recall)
+        if (precision + recall) > 0
+        else 0
+    )
 
-    # Add mapping edges based on atom-map numbers *within this reaction*
-    p_map = {}
-    product_map_nums = set()
-    for frag_i, mol in enumerate(p_mols):
-        for atom in mol.GetAtoms():
-            m = atom.GetAtomMapNum()
-            product_map_nums.add(m)
-            if m:
-                p_map[m] = ("P", frag_i, atom.GetIdx())
+    # AUC-ROC Calculation (Trapezoidal rule)
+    # Sort probabilities and corresponding truth values
+    desc_score_indices = np.argsort(y_probs)[::-1]
+    y_probs = y_probs[desc_score_indices]
+    y_true = y_true[desc_score_indices]
 
-    r_map = {}
-    for frag_i, mol in enumerate(r_mols):
-        for atom in mol.GetAtoms():
-            m = atom.GetAtomMapNum()
-            if m not in product_map_nums:
-                atom.SetAtomMapNum(0)
-            if m:
-                r_map[m] = ("R", frag_i, atom.GetIdx())
+    tps = np.cumsum(y_true)
+    fps = np.cumsum(1 - y_true)
 
-    for m, r_node in r_map.items():
-        p_node = p_map.get(m)
-        if p_node is not None:
-            G.add_edge(r_node, p_node, kind="map")
+    tpr = tps / tps[-1]
+    fpr = fps / fps[-1]
 
-    return G
+    # Calculate area under the curve using the trapezoidal rule
+    auc = np.trapezoid(tpr, fpr)
 
-
-def mapping_equivalent(rxn1: str, rxn2: str) -> bool:
-    G1 = rxn_to_mapping_graph(rxn1)
-    G2 = rxn_to_mapping_graph(rxn2)
-
-    def node_match(a, b):
-        return (
-            a["Z"] == b["Z"]
-            and a["side"] == b["side"]
-            # and a["frag"] == b["frag"]
-            and a["charge"] == b["charge"]
-            and a["aromatic"] == b["aromatic"]
-        )
-
-    def edge_match(a, b):
-        # must match bond-vs-map edges; bonds also match order
-        if a["kind"] != b["kind"]:
-            return False
-        if a["kind"] == "bond":
-            return a["order"] == b["order"]
-        return True  # kind == "map"
-
-    return nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match)
-
-
-def are_reactions_identical(rxn1, rxn2):
-    canonical_rxn1 = canonicalize_reaction_smiles(rxn1, remove_mapping=False)
-    canonical_rxn2 = canonicalize_reaction_smiles(rxn2, remove_mapping=False)
-    return canonical_rxn1 == canonical_rxn2
+    return {
+        "Accuracy": accuracy,
+        "Precision": precision,
+        "Recall": recall,
+        "F1-Score": f1_score,
+        "AUC": auc,
+        "Confusion Matrix": {"TP": tp, "TN": tn, "FP": fp, "FN": fn},
+    }
 
 
 gold_reactions = []

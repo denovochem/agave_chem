@@ -70,6 +70,7 @@
 !agave_chem/utils/constants.py
 !agave_chem/utils/logging_config.py
 !agave_chem/utils/graph_utils.py
+!agave_chem/utils/symmetry_classes.py
 
 !docs/
 !docs/getting_started.md

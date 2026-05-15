@@ -8,7 +8,12 @@
 
 An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. AgaveChem provides four composable mappers—from deterministic graph-based methods to a supervised neural mapper—that can be used individually or combined into a pipeline.
 
-The primary contribution is a supervised ALBERT-based neural mapper trained without any per-reaction manual annotation. Ground truth atom maps are generated automatically from a curated expert template library and an MCS mapper applied to a filtered subset of the Lowe USPTO dataset, yielding a labeled training corpus orders of magnitude larger than what direct annotation can provide.
+| library | per-reaction mapping accuracy (%) | per-atom mapping accuracy (%) |
+| --- | :---: | :---: |
+| RXNMapper | XXX | XXX |
+| GraphormerMapper | XXX | XXX |
+| LocalMapper | XXX | XXX |
+| AgaveChem | XXX | XXX |
 
 ## Neural mapper
 
