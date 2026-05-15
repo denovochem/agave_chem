@@ -18,7 +18,14 @@ from agave_chem.mappers.neural.model import (
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
 from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.utils.chem_utils import canonicalize_reaction_smiles
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.symmetry_classes import get_symmetry_class_from_mol
+
+
+def placeholder():
+    get_symmetry_class_from_mol()
+    canonicalize_reaction_smiles()
 
 
 class StringInfoDict(TypedDict):
@@ -411,24 +418,24 @@ class NeuralReactionMapper(ReactionMapper):
 
         Returns:
             Tuple[np.ndarray, np.ndarray]:
-                - **reactants_to_products_attn** (np.ndarray): Sub-matrix of shape
+                - **products_to_reactants_attn** (np.ndarray): Sub-matrix of shape
                   ``(n_product_tokens, n_reactant_tokens)`` giving the attention
                   weights from each product token to each reactant token.
-                - **products_to_reactants_attn** (np.ndarray): Transposed sub-matrix
+                - **reactants_to_products_attn** (np.ndarray): Transposed sub-matrix
                   of shape ``(n_product_tokens, n_reactant_tokens)`` giving the
                   attention weights from each reactant token to each product token,
                   transposed so that rows correspond to product tokens and columns
                   to reactant tokens, matching the orientation of
-                  ``reactants_to_products_attn``.
+                  ``products_to_reactants_attn``.
         """
-        reactants_to_products_attn = out[
+        products_to_reactants_attn = out[
             products_start_index:,
             reactants_start_index : reactants_end_index + 1,
-        ]  # reactants to products attention
-        products_to_reactants_attn = out[
+        ]  # products to reactants attention
+        reactants_to_products_attn = out[
             reactants_start_index : reactants_end_index + 1, products_start_index:
-        ].T  # products to reactants attention, transposed so indices align
-        return reactants_to_products_attn, products_to_reactants_attn
+        ].T  # reactants to products attention, transposed so indices align
+        return products_to_reactants_attn, reactants_to_products_attn
 
     def remove_non_atom_rows_and_columns(
         self, attn: np.ndarray, string_info_dict: StringInfoDict
@@ -564,12 +571,23 @@ class NeuralReactionMapper(ReactionMapper):
                 topologically equivalent. Only atoms with at least one symmetric
                 partner are included.
         """
-        if not mols:
-            return {}
-        combined = mols[0]
-        for mol in mols[1:]:
-            combined = Chem.CombineMols(combined, mol)
-        ranks = list(Chem.rdmolfiles.CanonicalRankAtoms(combined, breakTies=False))
+        ranks = []
+        seen_smiles_and_symmetry_classes: Dict[str, List[int]] = {}
+        for i, mol in enumerate(mols):
+            if Chem.MolToSmiles(mol) in seen_smiles_and_symmetry_classes:
+                mol_symmetry_classes = seen_smiles_and_symmetry_classes[
+                    Chem.MolToSmiles(mol)
+                ]
+            else:
+                mol_symmetry_classes = get_symmetry_class_from_mol(mol)
+                mol_symmetry_classes = [
+                    ele + (i + 1) * 1000 for ele in mol_symmetry_classes
+                ]
+                seen_smiles_and_symmetry_classes[Chem.MolToSmiles(mol)] = (
+                    mol_symmetry_classes
+                )
+
+            ranks.extend(mol_symmetry_classes)
         return self.get_duplicate_indices([ranks])
 
     def _apply_symmetric_attention(
@@ -631,12 +649,13 @@ class NeuralReactionMapper(ReactionMapper):
         self,
         rxn_smiles: str,
         aligned_attn_scores: Tuple[np.ndarray, np.ndarray],
-        one_to_one_correspondence: bool = False,
+        one_to_one_correspondence: bool = True,
         adjacent_atom_multiplier: float = 30,
         identical_adjacent_atom_multiplier: float = 10,
+        used_atom_divisor: float = 10,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
-    ) -> Tuple[str, float]:
+    ) -> Tuple[str, float, Dict[str, int]]:
         """
         Assign atom-to-atom map numbers to a reaction SMILES using a pre-computed
         attention matrix.
@@ -658,6 +677,9 @@ class NeuralReactionMapper(ReactionMapper):
                 scores of atoms neighboring an already-mapped pair.
             identical_adjacent_atom_multiplier (float): Additional multiplier
                 applied when a neighboring pair shares the same atom encoding.
+            used_atom_divisor (float): Divisor applied to attention scores
+                of reactant atoms that are already mapped if one_to_one_correspondence
+                is False
             reactants_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Maps
                 global reactant atom indices to existing atom map numbers, used
                 to anchor partially pre-mapped reactions.
@@ -666,10 +688,14 @@ class NeuralReactionMapper(ReactionMapper):
                 to anchor partially pre-mapped reactions.
 
         Returns:
-            Tuple[str, float]:
+            Tuple[str, float, Dict[str, int]]:
                 - Mapped reaction SMILES string with atom map numbers assigned.
                 - Confidence score computed as the product of per-atom assignment
                   probabilities.
+                - Dictionary mapping oversubscribed reactant SMILES (atom maps
+                  removed) to the maximum number of times any atom in that fragment
+                  was assigned to multiple product atoms. Empty when
+                  one_to_one_correspondence is True or when no oversubscription occurs.
         """
         if not reactants_atom_idx_to_orig_mapping:
             reactants_atom_idx_to_orig_mapping = {}
@@ -703,7 +729,6 @@ class NeuralReactionMapper(ReactionMapper):
         }
 
         (reactants_to_products_attn, products_to_reactants_attn) = aligned_attn_scores
-        attn = (reactants_to_products_attn + products_to_reactants_attn) / 2
 
         orig_reactants_to_products_attn = reactants_to_products_attn.copy()
         orig_products_to_reactants_attn = products_to_reactants_attn.copy()
@@ -711,74 +736,104 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
         products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
 
-        orig_reactants_to_products_attn = self._apply_symmetric_attention(
-            orig_reactants_to_products_attn, reactants_symmetric_indices, axis=1
-        )
         orig_products_to_reactants_attn = self._apply_symmetric_attention(
-            orig_products_to_reactants_attn, products_symmetric_indices, axis=0
+            orig_products_to_reactants_attn, reactants_symmetric_indices, axis=1
+        )
+        orig_reactants_to_products_attn = self._apply_symmetric_attention(
+            orig_reactants_to_products_attn, products_symmetric_indices, axis=0
         )
 
-        orig_attn = (
-            orig_reactants_to_products_attn + orig_products_to_reactants_attn
-        ) / 2
+        ## If not a one-to-one correspondence, multiple product atoms could map to the same
+        ## reactant atom. That reactant atom signal would be split, producing inaccurate
+        ## assignment probabilities. So we use only product to reactant attention
+        if one_to_one_correspondence:
+            orig_attn = (
+                orig_reactants_to_products_attn.copy()
+                + orig_products_to_reactants_attn.copy()
+            ) / 2
+            attn = (
+                reactants_to_products_attn.copy() + products_to_reactants_attn.copy()
+            ) / 2
+        else:
+            orig_attn = orig_products_to_reactants_attn.copy()
+            attn = products_to_reactants_attn.copy()
 
         assignment_probs = []
-        if one_to_one_correspondence:
-            for map_num in range(attn.shape[0]):
-                if products_orig_mapping_to_idx.get(map_num + 1, 0):
-                    row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
-                    col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
-                    products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
-                    reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+        for map_num in range(attn.shape[0]):
+            if products_orig_mapping_to_idx.get(map_num + 1, 0):
+                row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
+                col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
+
+                if reactants_atom_dict[col_highest_attn].GetAtomMapNum():
+                    if not reactants_atom_dict[col_highest_attn].HasProp(
+                        "oversubscribed_count"
+                    ):
+                        reactants_atom_dict[col_highest_attn].SetIntProp(
+                            "oversubscribed_count", 1
+                        )
+                    else:
+                        oversubscribed_count = reactants_atom_dict[
+                            col_highest_attn
+                        ].GetIntProp("oversubscribed_count")
+                        reactants_atom_dict[col_highest_attn].SetIntProp(
+                            "oversubscribed_count", oversubscribed_count + 1
+                        )
+
+                products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+                attn[row_highest_attn] = 0
+                attn[:, col_highest_attn] = 0
+                assignment_probs.append(1.0)
+            else:
+                highest_attn_score = attn.max()
+                highest_attn_score_indices = np.where(attn == highest_attn_score)
+                row_highest_attn = highest_attn_score_indices[0][0]
+                col_highest_attn = highest_attn_score_indices[1][0]
+
+                if reactants_atom_dict[col_highest_attn].GetAtomMapNum():
+                    if not reactants_atom_dict[col_highest_attn].HasProp(
+                        "oversubscribed_count"
+                    ):
+                        reactants_atom_dict[col_highest_attn].SetIntProp(
+                            "oversubscribed_count", 1
+                        )
+                    else:
+                        oversubscribed_count = reactants_atom_dict[
+                            col_highest_attn
+                        ].GetIntProp("oversubscribed_count")
+                        reactants_atom_dict[col_highest_attn].SetIntProp(
+                            "oversubscribed_count", oversubscribed_count + 1
+                        )
+
+                products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
+                reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
+
+                if one_to_one_correspondence:
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
-                    assignment_probs.append(1.0)
                 else:
-                    highest_attn_score = attn.max()
-                    highest_attn_score_indices = np.where(attn == highest_attn_score)
-                    row_highest_attn = highest_attn_score_indices[0][0]
-                    col_highest_attn = highest_attn_score_indices[1][0]
-                    products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
-                    reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
                     attn[row_highest_attn] = 0
-                    attn[:, col_highest_attn] = 0
-                    assignment_probs.append(
-                        orig_attn[row_highest_attn, col_highest_attn]
-                    )
+                    attn[:, col_highest_attn] /= used_atom_divisor
 
+                assignment_probs.append(orig_attn[row_highest_attn, col_highest_attn])
+
+            for (
+                product_atom_idx,
+                product_atom_env,
+            ) in products_atom_dict_neighbors[row_highest_attn]:
                 for (
-                    product_atom_idx,
-                    product_atom_env,
-                ) in products_atom_dict_neighbors[row_highest_attn]:
-                    for (
-                        reactant_atom_idx,
-                        reactant_atom_env,
-                    ) in reactants_atom_dict_neighbors[col_highest_attn]:
-                        if product_atom_env == reactant_atom_env:
-                            attn[product_atom_idx, reactant_atom_idx] *= (
-                                adjacent_atom_multiplier
-                                * identical_adjacent_atom_multiplier
-                            )
-                        else:
-                            attn[product_atom_idx, reactant_atom_idx] *= (
-                                adjacent_atom_multiplier
-                            )
-
-        else:
-            for map_num, row in enumerate(attn):
-                # get partial mapping working for now
-                # if products_orig_mapping_to_idx.get(map_num + 1, 0):
-                #     row_highest_attn = products_orig_mapping_to_idx[map_num + 1]
-                #     col_highest_attn = reactants_orig_mapping_to_idx[map_num + 1]
-                #     products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
-                #     reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
-                #     print(map_num + 1, row_highest_attn, col_highest_attn)
-                # else:
-                highest_attn_score = row.max()
-                highest_attn_indices = int(np.where(row == highest_attn_score)[0][0])
-                products_atom_dict[map_num].SetAtomMapNum(map_num + 1)
-                reactants_atom_dict[highest_attn_indices].SetAtomMapNum(map_num + 1)
-                assignment_probs.append(orig_attn[map_num, highest_attn_indices])
+                    reactant_atom_idx,
+                    reactant_atom_env,
+                ) in reactants_atom_dict_neighbors[col_highest_attn]:
+                    if product_atom_env == reactant_atom_env:
+                        attn[product_atom_idx, reactant_atom_idx] *= (
+                            adjacent_atom_multiplier
+                            * identical_adjacent_atom_multiplier
+                        )
+                    else:
+                        attn[product_atom_idx, reactant_atom_idx] *= (
+                            adjacent_atom_multiplier
+                        )
 
         mapped_reactants_str = ".".join(
             [Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols]
@@ -790,7 +845,24 @@ class NeuralReactionMapper(ReactionMapper):
 
         confidence = float(np.prod(assignment_probs))
 
-        return mapped_rxn_smiles, confidence
+        if one_to_one_correspondence:
+            return mapped_rxn_smiles, confidence, {}
+
+        oversubscribed_dict = {}
+        for reactant in reactants_mols:
+            max_oversubscribed_count = 0
+            for reactant_atom in reactant.GetAtoms():
+                if not reactant_atom.HasProp("oversubscribed_count"):
+                    continue
+                oversubscribed_count = reactant_atom.GetIntProp("oversubscribed_count")
+                if oversubscribed_count > max_oversubscribed_count:
+                    max_oversubscribed_count = oversubscribed_count
+            if max_oversubscribed_count == 0:
+                continue
+            [atom.SetAtomMapNum(0) for atom in reactant.GetAtoms()]
+            oversubscribed_dict[Chem.MolToSmiles(reactant)] = max_oversubscribed_count
+
+        return mapped_rxn_smiles, confidence, oversubscribed_dict
 
     def get_data_from_partially_mapped_smiles(self, rxn_smiles):
         reactants_str, products_str = self._split_reaction_components(rxn_smiles)
@@ -853,27 +925,138 @@ class NeuralReactionMapper(ReactionMapper):
             products_atom_idx_to_orig_mapping,
         )
 
-    def map_reaction(
+    def _get_attention_matrices_batch(
         self,
-        rxn_smiles: str,
+        texts: List[str],
         layer: int = 11,
         head: int = 7,
+        max_length: int = 512,
+    ) -> List[Tuple[np.ndarray, List[str]]]:
+        """
+        Run batched neural network inference and return log-attention matrices for a
+        list of reaction SMILES strings.
+
+        Tokenizes all inputs together in a single padded batch, executes one forward
+        pass, then trims each result to its non-padding length before applying the
+        logarithm.
+
+        Args:
+            texts (List[str]): Reaction SMILES strings to encode. Must be non-empty.
+            layer (int): 0-based layer index. Only used when the underlying model is
+                the base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
+            head (int): 0-based head index. Only used when the underlying model is the
+                base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
+            max_length (int): Maximum tokenization length. Must match the value used
+                during training.
+
+        Returns:
+            List[Tuple[np.ndarray, List[str]]]: One entry per input string, each
+                containing:
+                    - Log-attention matrix of shape (real_seq_len, real_seq_len) as a
+                      numpy array, with padding tokens stripped.
+                    - List of token strings aligned to the attention matrix axes.
+        """
+        self._model.eval()
+
+        enc = self._tokenizer(
+            texts,
+            max_length=max_length,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        )
+        input_ids = enc["input_ids"].to(self._device)
+        attention_mask = enc["attention_mask"].to(self._device)
+        token_type_ids = enc.get("token_type_ids", torch.zeros_like(enc["input_ids"]))
+        token_type_ids = token_type_ids.to(self._device)
+
+        with torch.no_grad():
+            if isinstance(self._model, AlbertWithAttentionAlignment):
+                attn_probs = self._model.predict_attention_probs(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    token_type_ids=token_type_ids,
+                )  # (B, S, S)
+                attn_batch = attn_probs.detach().cpu()  # (B, S, S)
+            else:
+                outputs = self._model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    output_attentions=True,
+                    return_dict=True,
+                )
+                attentions = outputs.attentions  # tuple[num_layers] of (B, H, S, S)
+                if layer < 0 or layer >= len(attentions):
+                    raise ValueError(
+                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
+                    )
+                num_heads = attentions[layer].shape[1]
+                if head < 0 or head >= num_heads:
+                    raise ValueError(
+                        f"head must be in [0, {num_heads - 1}], got {head}"
+                    )
+                attn_batch = attentions[layer][:, head].detach().cpu()  # (B, S, S)
+
+        results: List[Tuple[np.ndarray, List[str]]] = []
+        for i in range(len(texts)):
+            real_len = int(enc["attention_mask"][i].sum().item())
+            attn_i = attn_batch[i, :real_len, :real_len]
+            tokens_i = self._tokenizer.convert_ids_to_tokens(
+                enc["input_ids"][i].tolist()
+            )[:real_len]
+            results.append((torch.log(attn_i).numpy(), tokens_i))
+
+        return results
+
+    def _map_from_attention(
+        self,
+        rxn_smiles: str,
+        attn: np.ndarray,
+        tokens: List[str],
         sequence_max_length: int = 512,
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,
-        one_to_one_correspondence: bool = False,
-        start_from_partial_map: bool = False,
-    ) -> ReactionMapperResult:
+        one_to_one_correspondence: bool = True,
+        # canonicalize_reaction_smiles: bool = True,
+        reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
+        products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
+    ) -> Tuple[ReactionMapperResult, Optional[str]]:
         """
-        Maps a reaction SMILES string using a pre-trained Albert model.
+        Assign atom mappings from a pre-computed log-attention matrix and token list.
+
+        Performs all post-inference processing: token validation, attention masking,
+        cross-attention score alignment, non-atom row/column removal, and atom map
+        assignment. When one_to_one_correspondence is False and oversubscribed reactant
+        atoms are detected, the expanded reaction SMILES (with extra reactant copies)
+        is returned as the second element for a downstream retry pass.
 
         Args:
-            rxn_smiles (str): A reaction SMILES string.
-            layer (int): 0-based layer index to use for attention.
-            head (int): 0-based head index to use for attention.
+            rxn_smiles (str): An unmapped reaction SMILES string.
+            attn (np.ndarray): Log-attention matrix of shape (seq_len, seq_len) as
+                returned by _get_attention_matrices_batch or get_attention_matrix_for_head.
+            tokens (List[str]): Token strings aligned to the attention matrix axes.
+            sequence_max_length (int): Maximum allowed sequence length; sequences at or
+                above this length are treated as failures.
+            adjacent_atom_multiplier (float): Multiplier applied to attention scores of
+                atoms neighboring an already-mapped pair.
+            identical_adjacent_atom_multiplier (float): Additional multiplier applied
+                when a neighboring pair shares the same atom encoding.
+            one_to_one_correspondence (bool): If True, enforces greedy one-to-one
+                assignment; if False, each product atom independently picks its best
+                reactant atom.
+            reactants_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Existing
+                reactant atom map numbers to anchor partial mappings.
+            products_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Existing
+                product atom map numbers to anchor partial mappings.
 
         Returns:
-            str: A mapped reaction SMILES string with atom map numbers assigned.
+            Tuple[ReactionMapperResult, Optional[str]]:
+                - Mapping result. On failure (unknown tokens, sequence too long, or
+                  invalid mapping), returns a result with an empty selected_mapping.
+                - Expanded reaction SMILES with extra copies of oversubscribed reactant
+                  fragments appended, or None if no oversubscription was detected. Only
+                  non-None when one_to_one_correspondence is False and at least one
+                  reactant atom was assigned to more than one product atom.
         """
         default_mapping_dict = ReactionMapperResult(
             original_smiles="",
@@ -883,43 +1066,23 @@ class NeuralReactionMapper(ReactionMapper):
             mapping_score=None,
             additional_info=[{}],
         )
-        if not self._reaction_smiles_valid(rxn_smiles):
-            return default_mapping_dict
-
-        reactants_atom_idx_to_orig_mapping = None
-        products_atom_idx_to_orig_mapping = None
-        if start_from_partial_map:
-            (
-                rxn_smiles,
-                reactants_atom_idx_to_orig_mapping,
-                products_atom_idx_to_orig_mapping,
-            ) = self.get_data_from_partially_mapped_smiles(rxn_smiles)
-
-        attn, tokens = self.get_attention_matrix_for_head(
-            text=rxn_smiles,
-            layer=layer,
-            head=head,
-            max_length=sequence_max_length,
-            trim_padding=True,
-        )
 
         if "[UNK]" in tokens:
             logger.warning("Unknown token in sequence")
-            return default_mapping_dict
+            return default_mapping_dict, None
 
         if ">>" not in tokens:
             logger.warning("Sequence too long")
-
-            return default_mapping_dict
+            return default_mapping_dict, None
 
         if len(tokens) >= sequence_max_length:
             logger.warning("Sequence too long")
-            return default_mapping_dict
+            return default_mapping_dict, None
 
         string_info_dict = self.get_reactants_products_dict(tokens)
         attn_probs, _ = self.mask_attn_matrix(attn, string_info_dict)
 
-        reactants_to_products_attn, products_to_reactants_attn = (
+        products_to_reactants_attn, reactants_to_products_attn = (
             self.get_aligned_attn_scores(
                 attn_probs,
                 string_info_dict["reactants_start_index"],
@@ -935,7 +1098,7 @@ class NeuralReactionMapper(ReactionMapper):
             products_to_reactants_attn, string_info_dict
         )
 
-        mapped_rxn_smiles, confidence = self.assign_atom_maps(
+        mapped_rxn_smiles, confidence, oversubscribed_dict = self.assign_atom_maps(
             rxn_smiles,
             (reactants_to_products_attn, products_to_reactants_attn),
             one_to_one_correspondence=one_to_one_correspondence,
@@ -945,8 +1108,22 @@ class NeuralReactionMapper(ReactionMapper):
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
         )
 
+        expanded_rxn_smiles: Optional[str] = None
+        if oversubscribed_dict:
+            orig_reactants, orig_products = rxn_smiles.split(">>")
+            new_reactants_list: List[str] = []
+            for reactant, num_oversubscribed in oversubscribed_dict.items():
+                new_reactants_list.extend([reactant] * num_oversubscribed)
+            expanded_rxn_smiles = (
+                orig_reactants
+                + "."
+                + ".".join(new_reactants_list)
+                + ">>"
+                + orig_products
+            )
+
         if not self._verify_validity_of_mapping(mapped_rxn_smiles):
-            return default_mapping_dict
+            return default_mapping_dict, expanded_rxn_smiles
 
         return ReactionMapperResult(
             original_smiles=rxn_smiles,
@@ -955,21 +1132,271 @@ class NeuralReactionMapper(ReactionMapper):
             mapping_type=self._mapper_type,
             mapping_score=confidence,
             additional_info=[{}],
-        )
+        ), expanded_rxn_smiles
 
-    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
+    def _strip_unmapped_reactant_fragments(
+        self,
+        mapped_rxn_smiles: str,
+        orig_rxn_smiles: str,
+    ) -> str:
         """
-        Map a list of reaction SMILES strings using the neural mapper.
+        Remove unused extra reactant fragments from an oversubscription-expanded mapped reaction.
+
+        Uses fragment counts rather than positional indices, so the result is
+        independent of fragment ordering or SMILES canonicalization. For each
+        fragment type (identified by canonical SMILES with atom maps stripped),
+        the original count from orig_rxn_smiles is tracked in a counter. When
+        processing the mapped reactants, each fragment first tries to consume an
+        original slot; if one exists it is kept unconditionally (preserving
+        legitimate spectators). Once all original slots for a given type are
+        consumed, remaining copies are treated as extra and are kept only if at
+        least one of their atoms carries a non-zero atom map number.
+
+        Args:
+            mapped_rxn_smiles (str): Mapped reaction SMILES from the second-pass
+                retry, containing the original reactants plus any extra appended
+                copies.
+            orig_rxn_smiles (str): The pre-expansion reaction SMILES, used to
+                determine the original fragment counts.
+
+        Returns:
+            str: The reaction SMILES with unused (fully unmapped) extra reactant
+                fragments removed. Returns mapped_rxn_smiles unchanged if either
+                reactants side cannot be parsed.
+        """
+        orig_reactants_str, _ = self._split_reaction_components(orig_rxn_smiles)
+        mapped_reactants_str, products_str = self._split_reaction_components(
+            mapped_rxn_smiles
+        )
+        orig_mol = Chem.MolFromSmiles(orig_reactants_str)
+        mapped_mol = Chem.MolFromSmiles(mapped_reactants_str)
+        if orig_mol is None or mapped_mol is None:
+            return mapped_rxn_smiles
+
+        def _canonical_key(frag: Chem.Mol) -> str:
+            rw = Chem.RWMol(frag)
+            for atom in rw.GetAtoms():
+                atom.SetAtomMapNum(0)
+            return Chem.MolToSmiles(rw)
+
+        orig_counts: Dict[str, int] = defaultdict(int)
+        for frag in Chem.GetMolFrags(orig_mol, asMols=True):
+            orig_counts[_canonical_key(frag)] += 1
+
+        kept_frags: List[str] = []
+        for frag in Chem.GetMolFrags(mapped_mol, asMols=True):
+            key = _canonical_key(frag)
+            if orig_counts[key] > 0:
+                orig_counts[key] -= 1
+                kept_frags.append(Chem.MolToSmiles(frag, canonical=False))
+            elif any(atom.GetAtomMapNum() != 0 for atom in frag.GetAtoms()):
+                kept_frags.append(Chem.MolToSmiles(frag, canonical=False))
+
+        return ".".join(kept_frags) + ">>" + products_str
+
+    def map_reaction(
+        self,
+        rxn_smiles: str,
+        layer: int = 11,
+        head: int = 7,
+        sequence_max_length: int = 512,
+        adjacent_atom_multiplier: float = 10,
+        identical_adjacent_atom_multiplier: float = 10,
+        one_to_one_correspondence: bool = True,
+        start_from_partial_map: bool = False,
+    ) -> ReactionMapperResult:
+        """
+        Map a single reaction SMILES string using the neural mapper.
+
+        Convenience wrapper around map_reactions for single-reaction use.
+
+        Args:
+            rxn_smiles (str): A reaction SMILES string.
+            layer (int): 0-based layer index to use for attention.
+            head (int): 0-based head index to use for attention.
+            sequence_max_length (int): Maximum allowed sequence length.
+            adjacent_atom_multiplier (float): Multiplier for adjacent atom attention scores.
+            identical_adjacent_atom_multiplier (float): Additional multiplier when
+                neighboring atom encodings match.
+            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            start_from_partial_map (bool): If True, extracts and preserves existing atom
+                map numbers from the input SMILES before remapping.
+
+        Returns:
+            ReactionMapperResult: Mapping result. On failure returns a result with an
+                empty selected_mapping.
+        """
+        return self.map_reactions(
+            [rxn_smiles],
+            layer=layer,
+            head=head,
+            sequence_max_length=sequence_max_length,
+            adjacent_atom_multiplier=adjacent_atom_multiplier,
+            identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
+            one_to_one_correspondence=one_to_one_correspondence,
+            start_from_partial_map=start_from_partial_map,
+        )[0]
+
+    def map_reactions(
+        self,
+        reaction_list: List[str],
+        layer: int = 11,
+        head: int = 7,
+        sequence_max_length: int = 512,
+        adjacent_atom_multiplier: float = 10,
+        identical_adjacent_atom_multiplier: float = 10,
+        one_to_one_correspondence: bool = True,
+        start_from_partial_map: bool = False,
+        batch_size: int = 32,
+    ) -> List[ReactionMapperResult]:
+        """
+        Map a list of reaction SMILES strings using batched neural network inference.
+
+        Tokenizes and runs the model in batches of batch_size for efficiency, then
+        assigns atom mappings for each reaction individually from the resulting
+        attention matrices.
 
         Args:
             reaction_list (List[str]): A list of unmapped reaction SMILES strings.
+            layer (int): 0-based layer index. Only used for the base AlbertForMaskedLM;
+                ignored for AlbertWithAttentionAlignment.
+            head (int): 0-based head index. Only used for the base AlbertForMaskedLM;
+                ignored for AlbertWithAttentionAlignment.
+            sequence_max_length (int): Maximum tokenization length.
+            adjacent_atom_multiplier (float): Multiplier for adjacent atom attention scores.
+            identical_adjacent_atom_multiplier (float): Additional multiplier when
+                neighboring atom encodings match.
+            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            start_from_partial_map (bool): If True, extracts and preserves existing atom
+                map numbers before remapping.
+            batch_size (int): Number of reactions to process in a single forward pass.
 
         Returns:
             List[ReactionMapperResult]: A list of mapping results, one per input
                 reaction. Failed mappings return a result with an empty
-                selected_mapping.
+                selected_mapping. When one_to_one_correspondence is False and
+                oversubscribed reactant atoms are detected, a second batched
+                inference pass is run on expanded reactions (extra reactant copies
+                appended) with one_to_one_correspondence=True; successful retry
+                results replace the first-pass results.
         """
-        mapped_reactions = []
-        for reaction in reaction_list:
-            mapped_reactions.append(self.map_reaction(reaction))
-        return mapped_reactions
+        results: List[ReactionMapperResult] = [
+            ReactionMapperResult(
+                original_smiles="",
+                selected_mapping="",
+                possible_mappings={},
+                mapping_type=self._mapper_type,
+                mapping_score=None,
+                additional_info=[{}],
+            )
+            for _ in reaction_list
+        ]
+
+        # Preprocess: validate and optionally strip existing partial maps
+        prepared: List[
+            Optional[Tuple[str, Optional[Dict[int, int]], Optional[Dict[int, int]]]]
+        ] = []
+        for rxn_smiles in reaction_list:
+            rxn_smiles = canonicalize_reaction_smiles(rxn_smiles)
+            if not self._reaction_smiles_valid(rxn_smiles):
+                prepared.append(None)
+                continue
+            reactants_atom_idx_to_orig_mapping = None
+            products_atom_idx_to_orig_mapping = None
+            if start_from_partial_map:
+                (
+                    rxn_smiles,
+                    reactants_atom_idx_to_orig_mapping,
+                    products_atom_idx_to_orig_mapping,
+                ) = self.get_data_from_partially_mapped_smiles(rxn_smiles)
+            prepared.append(
+                (
+                    rxn_smiles,
+                    reactants_atom_idx_to_orig_mapping,
+                    products_atom_idx_to_orig_mapping,
+                )
+            )
+
+        valid_pairs = [(i, p) for i, p in enumerate(prepared) if p is not None]
+        valid_smiles = [p[0] for _, p in valid_pairs]
+
+        if not valid_smiles:
+            return results
+
+        # Batched neural network inference
+        attn_tokens_list: List[Tuple[np.ndarray, List[str]]] = []
+        for batch_start in range(0, len(valid_smiles), batch_size):
+            batch = valid_smiles[batch_start : batch_start + batch_size]
+            attn_tokens_list.extend(
+                self._get_attention_matrices_batch(
+                    texts=batch,
+                    layer=layer,
+                    head=head,
+                    max_length=sequence_max_length,
+                )
+            )
+
+        # Assign atom maps per reaction from pre-computed attention matrices
+        oversubscribed_cases: List[Tuple[int, str, str]] = []
+        for local_idx, (
+            orig_idx,
+            (rxn_smiles, reactants_map, products_map),
+        ) in enumerate(valid_pairs):
+            attn, tokens = attn_tokens_list[local_idx]
+            result, expanded_rxn_smiles = self._map_from_attention(
+                rxn_smiles=rxn_smiles,
+                attn=attn,
+                tokens=tokens,
+                sequence_max_length=sequence_max_length,
+                adjacent_atom_multiplier=adjacent_atom_multiplier,
+                identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
+                one_to_one_correspondence=one_to_one_correspondence,
+                reactants_atom_idx_to_orig_mapping=reactants_map,
+                products_atom_idx_to_orig_mapping=products_map,
+            )
+            results[orig_idx] = result
+            if expanded_rxn_smiles is not None:
+                expanded_rxn_smiles = canonicalize_reaction_smiles(expanded_rxn_smiles)
+                oversubscribed_cases.append((orig_idx, rxn_smiles, expanded_rxn_smiles))
+
+        if not oversubscribed_cases:
+            return results
+
+        # Second pass: batch-map expanded reactions with one_to_one_correspondence=True
+        expanded_smiles = [expanded for _, _, expanded in oversubscribed_cases]
+        expanded_attn_tokens: List[Tuple[np.ndarray, List[str]]] = []
+        for batch_start in range(0, len(expanded_smiles), batch_size):
+            batch = expanded_smiles[batch_start : batch_start + batch_size]
+            expanded_attn_tokens.extend(
+                self._get_attention_matrices_batch(
+                    texts=batch,
+                    layer=layer,
+                    head=head,
+                    max_length=sequence_max_length,
+                )
+            )
+
+        for local_idx, (orig_idx, orig_rxn_smiles, expanded_rxn) in enumerate(
+            oversubscribed_cases
+        ):
+            attn, tokens = expanded_attn_tokens[local_idx]
+            retry_result, _ = self._map_from_attention(
+                rxn_smiles=expanded_rxn,
+                attn=attn,
+                tokens=tokens,
+                sequence_max_length=sequence_max_length,
+                adjacent_atom_multiplier=adjacent_atom_multiplier,
+                identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
+                one_to_one_correspondence=True,
+            )
+            if retry_result["selected_mapping"]:
+                retry_result["original_smiles"] = orig_rxn_smiles
+                retry_result["selected_mapping"] = (
+                    self._strip_unmapped_reactant_fragments(
+                        retry_result["selected_mapping"],
+                        orig_rxn_smiles,
+                    )
+                )
+                results[orig_idx] = retry_result
+
+        return results

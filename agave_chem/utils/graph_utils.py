@@ -362,8 +362,8 @@ def mapping_equivalent(
         inputs are normalized via `normalize_rxn_atom_maps` before comparison,
         so reactant-only atom-map numbers do not affect the result.
     """
-    # rxn1 = normalize_rxn_atom_maps(rxn1)
-    # rxn2 = normalize_rxn_atom_maps(rxn2)
+    rxn1 = normalize_rxn_atom_maps(rxn1)
+    rxn2 = normalize_rxn_atom_maps(rxn2)
     G1 = rxn_to_mapping_graph(rxn1)
 
     def node_match(a, b):

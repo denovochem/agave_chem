@@ -28,6 +28,34 @@
 \usepackage{algpseudocode}
 \usepackage{subcaption}
 \usepackage{enumitem}
+\usepackage{listings}
+\lstdefinelanguage{json}{
+  basicstyle=\small\ttfamily,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  stringstyle=\color{teal},
+  keywordstyle=\color{blue!70!black}\bfseries,
+  morestring=[b]",
+  literate=
+    *{0}{{\color{orange!80!black}0}}{1}
+     {1}{{\color{orange!80!black}1}}{1}
+     {2}{{\color{orange!80!black}2}}{1}
+     {3}{{\color{orange!80!black}3}}{1}
+     {4}{{\color{orange!80!black}4}}{1}
+     {5}{{\color{orange!80!black}5}}{1}
+     {6}{{\color{orange!80!black}6}}{1}
+     {7}{{\color{orange!80!black}7}}{1}
+     {8}{{\color{orange!80!black}8}}{1}
+     {9}{{\color{orange!80!black}9}}{1}
+     {:}{{\color{black}{:}}}{1}
+     {,}{{\color{black}{,}}}{1}
+     {\{}{{\color{black}{\{}}}{1}
+     {\}}{{\color{black}{\}}}}{1}
+     {[}{{\color{black}{[}}}{1}
+     {]}{{\color{black}{]}}}{1},
+}
 
 % ---------------------------------------------------------------
 % Title / Authors
@@ -65,7 +93,7 @@ Expert Template and Maximum Common Substructure Ground Truth}}
   symmetry or where multiple plausible assignments exist.  Recent work has
   shown that supervised training from manually labeled reaction data
   improves accuracy, but hand annotation of individual reactions scales
-  poorly---even ambitious human-in-the-loop efforts cover only thousands
+  poorly---even ambitious manual labelling efforts cover only thousands
   of reactions.
 
   We present AgaveChem, an open-source Python library whose primary
@@ -74,12 +102,12 @@ Expert Template and Maximum Common Substructure Ground Truth}}
   templates and compose them with a maximum-common-substructure (MCS)
   mapper to generate atom-mapping ground truth from a filtered subset of
   the Lowe USPTO dataset, without any per-reaction manual annotation.  A
-  single verified template propagates correct supervision to every reaction
+  single verified template can propagate nearly perfect atom maps to every reaction
   in its scope, yielding a labeled training corpus orders of magnitude
   larger than what direct annotation can realistically provide.  The
   resulting labeled reactions---fully mapping $\sim$60\% of the corpus and
-  covering $\sim$90\% of product atoms---supervise an ALBERT-based neural
-  mapper through a two-phase training procedure: unsupervised MLM pre-training
+  covering $\sim$90\% of product atoms---are used to train an ALBERT-based neural
+  mapper through a two-phase training procedure: unsupervised masked language modeling (MLM) pre-training
   followed by multitask fine-tuning that simultaneously optimizes MLM and a
   direct attention alignment objective against the generated ground truth mappings.
   On held-out benchmark reactions, AgaveChem achieves greater accuracy than
@@ -88,8 +116,8 @@ Expert Template and Maximum Common Substructure Ground Truth}}
   mapper, and an MCS mapper---are released as independent, composable
   library components.  As part of this work we also release
   \texttt{rdchiral\_plus}, an improved fork of the rdchiral template
-  application library that reduces incorrect template roundtrips by 90\%
-  relative to the original rdchiral and by 94\% relative to
+  application library that reduces incorrect template roundtrips by 96\%
+  relative to the original rdchiral and by 98\% relative to
   rdchiral\_cpp.  Both libraries are freely available at
   \url{https://github.com/denovochem/agave_chem} and
   \url{https://github.com/denovochem/rdchiral_plus}.
@@ -111,14 +139,13 @@ template extraction---the automated derivation of SMARTS-based
 transformation rules from reaction databases---requires exact knowledge
 of which bonds are formed and broken, information that can only be
 obtained from a reliable atom map~\cite{Coley2019rdchiral}.
-Retrosynthetic planning tools including ASKCOS~\cite{Coley2019,aiZynthFinder} and
+Retrosynthetic planning tools including ASKCOS, AIZynthFinder~\cite{Coley2019,aiZynthFinder} and
 related systems consume these templates directly, so errors in the
 upstream map propagate throughout the synthesis prediction pipeline.
-Beyond template-based methods, atom maps also provide the training
-signal for sequence-to-sequence models of forward and retrosynthetic
-prediction~\cite{Schwaller2019} and are used in reaction classification
-workflows~\cite{Schneider2016}.  Despite its ubiquity as a dependency,
-producing accurate and complete atom maps at scale remains difficult.
+Beyond template-based methods, atom maps also may also be used for reaction center identification,
+reaction classification~\cite{Schneider2016}, reaction corpus filtering, and arrow arrow-pushing mechanism
+prediction. Despite its ubiquity as a dependency,
+producing accurate atom maps at scale remains difficult.
 
 \begin{figure}[htbp]
   \centering
@@ -132,9 +159,7 @@ Early mapping methods relied on heuristic graph matching.  INDIGO and
 related tools use atom-invariant scoring and integer programming to find
 optimal correspondences~\cite{Weininger1989}.  While these approaches
 are interpretable and fast on small molecules, they do not generalize
-well to large or structurally complex reactions, and they have no
-mechanism to exploit the wealth of structural knowledge encoded in
-reaction databases.  The benchmarking study of
+well to large or structurally complex reactions.  The benchmarking study of
 \citet{Lin2020} systematically evaluated several classical and
 hybrid mappers and identified substantial failure rates on USPTO reactions,
 motivating the development of data-driven alternatives.
@@ -146,22 +171,57 @@ mechanistic transformation directly.  NameRxn~\cite{NameRxn} (NextMove
 Software) classifies reactions against a large rule base of known
 mechanisms and named transformations, establishing atom-level
 correspondences as an inherent byproduct of the template match.
+Yet even with an exhaustive library of hand-curated templates, coverage
+on the USPTO---a corpus that is not particularly chemically diverse---remains only 60--73\%~\cite{Lagerstedt2021},
+underscoring the fundamental scalability limits of rule enumeration.
+The sheer cost of assembling such rule bases is illustrated by Chematica
+(now commercialized as Synthia by MilliporeSigma)~\cite{Szymkuc2016},
+whose knowledge base of approximately 115{,}000 expert-coded reaction rules
+required over 15~years of continuous curation by PhD-level chemists
+to curate.~\cite{Klucznik2018}.
 
 \paragraph{Neural approaches.}
 Schwaller et al.~\cite{Schwaller2021} demonstrated that Transformer
-encoder models~\cite{Vaswani2017} trained on unlabeled reaction SMILES via masked language
-modeling (MLM)~\cite{Devlin2019} learn atom-mapping as an emergent property of their
+encoder models~\cite{Vaswani2017} trained on unlabeled reaction SMILES via MLM
+~\cite{Devlin2019} learn atom-mapping as an emergent property of their
 attention weights, enabling attention-guided AAM without any labeled
-data.  This unsupervised paradigm scales naturally to large reaction
-corpora and achieves strong overall accuracy, but the MLM objective has
-no mechanism to explicitly penalize incorrect correspondences; errors
+data.  This unsupervised training regime is naturally suited to large
+unlabelled reaction corpora such as the USPTO, and achieves strong
+overall accuracy, but the MLM objective has no mechanism to explicitly
+penalize incorrect correspondences.  In practice, the raw attention
+signal is insufficient on its own: introducing a post-hoc neighbour
+attention multiplier---which rescales the attention weights of
+adjacent atoms before extracting correspondences---improves mapping
+correctness by as much as 30\%, with an optimal multiplier of
+90 rather than the na\"{i}ve value of 1~\cite{Schwaller2021}.
+Correspondences are then extracted via a greedy algorithm which
+enforces strict one-to-one assignments; this is appropriate for the
+common case but cannot represent reactions in which a single reactant
+atom contributes to multiple product atoms.  Residual errors
 arise especially for symmetric substrates and reactions where attention
 provides insufficient discriminating signal.  Nugmanov
-et al.~\cite{Nugmanov2022} (GraphormerMapper) addressed the sensitivity
-of SMILES-based models to atom ordering by replacing sequential
-tokenization with a graph-structured Transformer, improving mapping
-stability and generalization across reaction types.  Both of these
-approaches are trained entirely without labeled atom-mapping data.
+et al.~\cite{Nugmanov2022} (GraphormerMapper) addressed several of these
+limitations by replacing SMILES tokenization with a graph-structured
+Transformer that carries no positional encodings, making correspondence
+prediction invariant to atom and molecule ordering.  Rather than
+relying on a single attention head---whose selection is not principled
+and can overfit to a particular dataset---GraphormerMapper averages
+weights across all heads of the final layer and removes the per-product
+normalization step used in RXNMapper, yielding a more stable attention
+signal.  Correspondences are then enumerated in a breadth-first-search
+order, requiring each newly mapped product atom to be bond-connected to
+already-mapped atoms.  Despite these architectural improvements,
+GraphormerMapper likewise requires explicit post-hoc engineering for
+failure cases: mechanistically incorrect mappings for reaction classes
+such as esterification or carbonyl reduction are corrected by a library
+of predefined heuristic rules encoded as CGR SMILES and applied via
+subgraph isomorphism~\cite{Nugmanov2022}.  The need for a neighbour
+attention multiplier in RXNMapper and explicit heuristic correction rules
+in GraphormerMapper illustrates a recurring limitation of purely
+unsupervised objectives: the training signal alone is insufficient to
+guarantee chemically coherent correspondences across all reaction classes,
+motivating the integration of curated chemical knowledge alongside learned
+representations.
 
 A different strategy was taken by Chen et al.~\cite{Chen2024}
 (LocalMapper), who demonstrated that supervised training from
@@ -203,18 +263,17 @@ composable mappers:
 \begin{enumerate}[leftmargin=*, label=(\arabic*)]
   \item \textbf{Identical fragment mapper.}  Fragments that appear
         structurally unchanged on both sides of the reaction arrow---counter
-        ions, spectator molecules, and common leaving groups---are detected
+        ions, spectator molecules, etc---are detected
         and assigned maps directly, before any other mapper is invoked.
   \item \textbf{MCS mapper.}  Atoms whose local chemical environment is
       unchanged during the reaction are mapped via a modified MCS
-      procedure.  A configurable radius parameter controls how close to a
+      procedure.  Configurable radius parameters control how close to a
       reactive center the mapping extends, yielding conservative partial
       maps that avoid incorrectly assigning atoms near bond-breaking events.
   \item \textbf{Expert template mapper.}  A curated library of reaction
-        SMIRKS templates, sourced from ReactionFlash, Rxn-INSIGHT~\cite{Probst2022},
-        and manual curation, is applied to the reaction product.  If a
-        template generates the correct reactants, the mapping encoded in the
-        template SMIRKS is accepted as ground truth for that reaction.
+        SMIRKS templates, sourced from ReactionFlash~\cite{ReactionFlash}, Rxn-INSIGHT~\cite{Probst2022},
+        and manual curation, is applied to the reaction product.  Mappings from templates
+        that generating the expected reactants are retained, breaking ties where necessary using heuristics.
   \item \textbf{Neural mapper.}  An ALBERT transformer trained in two
         phases---unsupervised MLM pre-training followed by multitask
         supervised fine-tuning---that produces complete atom maps via
@@ -231,10 +290,10 @@ of reactions and covering $\sim$90\% of product atoms.
 
 As a secondary contribution, we release \texttt{rdchiral\_plus}, a
 substantially refactored fork of rdchiral~\cite{Coley2019rdchiral}
-that is used internally by the template mapper.  It introduces
-deterministic stereochemistry handling, corrects bond direction
-artifacts in conjugated systems, supports one-pot template application,
-and reduces incorrect template roundtrips by 96\% compared to the
+that is used internally by the template mapper.  It improves speed and fixes a number of 
+bugs/issues, including introducing deterministic stereochemistry handling, correcting bond direction
+artifacts in conjugated systems, supporting one-pot template application,
+and reducing incorrect template roundtrips by 96\% compared to the
 original rdchiral and 98\% compared to rdchiral\_cpp.
 \Cref{subsec:rdchiral} provides full details.
 
@@ -266,13 +325,10 @@ and directions for future work.
 
 AgaveChem is structured as a library of four independent mappers
 (\cref{fig:overview}) that can be used individually or combined into
-a pipeline.  In the default configuration, mappers are applied in order
-of increasing complexity and decreasing determinism: identical fragment
-$\to$ MCS $\to$ template $\to$ neural.  Each mapper operates on
-unmapped reaction SMILES and returns a scored, mapped reaction SMILES
-together with metadata about how the mapping was produced.  A
-higher-priority mapper in the pipeline can override the output of a
-lower-priority one.  Users may substitute any subset of mappers or
+a pipeline.  In the default configuration, identical fragments are first
+mapped using the identical fragment mapper. Following this, if a mapping 
+can be generated using the template mapper, this mapping is returned. If 
+not, the reaction proceeds to the neural mapper. Users may also substitute any subset of mappers or
 define custom selection strategies.
 
 \begin{figure}[htbp]
@@ -295,15 +351,28 @@ define custom selection strategies.
 \paragraph{Source data.}
 We draw from the Lowe USPTO reaction dataset~\cite{Lowe2012}, which
 contains \todo{total count} reactions extracted from US patent
-literature.  We filter this dataset to remove duplicate reactions, 
+literature.  Specifically, we use the subset from XXX.   
+We further filter this dataset to remove duplicate reactions, 
 reactions that could not be properly canonicalized, reactions that 
 fully contain the product as a part of the reactants SMILES. 
 We also devise a heuristic to remove reactions that erroneously 
 contain a related, but unused chemical as a part of the reaction 
 SMILES, typically as a result of a reference to a similar procedure.
-\todo[inline]{Insert reaction SMILES of erroneous reaction and accompanying passage from USPTO.}
-\todo{Describe filtering steps: duplicates removed,
-  malformed SMILES removed, etc.}  After filtering, approximately
+An illustrative example is shown in \cref{fig:erroneous-reaction}; 
+the following excerpt from the source patent describes the procedure from which the reaction is extracted:
+
+\begin{quote}
+\textit{The procedure similar to that of Step 2 of Example 1 was repeated except that 2.82 g of 2-(6'-carbethoxyhexyl)-3-methoxy-4-oxo-2-cyclopenten-1-one and 35 ml of methanol were used instead of 24 g of 2-(6'-carbomethoxyhexyl)-3-methoxy-4-oxo-2-cyclopenten-1-one and isopropanol respectively to provide 2.8 g of 2-(6'-carboethoxyhexyl)-3-methoxy-4-hydroxy-2-cyclopenten-1-one as an oily product.}~\cite{USP3954811}
+\end{quote}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{images/incorrectly_extracted_reaction.png}
+  \caption{Example of an erroneously extracted reaction from the USPTO dataset. The reaction SMILES incorrectly includes a related but unused chemical as a reactant, arising from the extraction procedure's reference to a similar prior step in the patent.}
+  \label{fig:erroneous-reaction}
+\end{figure}
+
+After filtering, approximately
 0.97~million reactions remain.  Atom mapping annotations present in
 the original dataset are stripped prior to any processing so that the
 ground truth is generated entirely by the pipeline described below.
@@ -345,7 +414,7 @@ identical in both the reactant and product.
 Each reactant and product component is first independently canonicalized with
 RDKit~\cite{RDKit}.  A fragment is identified as \emph{identical} if its canonical SMILES
 appears in both the reactant component list and the product component list.  For
-each such fragment, every atom is assigned a unique atom-map number (allocated
+each such fragment, every atom within the fragment is assigned a unique atom-map number (allocated
 from a reserved range starting at 500 to avoid collisions with downstream
 mappers), and the fragment is removed from both sides of the reaction before any
 other mapper is invoked.  After downstream processing of the reduced reaction,
@@ -388,7 +457,7 @@ endpoint together with the chemical properties of those endpoints (atomic
 number, formal charge, aromaticity, ring membership, total hydrogen count, and
 degree) and the bond itself (bond order, stereo).  Two environments are
 considered identical if and only if their fingerprints match.  The fingerprint
-also incorporates current atom-map numbers, so environments containing
+also incorporates atom-map numbers as they are assigned, so environments containing
 already-mapped atoms acquire a distinct signature that anchors subsequent
 matching.
 
@@ -400,14 +469,12 @@ otherwise equivalent atoms.
 
 \paragraph{Radius search.}
 Fingerprints are built incrementally, starting from a minimum radius
-(default 1) and increasing until a unique reactant--product fingerprint
+(default 1) and increasing until a unique reactant--product atom fingerprint
 match is found or all matches disappear.  Atoms whose environment has no
 cross-side match at a given radius are pruned and skipped at all subsequent
-radii, keeping computation tractable.  The largest radius at which at least
+radii as an optimization.  The largest radius at which at least
 one match was found is used as the \emph{final radius} for the subsequent
-mapping phase.  Fingerprint lookup uses a hash-based inverted index, giving
-$O(R + P)$ complexity per radius rather than $O(R \times P)$ pairwise
-comparison.
+mapping phase.
 
 \paragraph{Anchor-extend assignment.}
 Once the final radius is determined, atom-map numbers are assigned via an
@@ -434,8 +501,8 @@ already-mapped neighbor that was sourced from a different reactant molecule,
 enforcing structural adjacency consistency.
 
 \paragraph{Conservative partial mapping.}
-The \texttt{min\_radius\_to\_anchor\_new\_mapping} parameter controls conservatism
-near the reactive center.  At low radii, local environments are too generic to
+The \texttt{min\_radius\_to\_anchor\_new\_mapping} and \texttt{min\_radius} 
+parameters controls conservatism of the partial map.  At low radii, local environments are too generic to
 uniquely distinguish atoms that are unchanged from those involved in bond-making
 or bond-breaking events.  By requiring new unanchored matches to carry at least
 radius~3 of local context, the mapper abstains from assigning atoms in
@@ -462,8 +529,6 @@ ground truth in the pipeline.
   \label{fig:template-map}
 \end{figure}
 
-\todo[inline]{display a template reaction record}
-
 \paragraph{Template library.}
 Templates were assembled from three sources: (1) the Rxn-INSIGHT library of
 named reaction patterns~\cite{Probst2022}; (2) templates extracted from the
@@ -474,8 +539,28 @@ necessary, corrected by hand.  Each parent SMIRKS is expanded into one or more
 stereo-variants of the parent; templates are applied at the child level.  Each
 template carries an optional two-level priority tuple
 \texttt{(priority\_class, priority)} used for tie-breaking when multiple
-templates match a single reaction.  Template application is performed using
+templates produce different maps for a single reaction.  Template application is performed using
 \texttt{rdchiral\_plus} (\cref{subsec:rdchiral}).
+
+\begin{lstlisting}[language=json, caption={Example template reaction record.}, label={lst:template-record}, basicstyle=\footnotesize\ttfamily, float=htbp]
+{
+  "class_id": 5,
+  "name": "Prilezhaev Epoxidation; mCPBA epoxidation of alkene",
+  "priority": {
+      "priority_class": 3,
+      "priority": 5
+  },
+  "smirks": "[C:1]=[C:2].[O;H1:3]-OC(=O)c1cccc(Cl)c1>>[C:1]1-[O:3]-[C:2]1",
+  "subclass_id": 1,
+  "subsubclass_id": null,
+  "superclass_id": 10,
+  "rxno_classification": [
+      {
+          "rxno_id": "RXNO:0000405"
+      }
+  ]
+}
+\end{lstlisting}
 
 \paragraph{MCS pre-pass.}
 Before any template is applied, the MCS mapper is run on the input reaction to
@@ -483,7 +568,7 @@ produce a partial map.  Connected components of product atoms that the MCS
 mapper could not assign---atoms near the reactive center whose local environment
 is not uniquely shared with a reactant atom---are identified as \emph{unmapped
 islands}.  Template application is then restricted to templates whose product
-SMARTS overlaps with at least one unmapped island.  This focuses the template
+SMARTS overlaps with an atom in at least one unmapped island.  This focuses the template
 search on the reaction center and avoids wasting time on templates that would
 only remap atoms already conservatively assigned by the MCS mapper.
 
@@ -497,12 +582,10 @@ full rdchiral application is invoked:
         product and reactant molecule.  A template is discarded immediately if
         any of its required product or reactant bits are absent from the
         corresponding molecular fingerprints (\texttt{AllProbeBitsMatch}).
-        This bitwise check eliminates the vast majority of templates in $O(1)$
-        per template, before any substructure search is performed.
   \item \textbf{Substructure pre-screen.}  For templates that pass the
         fingerprint check, each template fragment must have at least one
-        substructure match in the product molecules (and, independently, in the
-        reactant molecules).  When unmapped islands are present, the product
+        substructure match in the product molecules and in the
+        reactant molecules.  Additionally, the product
         check is further tightened: a template fragment is accepted only if its
         substructure match has at least partial overlap with an unmapped island.
 \end{enumerate}
@@ -564,10 +647,11 @@ ring closure, and branch tokens as separate tokens.
 
 For supervised training, we augment the base ALBERT model with a
 dedicated attention alignment head.  The alignment head extracts the
-raw attention logits from a specific layer and head identified during
+raw attention logits from a specific layer and head(s) identified during
 the unsupervised pre-training phase, applies a final linear projection,
-and computes a cross-entropy loss against the ground truth alignment
-matrix.  Unmapped atoms and non-atom tokens (bonds, parentheses,
+and computes a KL-divergence loss against the ground truth alignment
+matrix.  Unmapped atoms that are confidently do not participate in the reaction
+ and non-atom tokens (bonds, parentheses,
 ring-closure digits) are directed to a special ``sink'' token, making
 the loss well-defined even for partially labeled reactions.  Symmetric
 atoms---those that belong to symmetry-equivalent groups as determined
@@ -609,8 +693,7 @@ atom tokens are eligible for masking; structural tokens (bond symbols,
 parentheses, ring-closure digits) are never masked.  For each masked
 atom, the replacement follows a modified 70/20/10 strategy: 70\% of
 the time the token is replaced with \texttt{[MASK]}, 20\% of the time
-it is replaced with a chemically plausible alternative (drawn from
-curated bioisosteric substitution groups), and 10\% of the time the
+it is replaced with a chemically plausible alternative, and 10\% of the time the
 original token is retained.  Random SMILES augmentation is applied
 at each epoch: with 5\% probability the canonical form is used;
 otherwise, a random SMILES enumeration of the reaction is sampled,
@@ -637,14 +720,13 @@ attention alignment loss:
   + \lambda_{\mathrm{align}} \cdot \mathcal{L}_{\mathrm{align}},
   \label{eq:loss}
 \end{equation}
-where $\mathcal{L}_{\mathrm{align}}$ is the per-atom cross-entropy
+where $\mathcal{L}_{\mathrm{align}}$ is the per-atom KL divergence
 between the predicted attention distribution and the ground truth
 alignment matrix, computed only over atoms for which a ground truth
 mapping is available.  Continuing the MLM objective prevents
 catastrophic forgetting and encourages the model to maintain the
-chemical representation learned in Phase~1.  The masking probability
-is increased to 20\% in this phase, and span masking uses the same
-weighted distribution over span sizes.
+chemical representation learned in Phase~1.  The same masking probability
+and weighted distribution over span sizes is used as in Phase~1.
 
 \todo[inline]{Report final $\lambda$ values and other hyperparameters
   after ablation experiments.}
@@ -654,17 +736,92 @@ weighted distribution over span sizes.
 \label{subsec:inference}
 % ---------------------------------------------------------------
 
-\todo[inline]{Describe the inference procedure: how attention weights
-  are extracted, how correspondences are decoded from the attention
-  matrix (argmax, Hungarian algorithm, etc.), and how the mapping is
-  converted back to atom map numbers in the SMILES string.}
+\paragraph{Input preparation.}
+A reaction SMILES of the form \texttt{reactants>>products} is tokenized
+using the custom SMILES tokenizer described in \cref{subsec:pretraining}.
+The reaction arrow token \texttt{>>} is retained in the sequence and acts
+as a structural boundary between the two sides of the reaction.
+During tokenization, each position is classified as either a heavy-atom token
+(annotated with its element identity) or a non-atom token (bond symbols, ring
+closures, parentheses, brackets, etc.); this classification is used in the
+subsequent masking step.
+
+\paragraph{Attention extraction.}
+The tokenized sequence is passed through the model in a single forward pass.
+For the supervised \texttt{AlbertWithAttentionAlignment} model, a dedicated
+output head produces a full-sequence attention matrix of shape
+$S \times S$ directly.
+For the unsupervised ALBERT baseline, the raw attention weights from a
+designated layer and head are extracted via
+the standard \texttt{output\_attentions} interface.
+In both cases the resulting matrix is log-transformed before downstream
+processing.
+
+\paragraph{Attention masking.}
+The log-attention matrix is masked to enforce chemical validity constraints.
+Self-side attention (reactant-to-reactant and product-to-product) is
+suppressed by setting the corresponding logits to $-10^6$, and attention
+to or from non-atom tokens is likewise suppressed, with the exception 
+of reactant atom's attention to the sink token.
+Attention between tokens of \emph{different element types} is
+also masked to $-10^6$, constraining proposed correspondences to
+same-element atom pairs.
+The masked logit matrix is then row-normalised via softmax, allocating all
+probability mass within each row to the remaining cross-reaction,
+element-matched positions.
+
+\paragraph{Cross-attention alignment and symmetry correction.}
+The masked probability matrix is sliced into two cross-attention sub-matrices:
+$\mathbf{A}^{P \to R}$ (product tokens attending to reactant tokens, shape
+$n_{\text{prod}} \times n_{\text{react}}$) and $\mathbf{A}^{R \to P}$
+(reactant tokens attending to product tokens, transposed to the same
+orientation).  Both matrices are further reduced to heavy-atom positions
+only by removing the rows and columns that correspond to non-atom tokens.
+To prevent probability mass from being artificially split among
+topologically equivalent atoms (e.g.\ the ortho positions of an
+unsubstituted arene), the columns (reactant symmetry) or rows (product
+symmetry) belonging to each symmetric group are summed before decoding;
+topological equivalence is determined by RDKit canonical ranks computed
+over the combined reactant or product graph.
+
+\paragraph{Greedy one-to-one assignment.}
+The two atom-level cross-attention sub-matrices are averaged element-wise
+to form a single scoring matrix.  Map numbers are then assigned by a greedy
+globally-aware procedure: at each iteration, the global maximum of the
+current scoring matrix is located; the corresponding product and reactant
+atoms receive the next available map number; and the entire row and column
+of that entry are zeroed by default to enforce a bijective correspondence.
+After each assignment, the attention scores of unassigned neighbors of the
+just-mapped pair are boosted by a multiplier (default $\times 10$) to
+encourage locally consistent mappings, with an additional multiplier
+(default $\times 10$) when a candidate neighbor pair shares the same
+element encoding.
+The overall reaction-level confidence score is the product of the
+per-atom attention probabilities at each selected position, taken from the
+symmetry-corrected scoring matrix before any neighborhood boosting is
+applied.
+
+\paragraph{Batched inference.}
+To amortise the cost of transformer inference, reactions are processed in
+configurable batches (default 32).  Within each batch, all reaction SMILES
+strings are tokenized and padded to a common maximum length (default 512
+tokens) to form a single dense input tensor; invalid reactions are skipped
+before batching and receive an empty result.  One forward pass of the model
+then produces the full attention tensor for all sequences simultaneously.
+Because all sequences in a batch are padded to the same length, each
+resulting attention matrix is trimmed to the reaction's true (non-padding)
+length by counting the non-zero entries in the corresponding
+\texttt{attention\_mask} row before any downstream processing.  Atom-map
+assignment and confidence scoring are subsequently performed per reaction
+on the CPU from the pre-computed (and padding-stripped) attention matrices,
+so that GPU time is concentrated entirely in the batched forward pass.
 
 % ---------------------------------------------------------------
 \subsection{\texttt{rdchiral\_plus}}
 \label{subsec:rdchiral}
 % ---------------------------------------------------------------
 
-The expert template mapper relies on accurate and reproducible template
+The expert template mapper relies on fast, accurate and reproducible template
 application.  The original rdchiral library~\cite{Coley2019rdchiral},
 while widely used, contains several classes of errors that affect both
 template extraction and application.  We developed
@@ -760,6 +917,53 @@ where the model assigns only a small number of atoms incorrectly.
   benchmarking study of Jaworski et al.\ and any additional evaluation
   sets used.}
 
+\paragraph{Evaluation metric.}
+A predicted mapping is compared against a reference mapping using a
+graph-isomorphism test rather than a literal string comparison.  Each
+mapped reaction SMILES is first converted into an undirected bipartite
+graph in which nodes represent heavy atoms and edges represent either
+intramolecular bonds or atom-mapping correspondences.  Every node
+carries the full atom environment---atomic number, formal charge,
+aromaticity, ring membership, total hydrogen count, degree, and CIP
+chirality tag---and every bond edge carries its bond order and stereo
+descriptor.  Two mappings are declared equivalent if and only if a
+graph isomorphism exists that simultaneously matches all node and edge
+attributes.  This approach correctly identifies mappings that are
+alphabetically different but chemically identical (e.g.\ when map
+numbers are permuted but all correspondences are preserved), and it
+properly penalizes mappings that differ only in stereochemistry.
+
+\paragraph{Tautomer equivalence.}
+A strict string- or even graph-level comparison can incorrectly
+penalise a correct mapping when the reaction involves a tautomerisable
+species.  Consider the N-alkylation of imidazole illustrated in
+\cref{fig:aam-example-intro}: a terminal chloroalkyl reacts at the
+NH nitrogen of imidazole, but the two tautomeric forms of the free
+base exchange the NH proton between the two ring nitrogens.  As drawn,
+the attacked nitrogen carries the NH, yet a mapper that assigns the
+bond-forming event to the other ring nitrogen produces an equally
+valid description of the same reaction.  To handle such cases,
+when tautomer-aware comparison is enabled, all tautomeric forms of
+each reactant and product fragment in the predicted reaction are
+enumerated (using RDKit's \texttt{TautomerEnumerator}), and the
+isomorphism test is performed against the full Cartesian product of
+tautomeric combinations.  The reference mapping is held fixed; a
+prediction is accepted if it matches any tautomeric variant of the
+reference.
+
+\paragraph{Resonance equivalence.}
+A complementary correction handles mappings that differ only in the
+assignment of atom-map numbers between resonance-equivalent atoms.
+For a small set of structural motifs---nitro groups
+($\mathrm{O{=}N^{+}O^{-}}$), carboxylates ($\mathrm{O{=}CO^{-}}$),
+carboxylic acids ($\mathrm{O{=}COH}$), and sulfonates
+($\mathrm{O{=}S({=}O)O^{-}}$)---atom-map numbers may legitimately
+be exchanged between the two equivalent oxygen atoms without changing
+the chemistry of the mapping.  When resonance-swap comparison is
+enabled, all $2^n$ combinations of such swaps (for $n$ candidate
+pairs) are enumerated for the predicted mapping, and the prediction is
+accepted if any combination is isomorphic to the reference.
+
 % ---------------------------------------------------------------
 \subsection{Comparison with Existing Neural Mappers}
 \label{subsec:comparison}
@@ -791,12 +995,56 @@ where the model assigns only a small number of atoms incorrectly.
   substantially outperforms RXNMapper; (2) characterize where remaining
   errors occur; (3) include qualitative examples.}
 
+\todo[inline]{Discussion of USPTO-50k and 3k}
+
+\todo[inline]{Discussion of Golden dataset errors}
+
+\todo[inline]{Discussion of USPTO-50k and USPTO-3k}
+
 % ---------------------------------------------------------------
 \subsection{Prediction Confidence}
 \label{subsec:prediction_confidence}
 % ---------------------------------------------------------------
 
-\todo[inline]{Report template neural network prediction confidence metrics.}
+The neural mapper produces a scalar confidence score for each predicted
+mapping, derived from the attention alignment logits.  To evaluate the
+discriminative quality of this score we treat the task as binary
+classification---a mapping is labelled \emph{correct} if it matches the
+deterministic ground truth and \emph{incorrect} otherwise---and assess
+the model's ability to distinguish the two classes on a held-out test
+set of \todo{N} reactions.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Binary classification performance of the neural mapper
+    confidence score on the held-out test set.}
+  \label{tab:confidence_metrics}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Metric} & \textbf{Value} \\
+    \midrule
+    Accuracy  & 0.767 \\
+    Precision & 0.972 \\
+    Recall    & 0.765 \\
+    F1-Score  & 0.857 \\
+    AUC       & 0.842 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The confusion matrix on the test set contains
+$\mathrm{TP} = 1{,}224$, $\mathrm{TN} = 123$, $\mathrm{FP} = 35$, and
+$\mathrm{FN} = 375$ predictions.  The very high precision (0.972) with
+relatively lower recall (0.765) indicates that when the confidence score
+flags a mapping as correct, it almost never makes a false positive
+error; however, a meaningful fraction of genuinely correct mappings
+receive a low confidence score and are consequently under-counted.
+The AUC of 0.842 confirms that the score provides reliable rank
+ordering across the full confidence range.
+
+\todo[inline]{Expand: describe the confidence threshold used, the
+  class imbalance in the test set, and how the score is used at
+  inference time (e.g.\ fallback to MCS mapper below a threshold).}
 
 % ---------------------------------------------------------------
 \subsection{Template Mapper Performance}
@@ -836,19 +1084,19 @@ Lowe USPTO corpus, then apply this data to directly supervise the
 attention alignment objective during fine-tuning.  The result is a
 model that retains the broad reaction coverage of attention-based
 neural mappers while substantially reducing the class of errors that
-arise from inferring atomic correspondence without explicit supervision.  The deterministic mappers that produce the
+arise from inferring atomic correspondence without explicit supervision.  
+The deterministic mappers that produce the
 training labels are themselves useful tools, covering $\sim$60\% of
 reactions fully and $\sim$90\% of product atoms across the USPTO corpus.
 
 The expert template mapper is notable as a standalone tool.  For
 reactions that match a known named reaction pattern, it produces maps
 that are by construction mechanistically consistent, making it
-particularly well-suited for downstream applications that require
-interpretable maps, such as reaction classification and retrosynthetic
-template extraction.
+particularly well-suited for downstream applications besides atom-to-atom mapping,
+ such as reaction classification.
 
 As a byproduct of this work, we release \texttt{rdchiral\_plus}, a
-substantially improved fork of rdchiral.  The 90\% reduction in
+substantially improved fork of rdchiral.  The 96\% reduction in
 incorrect template roundtrips directly improves the quality of the
 generated ground truth and, through it, the quality of the trained
 neural model.
@@ -868,10 +1116,10 @@ reactions at no additional per-reaction annotation cost.  More broadly, any
 deterministic method that can precisely establish product atom
 provenance---additional template sources, curated mechanistic rules, or
 reaction-class-specific substructure procedures---slots naturally into the same
-pipeline.  Self-training, in which high-confidence predictions from the neural
-mapper are added back to the labeled set, may further close the accuracy gap
-without requiring additional annotation.  Training on a larger, higher-quality,
-and more chemically diverse corpus would likewise be expected to improve
+pipeline.  Likewise, any method that can precisely determine which reactant atoms
+do \emph{not} correspond to any product atoms, for example, by comparing stoichiometric ratios of reactants and products, may
+also be easily integrated into the pipeline.  As always, training on a larger, higher-quality,
+and more chemically diverse corpus would be expected to improve
 generalization, especially for underrepresented or complex reaction classes.
 
 The labeled ground truth produced by the deterministic pipeline is
@@ -980,6 +1228,12 @@ produced using the AgaveChem deterministic mapping pipeline, are available at
   NameRxn: Expert System for Named Reaction Identification and Classification.
   \url{https://www.nextmovesoftware.com/namerxn.html}.
 
+  \bibitem{Lagerstedt2021}
+  Lagerstedt, I.
+  NameRxn: More than just a reaction classifier.
+  Presented at ACS Fall 2021, Atlanta, GA, August 2021.
+  \url{https://www.nextmovesoftware.com/talks/ACS_2021_Fall_Lagerstedt_Namerxn.pdf}.
+
   \bibitem{Weininger1989}
   Indigo Toolkit.
   EPAM Life Sciences.
@@ -1024,6 +1278,25 @@ produced using the AgaveChem deterministic mapping pipeline, are available at
   AiZynthFinder: A fast, robust and flexible open-source software for
   retrosynthetic planning.
   \emph{J.\ Cheminform.} \textbf{2020}, \emph{12}, 70.
+
+  \bibitem{Szymkuc2016}
+  Szymku\'c, S.; Gajewska, E.~P.; Klucznik, T.; Molga, K.; Dittwald, P.;
+  Startek, M.; Bajczyk, M.; Grzybowski, B.~A.
+  Computer-Assisted Synthetic Planning: The End of the Beginning.
+  \emph{Angew.\ Chem.\ Int.\ Ed.} \textbf{2016}, \emph{55}, 5904--5937.
+
+  \bibitem{Klucznik2018}
+  Klucznik, T.; Mikulak-Klucznik, B.; McCormack, M.~P.; Lima, H.;
+  Szymku\'c, S.; Bhowmick, M.; Molga, K.; Zhou, Y.; Rickershauser, L.;
+  Gajewska, E.~P.; Trice, A.; Dittwald, P.; Startek, M.~J.; Grzybowski, B.~A.
+  Efficient Syntheses of Diverse, Medicinally Relevant Targets Planned by
+  Computer and Executed in the Laboratory.
+  \emph{Chem} \textbf{2018}, \emph{4}, 522--532.
+
+  \bibitem{USP3954811}
+  \todo{Verify patent title and inventors.}
+  U.S.\ Patent 3,954,811, 1976.
+  \url{https://patents.google.com/patent/US3954811A}
 
 \end{thebibliography}
 

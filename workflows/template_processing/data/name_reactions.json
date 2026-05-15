@@ -21848,10 +21848,10 @@
         "class_id": 5,
         "name": "Prilezhaev Epoxidation; mCPBA epoxidation of alkene",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 3,
+            "priority": 5
         },
-        "smirks": "[C:1]=[C:2].[O;H1]-[O]-[C](=O)-c1ccccc1Cl>>[C:1]1-[O]-[C:2]1",
+        "smirks": "[C:1]=[C:2].[O;H1:3]-OC(=O)c1cccc(Cl)c1>>[C:1]1-[O:3]-[C:2]1",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
