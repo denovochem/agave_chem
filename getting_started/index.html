@@ -1,0 +1,1301 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Chemical Reaction SMILES Mapping">
+      
+      
+      
+      
+        <link rel="prev" href="../installation/">
+      
+      
+        <link rel="next" href="../reference/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Getting Started - AgaveChem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#getting-started" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AgaveChem" class="md-header__button md-logo" aria-label="AgaveChem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AgaveChem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Getting Started
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/denovochem/agave_chem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    denovochem/agave_chem
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AgaveChem" class="md-nav__button md-logo" aria-label="AgaveChem" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AgaveChem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/denovochem/agave_chem" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    denovochem/agave_chem
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview-of-the-mapping-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview of the mapping pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-map_reactions-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map_reactions function
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The map_reactions function">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-neural-mapper-in-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the neural mapper in the pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-mapper-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working with mapper results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identical-fragment-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identical fragment mapper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcs-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCS mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCS mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-parameters-for-map_reaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key parameters for map_reaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partial-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expert-template-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expert template mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Expert template mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-custom-smirks-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using custom SMIRKS patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neural-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Neural mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neural-mapper-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural mapper parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mapping-a-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping a batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapping-scorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping scorer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mapping scorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scoring-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scoring metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-mappers-manually" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing mappers manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sanitizing-and-validating-mapped-reactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sanitizing and validating mapped reactions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview-of-the-mapping-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview of the mapping pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-map_reactions-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The map_reactions function
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The map_reactions function">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-neural-mapper-in-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the neural mapper in the pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-mapper-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working with mapper results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identical-fragment-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identical fragment mapper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcs-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCS mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCS mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-parameters-for-map_reaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key parameters for map_reaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partial-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expert-template-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expert template mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Expert template mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-custom-smirks-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using custom SMIRKS patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neural-mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural mapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Neural mapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neural-mapper-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neural mapper parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mapping-a-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping a batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mapping-scorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping scorer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mapping scorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scoring-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scoring metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-mappers-manually" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing mappers manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sanitizing-and-validating-mapped-reactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sanitizing and validating mapped reactions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="getting-started">Getting Started</h1>
+<p>This guide covers all four AgaveChem mappers in depth, the <code>map_reactions</code> pipeline function, working with mapper results, scoring mappings, and advanced configuration options.</p>
+<hr />
+<h2 id="overview-of-the-mapping-pipeline">Overview of the mapping pipeline</h2>
+<p>AgaveChem provides four composable mappers that can be used independently or combined into a pipeline. In the default pipeline, mappers are applied in order of increasing complexity:</p>
+<ol>
+<li><strong>Identical fragment mapper</strong> — maps spectator molecules and structurally unchanged fragments before any other mapper is invoked</li>
+<li><strong>MCS mapper</strong> — assigns atom-map numbers to atoms whose local chemical environment is preserved across the reaction, yielding conservative partial maps</li>
+<li><strong>Expert template mapper</strong> — applies a curated library of reaction SMIRKS templates to classify and fully map known reaction classes</li>
+<li><strong>Neural mapper</strong> — an ALBERT-based model trained on labeled USPTO reactions, used for complete mapping at inference time</li>
+</ol>
+<p>Each mapper operates on unmapped reaction SMILES and returns a <code>ReactionMapperResult</code> dictionary. A higher-priority mapper in the pipeline overrides the output of a lower-priority one.</p>
+<hr />
+<h2 id="the-map_reactions-function">The <code>map_reactions</code> function</h2>
+<p>The easiest way to map a batch of reactions is the top-level <code>map_reactions</code> function, which runs the MCS and template mappers by default:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">map_reactions</span>
+
+<span class="n">reactions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O&gt;&gt;CC(=O)C(=O)Cl&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;OCC(=O)OCCCO.Cl&gt;&gt;ClCC(=O)OCCCO&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">map_reactions</span><span class="p">(</span><span class="n">reactions</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;original_reaction&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;final_mapping&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="parameters">Parameters</h3>
+<ul>
+<li><code>reaction_list</code> (<code>List[str]</code>) — list of unmapped reaction SMILES strings; a single string is also accepted</li>
+<li><code>mappers_list</code> (<code>List[ReactionMapper]</code>) — list of mapper instances to apply in order; defaults to <code>[MCSReactionMapper("mcs_default"), TemplateReactionMapper("expert_default")]</code></li>
+<li><code>batch_size</code> (<code>int</code>) — number of reactions per processing batch (default: <code>500</code>, max: <code>1000</code>)</li>
+</ul>
+<h3 id="using-the-neural-mapper-in-the-pipeline">Using the neural mapper in the pipeline</h3>
+<p>To use the neural mapper, pass it explicitly in <code>mappers_list</code>. Place it last so it acts as the highest-priority mapper:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">map_reactions</span><span class="p">,</span> <span class="n">MCSReactionMapper</span><span class="p">,</span> <span class="n">NeuralReactionMapper</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">map_reactions</span><span class="p">(</span>
+    <span class="n">reactions</span><span class="p">,</span>
+    <span class="n">mappers_list</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">MCSReactionMapper</span><span class="p">(</span><span class="s2">&quot;mcs&quot;</span><span class="p">),</span>
+        <span class="n">NeuralReactionMapper</span><span class="p">(</span><span class="s2">&quot;neural&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="working-with-mapper-results">Working with mapper results</h2>
+<p>Every mapper returns a <code>ReactionMapperResult</code> dictionary with the following keys:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>original_smiles</code></td>
+<td><code>str</code></td>
+<td>The unmapped input reaction SMILES</td>
+</tr>
+<tr>
+<td><code>selected_mapping</code></td>
+<td><code>str</code></td>
+<td>The chosen mapped reaction SMILES (empty string if mapping failed)</td>
+</tr>
+<tr>
+<td><code>possible_mappings</code></td>
+<td><code>Dict[str, List]</code></td>
+<td>All candidate mappings produced before selection</td>
+</tr>
+<tr>
+<td><code>mapping_type</code></td>
+<td><code>str</code></td>
+<td>Which mapper produced the result (<code>"mcs"</code>, <code>"template"</code>, <code>"neural"</code>, etc.)</td>
+</tr>
+<tr>
+<td><code>mapping_score</code></td>
+<td><code>Any</code></td>
+<td>Optional score attached by the mapper (may be <code>None</code>)</td>
+</tr>
+<tr>
+<td><code>additional_info</code></td>
+<td><code>List[Dict]</code></td>
+<td>Mapper-specific metadata</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>map_reactions</code> function returns <code>AgaveChemMapperResult</code> dictionaries with an additional <code>final_mapping</code> key (the best mapping across all mappers) and <code>mapper_results</code> (the per-mapper results list).</p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;final_mapping&quot;</span><span class="p">])</span>        <span class="c1"># best mapping from the pipeline</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;original_reaction&quot;</span><span class="p">])</span>    <span class="c1"># original unmapped SMILES</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;mapper_results&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;mapping_type&quot;</span><span class="p">])</span>  <span class="c1"># which mapper produced it</span>
+</code></pre></div>
+<hr />
+<h2 id="identical-fragment-mapper">Identical fragment mapper</h2>
+<p>The identical fragment mapper handles fragments that appear structurally unchanged on both sides of the reaction. It is invoked automatically within <code>map_reactions</code>, but can also be used standalone:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdenticalFragmentMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">IdenticalFragmentMapper</span><span class="p">(</span><span class="s2">&quot;my_ifm&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;CC(=O)O.[Na+].[Cl-]&gt;&gt;CC(=O)[O-].[Na+].[Cl-]&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<p>Identical fragments are assigned map numbers from a reserved range (starting at 500) to avoid collisions with downstream mappers.</p>
+<hr />
+<h2 id="mcs-mapper">MCS mapper</h2>
+<p>The MCS mapper assigns atom-map numbers to atoms whose local chemical environment is preserved across the reaction. It uses a bond-radius environment fingerprinting scheme and is efficient even for large, multi-fragment reactions.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCSReactionMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">MCSReactionMapper</span><span class="p">(</span><span class="s2">&quot;my_mcs&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O&gt;&gt;CC(=O)C(=O)Cl&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="key-parameters-for-map_reaction">Key parameters for <code>map_reaction</code></h3>
+<ul>
+<li><code>min_radius</code> (<code>int</code>) — smallest bond-radius to consider (default: <code>1</code>)</li>
+<li><code>min_radius_to_anchor_new_mapping</code> (<code>int</code>) — below this radius, environments are only matched when they already contain at least one mapped atom; controls how close to the reactive center new anchor atoms can be seeded (default: <code>3</code>)</li>
+<li><code>max_radius</code> (<code>Optional[int]</code>) — largest bond-radius to search; defaults to the size of the largest molecule</li>
+</ul>
+<h3 id="partial-mapping">Partial mapping</h3>
+<p>The MCS mapper produces partial maps for reactions where the reactive center cannot be unambiguously resolved. The <code>selected_mapping</code> will contain atom-map numbers only for atoms whose environment was confidently matched:</p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;c1ccccc1Br.B(O)(O)c1ccccc1&gt;&gt;c1ccc(-c2ccccc2)cc1&quot;</span><span class="p">)</span>
+<span class="c1"># Atoms in the biaryl core will be mapped; the coupling site atoms may not be</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<hr />
+<h2 id="expert-template-mapper">Expert template mapper</h2>
+<p>The expert template mapper applies a curated library of reaction SMIRKS templates to classify and fully map reactions that match known reaction classes.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">TemplateReactionMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">TemplateReactionMapper</span><span class="p">(</span><span class="s2">&quot;my_template&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O&gt;&gt;CC(=O)C(=O)Cl&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;possible_mappings&quot;</span><span class="p">])</span>   <span class="c1"># all candidate mapped SMILES and their templates</span>
+</code></pre></div>
+<h3 id="constructor-parameters">Constructor parameters</h3>
+<ul>
+<li><code>mapper_name</code> (<code>str</code>) — unique name for this mapper instance</li>
+<li><code>mapper_weight</code> (<code>float</code>) — priority weight in a multi-mapper pipeline (default: <code>3</code>)</li>
+<li><code>custom_smirks_patterns</code> (<code>List[Dict] | None</code>) — list of user-supplied SMIRKS patterns; each dict must have <code>"name"</code>, <code>"smirks"</code>, and <code>"superclass_id"</code> keys</li>
+<li><code>use_default_smirks_patterns</code> (<code>bool</code>) — whether to include the built-in template library (default: <code>True</code>)</li>
+<li><code>max_transforms</code> (<code>int</code>) — maximum number of tautomer transforms (default: <code>1000</code>)</li>
+<li><code>max_tautomers</code> (<code>int</code>) — maximum number of tautomers to enumerate (default: <code>1000</code>)</li>
+<li><code>use_mcs_mapping</code> (<code>bool</code>) — whether to use MCS internally to focus template matching on the probable reaction center (default: <code>True</code>)</li>
+</ul>
+<h3 id="using-custom-smirks-patterns">Using custom SMIRKS patterns</h3>
+<p>You can extend or replace the built-in template library with your own reaction SMIRKS:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">TemplateReactionMapper</span>
+
+<span class="n">custom_patterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;My custom acylation&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;smirks&quot;</span><span class="p">:</span> <span class="s2">&quot;[C:1](=[O:2])[Cl:3].[N:4]&gt;&gt;[C:1](=[O:2])[N:4]&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;superclass_id&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">TemplateReactionMapper</span><span class="p">(</span>
+    <span class="s2">&quot;custom_template&quot;</span><span class="p">,</span>
+    <span class="n">custom_smirks_patterns</span><span class="o">=</span><span class="n">custom_patterns</span><span class="p">,</span>
+    <span class="n">use_default_smirks_patterns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>   <span class="c1"># combine with built-in patterns</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;CC(=O)Cl.NC&gt;&gt;CC(=O)NC&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<hr />
+<h2 id="neural-mapper">Neural mapper</h2>
+<h3 id="overview">Overview</h3>
+<p>The neural mapper uses a supervised ALBERT-based model trained on labeled USPTO reactions. It is the recommended mapper for general-purpose atom mapping.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeuralReactionMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">NeuralReactionMapper</span><span class="p">(</span><span class="s2">&quot;my_neural&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reaction</span><span class="p">(</span><span class="s2">&quot;CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O&gt;&gt;CC(=O)C(=O)Cl&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="neural-mapper-parameters">Neural mapper parameters</h3>
+<ul>
+<li><code>mapper_name</code> (<code>str</code>) — unique name for this mapper instance</li>
+<li><code>mapper_weight</code> (<code>float</code>) — priority weight in a multi-mapper pipeline (default: <code>3</code>)</li>
+<li><code>checkpoint_path</code> (<code>Optional[str]</code>) — path to a custom model checkpoint directory; defaults to the bundled pre-trained model</li>
+<li><code>use_supervised</code> (<code>bool</code>) — whether to use the supervised (fine-tuned) model head (default: <code>True</code>)</li>
+<li><code>sequence_max_length</code> (<code>int</code>) — maximum token sequence length (default: <code>512</code>)</li>
+</ul>
+<h3 id="mapping-a-batch">Mapping a batch</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeuralReactionMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">NeuralReactionMapper</span><span class="p">(</span><span class="s2">&quot;neural_batch&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">map_reactions</span><span class="p">([</span>
+    <span class="s2">&quot;CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O&gt;&gt;CC(=O)C(=O)Cl&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;OCC(=O)OCCCO.Cl&gt;&gt;ClCC(=O)OCCCO&quot;</span><span class="p">,</span>
+<span class="p">])</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;selected_mapping&quot;</span><span class="p">])</span>
+</code></pre></div>
+<hr />
+<h2 id="mapping-scorer">Mapping scorer</h2>
+<p><code>MappingScorer</code> evaluates the quality of an atom-mapped reaction SMILES using a set of chemically motivated metrics.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingScorer</span>
+
+<span class="n">scorer</span> <span class="o">=</span> <span class="n">MappingScorer</span><span class="p">()</span>
+<span class="n">score</span> <span class="o">=</span> <span class="n">scorer</span><span class="o">.</span><span class="n">score_mapping</span><span class="p">(</span>
+    <span class="s2">&quot;[CH3:1][C:2](=[O:3])[OH:4].[HO:5][CH2:6][CH3:7]&gt;&gt;[CH3:1][C:2](=[O:3])[O:5][CH2:6][CH3:7]&quot;</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="scoring-metrics">Scoring metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bond_energy_cost</code></td>
+<td>Summed bond dissociation energy cost of all bond changes</td>
+</tr>
+<tr>
+<td><code>num_bond_changes</code></td>
+<td>Total number of bonds formed or broken</td>
+</tr>
+<tr>
+<td><code>num_fragments</code></td>
+<td>Number of disconnected fragments affected</td>
+</tr>
+<tr>
+<td><code>stereo_changes</code></td>
+<td>Number of stereocenters whose configuration changes</td>
+</tr>
+<tr>
+<td><code>ring_changes</code></td>
+<td>Number of ring opening or closing events</td>
+</tr>
+</tbody>
+</table>
+<h3 id="custom-weights">Custom weights</h3>
+<p>Each metric weight can be adjusted at construction time:</p>
+<div class="highlight"><pre><span></span><code><span class="n">scorer</span> <span class="o">=</span> <span class="n">MappingScorer</span><span class="p">(</span>
+    <span class="n">energy_penalty_weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">bond_change_weight</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+    <span class="n">fragment_weight</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+    <span class="n">stereo_weight</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span>
+    <span class="n">ring_weight</span><span class="o">=</span><span class="mf">25.0</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="composing-mappers-manually">Composing mappers manually</h2>
+<p>Mappers can be composed into a custom pipeline by passing a <code>mappers_list</code> to <code>map_reactions</code>. The list is applied in order; the last mapper whose result is non-empty is used as the <code>final_mapping</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">map_reactions</span><span class="p">,</span>
+    <span class="n">MCSReactionMapper</span><span class="p">,</span>
+    <span class="n">TemplateReactionMapper</span><span class="p">,</span>
+    <span class="n">NeuralReactionMapper</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">map_reactions</span><span class="p">(</span>
+    <span class="n">reactions</span><span class="p">,</span>
+    <span class="n">mappers_list</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">MCSReactionMapper</span><span class="p">(</span><span class="s2">&quot;mcs&quot;</span><span class="p">,</span> <span class="n">mapper_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="n">TemplateReactionMapper</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="n">mapper_weight</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">NeuralReactionMapper</span><span class="p">(</span><span class="s2">&quot;neural&quot;</span><span class="p">,</span> <span class="n">mapper_weight</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Note that mapper names within a pipeline must be unique.</p>
+<hr />
+<h2 id="sanitizing-and-validating-mapped-reactions">Sanitizing and validating mapped reactions</h2>
+<p>All mapper classes expose shared utility methods via the <code>ReactionMapper</code> base class:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">agave_chem</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCSReactionMapper</span>
+
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">MCSReactionMapper</span><span class="p">(</span><span class="s2">&quot;util&quot;</span><span class="p">)</span>
+
+<span class="c1"># Sanitize a mapped reaction SMILES (validates, optionally canonicalizes)</span>
+<span class="n">clean</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">sanitize_rxn_string</span><span class="p">(</span>
+    <span class="s2">&quot;[CH3:1][C:2](=[O:3])[OH:4].[HO:5][CH2:6]&gt;&gt;[CH3:1][C:2](=[O:3])[O:5][CH2:6]&quot;</span><span class="p">,</span>
+    <span class="n">expect_full_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">canonicalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">remove_mapping</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span>
+
+<span class="c1"># Sanitize a molecule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rdkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chem</span>
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">MolFromSmiles</span><span class="p">(</span><span class="s2">&quot;CC(=O)O&quot;</span><span class="p">)</span>
+<span class="n">clean_mol</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">sanitize_molecule</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">add_hs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
