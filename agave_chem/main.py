@@ -3,9 +3,7 @@ from typing import List
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
 )
-from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
 from agave_chem.mappers.types import AgaveChemMapperResult, ReactionMapperResult
 from agave_chem.utils.logging_config import logger
 
@@ -61,6 +59,9 @@ def map_reactions_using_mappers(
     return results
 
 
+_default_mappers: List[ReactionMapper] | None = None
+
+
 def map_reactions(
     reaction_list: List[str],
     mappers_list: List[ReactionMapper] = [],
@@ -68,11 +69,20 @@ def map_reactions(
     batch_size: int = 500,
 ) -> List[AgaveChemMapperResult]:
     """ """
+    global _default_mappers
+
     if not mappers_list:
-        mappers_list = [
-            MCSReactionMapper("mcs_default"),
-            TemplateReactionMapper("expert_default"),
-        ]
+        if _default_mappers is None:
+            from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
+            from agave_chem.mappers.template.template_mapper import (
+                TemplateReactionMapper,
+            )
+
+            _default_mappers = [
+                MCSReactionMapper("mcs_default"),
+                TemplateReactionMapper("expert_default"),
+            ]
+        mappers_list = _default_mappers
 
     if isinstance(reaction_list, str):
         reaction_list = [reaction_list]
