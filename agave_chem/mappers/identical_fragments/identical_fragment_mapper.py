@@ -4,7 +4,6 @@ from rdkit import Chem
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.types import ReactionMapperResult
-from agave_chem.utils.chem_utils import canonicalize_smiles
 from agave_chem.utils.logging_config import logger
 
 
@@ -37,17 +36,29 @@ class IdenticalFragmentMapper(ReactionMapper):
         reactants_smiles_list = reactants.split(".")
         products_smiles_list = products.split(".")
 
+        ## TODO: We canonicalized these before, but it was very slow...
+        ## almost certainly due to tautomer canonicalization
+
+        # reactants_smiles_list_mapping_dict = {
+        #     canonicalize_smiles(reactant): reactant
+        #     for reactant in reactants_smiles_list
+        # }
+
+        # canonicalized_reactants_smiles_list = [
+        #     canonicalize_smiles(smiles) for smiles in reactants_smiles_list
+        # ]
+        # canonicalized_products_smiles_list = [
+        #     canonicalize_smiles(smiles) for smiles in products_smiles_list
+        # ]
+
         reactants_smiles_list_mapping_dict = {
-            canonicalize_smiles(reactant): reactant
-            for reactant in reactants_smiles_list
+            reactant: reactant for reactant in reactants_smiles_list
         }
 
         canonicalized_reactants_smiles_list = [
-            canonicalize_smiles(smiles) for smiles in reactants_smiles_list
+            smiles for smiles in reactants_smiles_list
         ]
-        canonicalized_products_smiles_list = [
-            canonicalize_smiles(smiles) for smiles in products_smiles_list
-        ]
+        canonicalized_products_smiles_list = [smiles for smiles in products_smiles_list]
 
         atom_mapped_identical_reactants_products = []
         atom_map_num = 500
@@ -56,6 +67,8 @@ class IdenticalFragmentMapper(ReactionMapper):
             if canonicalized_reactant in canonicalized_products_smiles_list:
                 reactants_smiles_list.remove(reactant)
                 products_smiles_list.remove(reactant)
+                canonicalized_products_smiles_list.remove(canonicalized_reactant)
+
                 reactant_mol = Chem.MolFromSmiles(canonicalized_reactant)
                 for atom in reactant_mol.GetAtoms():
                     atom.SetAtomMapNum(atom_map_num)

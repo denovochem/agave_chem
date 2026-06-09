@@ -56,6 +56,7 @@
 !agave_chem/mappers/template/__init__.py
 !agave_chem/mappers/template/template_initialization.py
 !agave_chem/mappers/template/template_mapper.py
+!agave_chem/mappers/template/parallel_template_mapper.py
 
 !agave_chem/mappers/neural/
 !agave_chem/mappers/neural/__init__.py
@@ -77,6 +78,7 @@
 !docs/index.md
 !docs/installation.md
 !docs/reference.md
+!docs/stylesheets/
 !docs/stylesheets/extra.css
 
 !examples/
