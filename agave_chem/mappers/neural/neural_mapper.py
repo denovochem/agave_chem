@@ -23,11 +23,6 @@ from agave_chem.utils.logging_config import logger
 from agave_chem.utils.symmetry_classes import get_symmetry_class_from_mol
 
 
-def placeholder():
-    get_symmetry_class_from_mol()
-    canonicalize_reaction_smiles()
-
-
 class StringInfoDict(TypedDict):
     reactants_dict: Dict[int, str]
     products_dict: Dict[int, str]
@@ -180,9 +175,7 @@ class NeuralReactionMapper(ReactionMapper):
         )
         input_ids = enc["input_ids"].to(self._device)
         attention_mask = enc["attention_mask"].to(self._device)
-
-        token_type_ids = enc.get("token_type_ids", torch.zeros_like(enc["input_ids"]))
-        token_type_ids = token_type_ids.to(self._device)
+        token_type_ids = torch.zeros_like(input_ids)
 
         with torch.no_grad():
             if isinstance(self._model, AlbertWithAttentionAlignment):
@@ -967,8 +960,7 @@ class NeuralReactionMapper(ReactionMapper):
         )
         input_ids = enc["input_ids"].to(self._device)
         attention_mask = enc["attention_mask"].to(self._device)
-        token_type_ids = enc.get("token_type_ids", torch.zeros_like(enc["input_ids"]))
-        token_type_ids = token_type_ids.to(self._device)
+        token_type_ids = torch.zeros_like(input_ids)
 
         with torch.no_grad():
             if isinstance(self._model, AlbertWithAttentionAlignment):
