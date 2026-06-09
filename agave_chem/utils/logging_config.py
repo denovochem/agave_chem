@@ -52,8 +52,8 @@ def configure_logging(
     log_file: Path | None = None
     error_log_file: Path | None = None
     if log_dir:
-        log_file = log_dir / "cholla_chem.log"
-        error_log_file = log_dir / "cholla_chem_errors.log"
+        log_file = log_dir / "agave_chem.log"
+        error_log_file = log_dir / "agave_chem_errors.log"
 
         log_file.parent.mkdir(parents=True, exist_ok=True)
         log_file.touch()
