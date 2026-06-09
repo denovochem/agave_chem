@@ -13,7 +13,7 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.utils.logging_config import logger
 
-tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator()
 
 
 def canonicalize_smiles(
@@ -48,7 +48,7 @@ def canonicalize_smiles(
         for i in x:
             m = Chem.MolFromSmiles(i)
             if canonicalize_tautomer:
-                m = tautomer_enumerator.Canonicalize(m)
+                m = TAUTOMER_ENUMERATOR.Canonicalize(m)
             if remove_mapping:
                 [a.SetAtomMapNum(0) for a in m.GetAtoms()]
             canonical_smiles_string = str(
@@ -80,7 +80,7 @@ def randomize_smiles(
         for i in x:
             m = Chem.MolFromSmiles(i)
             if randomize_tautomer:
-                tautomers = tautomer_enumerator.Enumerate(m)
+                tautomers = TAUTOMER_ENUMERATOR.Enumerate(m)
                 m = random.choice(tautomers)
             if remove_mapping:
                 [a.SetAtomMapNum(0) for a in m.GetAtoms()]

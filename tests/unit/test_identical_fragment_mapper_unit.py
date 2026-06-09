@@ -110,3 +110,22 @@ def test_map_reaction_with_identical_fragment_adds_atom_mapping():
     assert len(mapped_reactants) == 1
     assert len(mapped_products) == 1
     assert mapped_reactants[0] == mapped_products[0]
+
+
+def test_atom_map_identical_fragments_stoichiometry_mismatch():
+    """Regression: fragments with unequal counts on both sides should only
+    be paired up to the minimum count."""
+    mapper = IdenticalFragmentMapper(mapper_name="test")
+
+    # 3 [K+] reactants, 1 [K+] product
+    rxn = "F.[K+].[K+].[K+].CC>>CCC.[K+]"
+    mapped_frags, remaining_rxn = mapper._atom_map_identical_fragments(rxn)
+
+    # Only 1 copy should be paired and mapped.
+    assert len(mapped_frags) == 1
+    assert _get_atom_map_nums(mapped_frags[0]) == [500]
+
+    # Remaining reaction should have 2 unmapped [K+] on reactants, 0 on products.
+    r_frags, p_frags = _split_rxn(remaining_rxn)
+    assert r_frags.count("[K+]") == 2
+    assert "[K+]" not in p_frags
