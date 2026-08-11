@@ -34,6 +34,9 @@ zip-safe = false
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.ruff.lint]
+ignore = ["UP", "BLE001"]
+
 [tool.setuptools.package-data]
 agave_chem = [
     "datafiles/models/supervised_albert_model/*.json",
