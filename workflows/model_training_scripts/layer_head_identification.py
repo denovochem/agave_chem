@@ -13,18 +13,18 @@ REPO_ROOT = BASE_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training.albert_mapper_supervised_training import (  # noqa: E402
+from model_training.albert_mapper_supervised_training import (
     SupervisedAtomMappingDataset,
     SupervisedConfig,
     evaluate_supervised_attention_loss,
 )
-from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+from model_training.albert_mapper_unuspervised_training import (
     CustomTokenizer,
     MLMConfig,
 )
 
-from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
-from agave_chem.mappers.neural.model import (  # noqa: E402
+from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
+from agave_chem.mappers.neural.model import (
     AlbertWithAttentionAlignment,
 )
 
@@ -191,13 +191,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     base_model = AlbertForMaskedLM.from_pretrained(args.pretrained_model_path)
     supervised_config = SupervisedConfig(
         target_layer=0,
-        target_head=0,
         multitask=False,
     )
     model = AlbertWithAttentionAlignment(
         base_model=base_model,
         supervised_config=supervised_config,
-        max_length=args.max_length,
     )
     model.to(device)
 
@@ -211,7 +209,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 val_dataset,
                 device=device,
                 target_layer=layer_num,
-                target_head=head_num,
             )
             print(f"layer={layer_num} head={head_num} loss={layer_head_combo_loss}")
             if layer_head_combo_loss < best_loss:

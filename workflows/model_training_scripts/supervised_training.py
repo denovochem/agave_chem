@@ -11,16 +11,17 @@ REPO_ROOT = BASE_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agave_chem.mappers.neural.constants import smiles_token_to_id_dict  # noqa: E402
-from model_training.albert_mapper_supervised_training import (  # noqa: E402
+from model_training.albert_mapper_supervised_training import (
     SupervisedConfig,
     build_attention_target_from_mapped_rxn_smiles,
     main_supervised,
 )
-from model_training.albert_mapper_unuspervised_training import (  # noqa: E402
+from model_training.albert_mapper_unuspervised_training import (
     CustomTokenizer,
     TrainingConfig,
 )
+
+from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
 
 
 def _read_lines(path: str) -> List[str]:
@@ -90,7 +91,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--target-layer", type=int, default=9)
-    parser.add_argument("--target-head", type=int, default=5)
 
     parser.add_argument("--num-epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=64)
@@ -156,7 +156,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
 
     supervised_config = SupervisedConfig()
-    supervised_config.target_head = args.target_head
     supervised_config.target_layer = args.target_layer
 
     main_supervised(

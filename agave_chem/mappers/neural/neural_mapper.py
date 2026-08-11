@@ -38,7 +38,6 @@ def load_neural_albert_model(
     checkpoint_dir: str,
     device: torch.device,
     use_supervised: bool,
-    max_length: int = 512,
     supervised_config: SupervisedConfig | None = None,
 ) -> AlbertForMaskedLM | AlbertWithAttentionAlignment:
     checkpoint_dir = str(checkpoint_dir)
@@ -60,7 +59,6 @@ def load_neural_albert_model(
     wrapper = AlbertWithAttentionAlignment(
         base_model=base_model,
         supervised_config=supervised_config,
-        max_length=max_length,
     ).to(device)
 
     pt_path = str(Path(checkpoint_dir) / "supervised_albert_model.pt")
@@ -101,11 +99,9 @@ class NeuralReactionMapper(ReactionMapper):
                 supervised model. If None, a default SupervisedConfig is used.
             sequence_max_length (int): Maximum tokenization length for the model.
             layer (int): 0-based attention layer index to use for mapping. Only
-                used for the base AlbertForMaskedLM; ignored for
-                AlbertWithAttentionAlignment.
+                used when the base AlbertForMaskedLM is loaded (not supervised).
             head (int): 0-based attention head index to use for mapping. Only
-                used for the base AlbertForMaskedLM; ignored for
-                AlbertWithAttentionAlignment.
+                used when the base AlbertForMaskedLM is loaded (not supervised).
             adjacent_atom_multiplier (float): Multiplier applied to attention
                 scores of atoms neighboring an already-mapped pair.
             identical_adjacent_atom_multiplier (float): Additional multiplier
@@ -138,7 +134,6 @@ class NeuralReactionMapper(ReactionMapper):
             checkpoint_dir=checkpoint_path,
             device=self._device,
             use_supervised=use_supervised,
-            max_length=sequence_max_length,
             supervised_config=self._supervised_config,
         )
 

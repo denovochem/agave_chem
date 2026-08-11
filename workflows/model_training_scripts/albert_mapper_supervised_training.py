@@ -22,7 +22,7 @@ REPO_ROOT = BASE_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from model_training_scripts.albert_mapper_unuspervised_training import (  # noqa: E402
+from model_training_scripts.albert_mapper_unuspervised_training import (
     MLMConfig,
     ModelConfig,
     SpanMLMConfig,
@@ -33,16 +33,16 @@ from model_training_scripts.albert_mapper_unuspervised_training import (  # noqa
     resolve_protected_token_ids,
 )
 
-from agave_chem.mappers.neural.constants import (  # noqa: E402
+from agave_chem.mappers.neural.constants import (
     smiles_token_to_id_dict,
     token_atom_identity_dict,
 )
-from agave_chem.mappers.neural.model import (  # noqa: E402
+from agave_chem.mappers.neural.model import (
     AlbertWithAttentionAlignment,
     SupervisedConfig,
 )
-from agave_chem.mappers.neural.tokenizer import CustomTokenizer  # noqa: E402
-from agave_chem.utils.chem_utils import (  # noqa: E402
+from agave_chem.mappers.neural.tokenizer import CustomTokenizer
+from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
     randomize_reaction_smiles,
     remove_reaction_smiles_atom_mapping,
@@ -200,9 +200,7 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
             and mapnum <= 800
             and mapnum not in symmetric_atom_token_indices_to_not_sink
             and all_product_atoms_mapped
-        ):
-            atom_token_indices_to_sink.append(i)
-        elif (
+        ) or (
             mapnum in atom_map_nums_to_sink_atomic_num_not_in_product
             and mapnum not in symmetric_atom_token_indices_to_not_sink
         ):
@@ -627,10 +625,7 @@ class SupervisedAlbertTrainer:
         """Run the full training loop."""
         mode = "multitask" if self.supervised_config.multitask else "supervised-only"
         print(f"Starting {mode} training on device: {self.device}")
-        print(
-            f"Target layer: {self.supervised_config.target_layer}, "
-            f"Target head: {self.supervised_config.target_head}"
-        )
+        print(f"Target layer: {self.supervised_config.target_layer}")
         print(f"Epochs: {self.training_config.num_epochs}")
 
         for epoch in range(1, self.training_config.num_epochs + 1):
@@ -700,7 +695,6 @@ def evaluate_supervised_attention_loss(
     dataloader_or_dataset: DataLoader | Dataset,
     device: torch.device | None = None,
     target_layer: int | None = None,
-    target_head: int | None = None,
     batch_size: int = 128,
     num_workers: int = 0,
     pin_memory: bool | None = None,
@@ -713,7 +707,6 @@ def evaluate_supervised_attention_loss(
         dataloader_or_dataset: Either a DataLoader yielding batches, or a Dataset yielding single examples.
         device: Device to run eval on. If None, uses the model's parameter device.
         target_layer: Optional override for supervised_config.target_layer during eval.
-        target_head: Optional override for supervised_config.target_head during eval.
         batch_size: Batch size to use if a Dataset is provided.
         num_workers: DataLoader num_workers to use if a Dataset is provided.
         pin_memory: DataLoader pin_memory to use if a Dataset is provided. If None, uses torch.cuda.is_available().
@@ -730,8 +723,6 @@ def evaluate_supervised_attention_loss(
 
     if target_layer is not None:
         model.supervised_config.target_layer = target_layer
-    if target_head is not None:
-        model.supervised_config.target_head = target_head
 
     try:
         model = model.to(device)
@@ -779,7 +770,7 @@ def evaluate_supervised_attention_loss(
 
     except IndexError as e:
         raise ValueError(
-            "Invalid 'target_layer'/'target_head' for the model's attention tensors."
+            "Invalid 'target_layer' for the model's attention tensors."
         ) from e
 
 
@@ -836,7 +827,6 @@ def main_supervised(
     model = AlbertWithAttentionAlignment(
         base_model=base_model,
         supervised_config=supervised_config,
-        max_length=256,
     )
 
     # --- Datasets ---

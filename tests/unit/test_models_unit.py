@@ -234,31 +234,17 @@ class TestSupervisedConfig:
     def test_default_values(self):
         config = SupervisedConfig()
         assert config.target_layer == 11
-        assert config.target_head == 7
-        assert config.head_type == "bilinear"
         assert config.bottleneck_size == 64
 
     def test_valid_construction(self):
         config = SupervisedConfig(
             target_layer=5,
-            target_head=3,
-            head_type="attention",
         )
         assert config.target_layer == 5
-        assert config.target_head == 3
-        assert config.head_type == "attention"
-
-    def test_invalid_head_type_raises(self):
-        with pytest.raises(ValidationError):
-            SupervisedConfig(head_type="invalid")  # type: ignore[arg-type]
 
     def test_negative_layer_raises(self):
         with pytest.raises(ValidationError):
             SupervisedConfig(target_layer=-1)
-
-    def test_negative_head_raises(self):
-        with pytest.raises(ValidationError):
-            SupervisedConfig(target_head=-1)
 
     def test_zero_bottleneck_size_raises(self):
         with pytest.raises(ValidationError):
@@ -266,5 +252,5 @@ class TestSupervisedConfig:
 
     def test_mutable(self):
         config = SupervisedConfig()
-        config.target_head = 3
-        assert config.target_head == 3
+        config.target_layer = 3
+        assert config.target_layer == 3
