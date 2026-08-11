@@ -1380,11 +1380,11 @@ class NeuralReactionMapper(ReactionMapper):
                     tokens=tokens,
                     one_to_one_correspondence=True,
                 )
-                if retry_result["selected_mapping"]:
-                    retry_result["original_smiles"] = orig_rxn_smiles
-                    retry_result["selected_mapping"] = (
+                if retry_result.selected_mapping:
+                    retry_result.original_smiles = orig_rxn_smiles
+                    retry_result.selected_mapping = (
                         self._strip_unmapped_reactant_fragments(
-                            retry_result["selected_mapping"],
+                            retry_result.selected_mapping,
                             orig_rxn_smiles,
                         )
                     )

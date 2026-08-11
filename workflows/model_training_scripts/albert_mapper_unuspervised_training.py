@@ -2,12 +2,12 @@ import random
 import sys
 import time
 from collections import deque
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Literal, Optional, Set, Tuple
 
 import numpy as np
 import torch
+from pydantic import BaseModel, Field, field_validator, model_validator
 from rdkit import Chem
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
@@ -25,13 +25,13 @@ REPO_ROOT = BASE_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agave_chem.mappers.neural.constants import (  # noqa: E402
+from agave_chem.mappers.neural.constants import (
     smiles_id_to_token_dict,
     smiles_token_to_id_dict,
     token_atom_identity_dict,
 )
-from agave_chem.mappers.neural.tokenizer import CustomTokenizer  # noqa: E402
-from agave_chem.utils.chem_utils import (  # noqa: E402
+from agave_chem.mappers.neural.tokenizer import CustomTokenizer
+from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
     randomize_reaction_smiles,
 )
@@ -41,9 +41,28 @@ from agave_chem.utils.chem_utils import (  # noqa: E402
 # ============================================================
 
 
-@dataclass
-class ModelConfig:
-    """Configuration for the ALBERT model architecture."""
+class ModelConfig(BaseModel):
+    """
+    Configuration for the ALBERT model architecture.
+
+    Args:
+        vocab_size (int): Size of the vocabulary.
+        embedding_size (int): Dimension of token embeddings.
+        hidden_size (int): Hidden layer dimension.
+        num_hidden_layers (int): Number of transformer layers.
+        num_attention_heads (int): Number of attention heads.
+        intermediate_size (int): Feed-forward intermediate dimension.
+        hidden_act (Literal[...]): Activation function for hidden layers.
+        hidden_dropout_prob (float): Dropout probability for hidden layers.
+        attention_probs_dropout_prob (float): Dropout probability for attention.
+        max_position_embeddings (int): Maximum sequence length.
+        type_vocab_size (int): Size of the token type vocabulary.
+        initializer_range (float): Range for weight initialization.
+        layer_norm_eps (float): Epsilon for layer normalization.
+        classifier_dropout_prob (float): Dropout probability for classifier.
+        num_hidden_groups (int): Number of hidden parameter-sharing groups.
+        inner_group_num (int): Number of inner groups within each hidden group.
+    """
 
     vocab_size: int = 1024
     embedding_size: int = 128
@@ -51,7 +70,7 @@ class ModelConfig:
     num_hidden_layers: int = 12
     num_attention_heads: int = 8
     intermediate_size: int = 512
-    hidden_act: str = "gelu_new"
+    hidden_act: Literal["gelu", "gelu_new", "relu", "silu", "tanh"] = "gelu_new"
     hidden_dropout_prob: float = 0.1
     attention_probs_dropout_prob: float = 0.1
     max_position_embeddings: int = 512
@@ -62,10 +81,56 @@ class ModelConfig:
     num_hidden_groups: int = 1
     inner_group_num: int = 1
 
+    @field_validator(
+        "vocab_size",
+        "embedding_size",
+        "hidden_size",
+        "num_hidden_layers",
+        "num_attention_heads",
+        "intermediate_size",
+        "max_position_embeddings",
+        "type_vocab_size",
+        "num_hidden_groups",
+        "inner_group_num",
+    )
+    @classmethod
+    def _positive_int(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("must be a positive integer")
+        return v
 
-@dataclass
-class TrainingConfig:
-    """Configuration for the training process."""
+    @field_validator(
+        "hidden_dropout_prob",
+        "attention_probs_dropout_prob",
+        "classifier_dropout_prob",
+        "initializer_range",
+        "layer_norm_eps",
+    )
+    @classmethod
+    def _non_negative_float(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+
+class TrainingConfig(BaseModel):
+    """
+    Configuration for the training process.
+
+    Args:
+        learning_rate (float): Learning rate for the optimizer.
+        weight_decay (float): Weight decay coefficient.
+        adam_epsilon (float): Epsilon for AdamW optimizer.
+        max_grad_norm (float): Maximum gradient norm for clipping.
+        num_epochs (int): Number of training epochs.
+        batch_size (int): Training batch size.
+        warmup_steps (int): Number of warmup steps for the scheduler.
+        save_steps (int): Steps between model checkpoints (currently unused).
+        logging_steps (int): Steps between logging.
+        output_dir (str): Directory for saving model outputs.
+        seed (int): Random seed for reproducibility.
+        fp16 (bool): Whether to use mixed-precision training.
+    """
 
     learning_rate: float = 2e-4
     weight_decay: float = 0.001
@@ -74,25 +139,78 @@ class TrainingConfig:
     num_epochs: int = 3
     batch_size: int = 32
     warmup_steps: int = 10000
-    save_steps: int = 1000  # This currently does nothing
+    save_steps: int = 1000
     logging_steps: int = 100
     output_dir: str = "./albert_output"
     seed: int = 42
     fp16: bool = False
 
+    @field_validator("learning_rate", "weight_decay", "adam_epsilon", "max_grad_norm")
+    @classmethod
+    def _non_negative_float(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
 
-@dataclass
-class MLMConfig:
-    """Configuration for Masked Language Modeling preprocessing."""
+    @field_validator(
+        "num_epochs",
+        "batch_size",
+        "warmup_steps",
+        "save_steps",
+        "logging_steps",
+        "seed",
+    )
+    @classmethod
+    def _non_negative_int(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+
+class MLMConfig(BaseModel):
+    """
+    Configuration for Masked Language Modeling preprocessing.
+
+    Args:
+        mlm_probability (float): Probability of selecting a token for masking.
+        mask_token_prob (float): Probability of replacing a selected token with [MASK].
+        random_token_prob (float): Probability of replacing a selected token with a random token.
+        keep_token_prob (float): Probability of keeping the original token.
+
+    Note:
+        ``mask_token_prob + random_token_prob + keep_token_prob`` should sum
+        to approximately 1.0.  This is validated at construction time.
+    """
 
     mlm_probability: float = 0.15
-    mask_token_prob: float = 0.80  # 80% replace with [MASK]
-    random_token_prob: float = 0.10  # 10% replace with random token
-    keep_token_prob: float = 0.10  # 10% keep original token
+    mask_token_prob: float = 0.80
+    random_token_prob: float = 0.10
+    keep_token_prob: float = 0.10
+
+    @field_validator(
+        "mlm_probability",
+        "mask_token_prob",
+        "random_token_prob",
+        "keep_token_prob",
+    )
+    @classmethod
+    def _probability_range(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("must be between 0 and 1")
+        return v
+
+    @model_validator(mode="after")
+    def _check_prob_sum(self) -> "MLMConfig":
+        total = self.mask_token_prob + self.random_token_prob + self.keep_token_prob
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(
+                f"mask_token_prob + random_token_prob + keep_token_prob "
+                f"must sum to ~1.0, got {total}"
+            )
+        return self
 
 
-@dataclass
-class SpanMLMConfig:
+class SpanMLMConfig(BaseModel):
     """
     Configuration for graph-aware span-based Masked Language Modeling.
 
@@ -100,17 +218,51 @@ class SpanMLMConfig:
     contiguous neighborhoods of atoms on the molecular graph for masking.
     Only atom tokens are eligible; structural tokens (bonds, parentheses,
     ring numbers, etc.) are never masked.
+
+    Args:
+        mlm_probability (float): Probability of selecting a token for masking.
+        span_size_weights (Dict[int, float]): Weights for span sizes 1-5.
+            Defaults to {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}.
+        mask_token_prob (float): Probability of replacing a selected token with [MASK].
+        plausible_replace_prob (float): Probability of replacing with a plausible token.
+        keep_token_prob (float): Probability of keeping the original token.
+
+    Note:
+        ``mask_token_prob + plausible_replace_prob + keep_token_prob`` should
+        sum to approximately 1.0.  This is validated at construction time.
     """
 
     mlm_probability: float = 0.15
-    span_size_weights: Dict[int, float] | None = None
+    span_size_weights: Dict[int, float] = Field(
+        default_factory=lambda: {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}
+    )
     mask_token_prob: float = 0.70
     plausible_replace_prob: float = 0.20
     keep_token_prob: float = 0.10
 
-    def __post_init__(self) -> None:
-        if self.span_size_weights is None:
-            self.span_size_weights = {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}
+    @field_validator(
+        "mlm_probability",
+        "mask_token_prob",
+        "plausible_replace_prob",
+        "keep_token_prob",
+    )
+    @classmethod
+    def _probability_range(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("must be between 0 and 1")
+        return v
+
+    @model_validator(mode="after")
+    def _check_prob_sum(self) -> "SpanMLMConfig":
+        total = (
+            self.mask_token_prob + self.plausible_replace_prob + self.keep_token_prob
+        )
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(
+                f"mask_token_prob + plausible_replace_prob + keep_token_prob "
+                f"must sum to ~1.0, got {total}"
+            )
+        return self
 
 
 # ============================================================

@@ -132,15 +132,15 @@ class TestMapReactionInvalidInput:
 
     def test_invalid_smiles_returns_default(self, mapper):
         res = mapper.map_reaction("CC")
-        assert res["original_smiles"] == ""
-        assert res["selected_mapping"] == ""
-        assert res["mapping_type"] == "neural"
+        assert res.original_smiles == ""
+        assert res.selected_mapping == ""
+        assert res.mapping_type == "neural"
 
     def test_invalid_smiles_in_list_returns_default(self, mapper):
         results = mapper.map_reactions(["CC"])
         assert len(results) == 1
-        assert results[0]["selected_mapping"] == ""
-        assert results[0]["mapping_type"] == "neural"
+        assert results[0].selected_mapping == ""
+        assert results[0].mapping_type == "neural"
 
 
 class TestResultOrderPreservation:
@@ -181,9 +181,9 @@ class TestResultOrderPreservation:
         ]
         results = mapper.map_reactions(rxns)
         assert len(results) == len(rxns)
-        assert results[0]["original_smiles"] == rxns[0]
-        assert results[1]["original_smiles"] == rxns[1]
-        assert results[2]["original_smiles"] == rxns[2]
+        assert results[0].original_smiles == rxns[0]
+        assert results[1].original_smiles == rxns[1]
+        assert results[2].original_smiles == rxns[2]
 
     def test_results_match_input_order_with_invalid_interspersed(self, mapper):
         rxns = [
@@ -195,12 +195,12 @@ class TestResultOrderPreservation:
         ]
         results = mapper.map_reactions(rxns)
         assert len(results) == len(rxns)
-        assert results[0]["original_smiles"] == rxns[0]
-        assert results[1]["original_smiles"] == ""
-        assert results[1]["selected_mapping"] == ""
-        assert results[2]["original_smiles"] == rxns[2]
-        assert results[3]["selected_mapping"] == ""
-        assert results[4]["original_smiles"] == rxns[4]
+        assert results[0].original_smiles == rxns[0]
+        assert results[1].original_smiles == ""
+        assert results[1].selected_mapping == ""
+        assert results[2].original_smiles == rxns[2]
+        assert results[3].selected_mapping == ""
+        assert results[4].original_smiles == rxns[4]
 
     def test_single_reaction_returns_single_result(self, mapper):
         results = mapper.map_reactions(["CC>>CC"])

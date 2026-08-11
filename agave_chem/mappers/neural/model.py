@@ -1,34 +1,54 @@
-from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Literal
 
 import torch
+from pydantic import BaseModel, field_validator
 from transformers import AlbertForMaskedLM
 
 
-@dataclass
-class SupervisedConfig:
-    """Configuration for supervised attention alignment training."""
+class SupervisedConfig(BaseModel):
+    """
+    Configuration for supervised attention alignment training.
 
-    target_layer: int = 11  # Which layer's attention to supervise
-    target_head: int = 7  # Which head's attention to supervise
+    Args:
+        target_layer (int): Which layer's attention to supervise.
+        target_head (int): Which head's attention to supervise.
+        mlm_loss_weight (float): Loss weight for MLM task in multitask learning.
+        attention_loss_weight (float): Loss weight for attention alignment task.
+        multitask (bool): If False, only attention alignment loss is used.
+        freeze_base_model (bool): If True, only train the attention head.
+        use_residual (bool): Initialize with identity for residual learning.
+        head_type (Literal["attention", "bilinear"]): Head type — "attention" for
+            AttentionAlignmentHead, "bilinear" for BilinearMappingHead.
+        bottleneck_size (int): BilinearMappingHead bottleneck size (only used
+            when head_type == "bilinear").
+        use_attention_residual (bool): Whether BilinearMappingHead uses attention
+            residual.
+    """
 
-    # Loss weighting for multitask learning
+    target_layer: int = 11
+    target_head: int = 7
     mlm_loss_weight: float = 1.0
     attention_loss_weight: float = 1.0
-
-    # Training mode
-    multitask: bool = True  # If False, only attention alignment loss
-    freeze_base_model: bool = False  # If True, only train the attention head
-
-    # Dense layer config
-    use_residual: bool = True  # Initialize with identity for residual learning
-
-    # Head type: "attention" for AttentionAlignmentHead, "bilinear" for BilinearMappingHead
-    head_type: str = "bilinear"
-
-    # BilinearMappingHead config (only used when head_type == "bilinear")
+    multitask: bool = True
+    freeze_base_model: bool = False
+    use_residual: bool = True
+    head_type: Literal["attention", "bilinear"] = "bilinear"
     bottleneck_size: int = 64
     use_attention_residual: bool = True
+
+    @field_validator("target_layer", "target_head")
+    @classmethod
+    def _non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+    @field_validator("bottleneck_size")
+    @classmethod
+    def _positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("must be positive")
+        return v
 
 
 class AttentionAlignmentHead(torch.nn.Module):

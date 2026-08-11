@@ -74,9 +74,9 @@ def test_map_reaction_invalid_smiles_returns_default():
     # invalid because reaction_smiles.count('>>') != 1
     res = mapper.map_reaction("CC")
 
-    assert res["original_smiles"] == "CC"
-    assert res["selected_mapping"] == ""
-    assert res["mapping_type"] == "identical_fragment"
+    assert res.original_smiles == "CC"
+    assert res.selected_mapping == ""
+    assert res.mapping_type == "identical_fragment"
 
 
 def test_map_reaction_no_identical_fragment_returns_input_unchanged():
@@ -85,8 +85,8 @@ def test_map_reaction_no_identical_fragment_returns_input_unchanged():
     rxn = "CC>>CO"
     res = mapper.map_reaction(rxn)
 
-    assert res["original_smiles"] == rxn
-    assert res["selected_mapping"] == rxn
+    assert res.original_smiles == rxn
+    assert res.selected_mapping == rxn
 
 
 def test_map_reaction_with_identical_fragment_adds_atom_mapping():
@@ -95,9 +95,9 @@ def test_map_reaction_with_identical_fragment_adds_atom_mapping():
     rxn = "CCC.Cl>>CC.Cl"
     res = mapper.map_reaction(rxn)
 
-    assert res["original_smiles"] == rxn
+    assert res.original_smiles == rxn
 
-    mapped = res["selected_mapping"]
+    mapped = res.selected_mapping
     reactants, products = _split_rxn(mapped)
 
     # Both sides should contain 2 fragments, including a mapped fragment.

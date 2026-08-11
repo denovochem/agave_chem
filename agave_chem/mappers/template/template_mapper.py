@@ -132,9 +132,9 @@ class TemplateReactionMapper(ReactionMapper):
         Initialize the TemplateMapper instance.
 
         Args:
-            custom_smirks_patterns (List[Dict]): A list of dictionaries containing
-                custom SMIRKS patterns. Each dictionary should have a 'name' key,
-                a 'smirks' key, and a 'superclass_id' key.
+            custom_smirks_patterns (List[SmirksPattern] | None): A list of SmirksPattern
+                objects (or dicts that will be validated into SmirksPattern) containing
+                custom SMIRKS patterns.
             use_default_smirks_patterns (bool): Whether to use the default SMIRKS
                 patterns.
         """
@@ -143,25 +143,11 @@ class TemplateReactionMapper(ReactionMapper):
 
         if custom_smirks_patterns is not None:
             if not isinstance(custom_smirks_patterns, list):
-                raise TypeError(
-                    "Invalid input: custom_smirks_patterns must be a list of dictionaries."
-                )
-            for pattern in custom_smirks_patterns:
-                if set(pattern.keys()) != set(["name", "smirks", "superclass_id"]):
-                    raise TypeError(
-                        "Invalid input: each dictionary in custom_smirks_patterns must have 'name', 'smirks', and 'superclass_id' keys."
-                    )
-                for key, value in pattern.items():
-                    if key == "superclass_id":
-                        if value is not None and not isinstance(value, int):
-                            raise TypeError(
-                                "Invalid input: 'superclass_id' value must be an integer or None."
-                            )
-                    else:
-                        if not isinstance(value, str):
-                            raise TypeError(
-                                "Invalid input: 'name' and 'smirks' values must be strings."
-                            )
+                raise TypeError("Invalid input: custom_smirks_patterns must be a list.")
+            custom_smirks_patterns = [
+                SmirksPattern(**pattern) if isinstance(pattern, dict) else pattern
+                for pattern in custom_smirks_patterns
+            ]
 
         self._custom_smirks_patterns = custom_smirks_patterns
         self._use_default_smirks_patterns = use_default_smirks_patterns
@@ -193,11 +179,15 @@ class TemplateReactionMapper(ReactionMapper):
         if self._use_default_smirks_patterns and self._custom_smirks_patterns is None:
             smirks_patterns = self._uninitialized_smirks_patterns
         elif self._custom_smirks_patterns and not self._use_default_smirks_patterns:
-            smirks_patterns = self._custom_smirks_patterns
+            smirks_patterns = [
+                p.model_dump() if isinstance(p, SmirksPattern) else p
+                for p in self._custom_smirks_patterns
+            ]
         elif self._custom_smirks_patterns and self._use_default_smirks_patterns:
-            smirks_patterns = (
-                self._custom_smirks_patterns + self._uninitialized_smirks_patterns
-            )
+            smirks_patterns = [
+                p.model_dump() if isinstance(p, SmirksPattern) else p
+                for p in self._custom_smirks_patterns
+            ] + self._uninitialized_smirks_patterns
         else:
             raise TypeError(
                 "Attempting to initialize AgaveChem with no SMIRKS patterns"
@@ -1520,10 +1510,15 @@ class TemplateReactionMapper(ReactionMapper):
         else:
             selected_mapping = list(deduplicated_mapped_outcomes.keys())[0]
 
+        possible_mappings_template_names: Dict[str, List[str]] = {
+            mapping: [p["template_name"] for p in patterns]
+            for mapping, patterns in deduplicated_mapped_outcomes.items()
+        }
+
         return ReactionMapperResult(
             original_smiles=original_smiles,
             selected_mapping=selected_mapping,
-            possible_mappings=deduplicated_mapped_outcomes,
+            possible_mappings=possible_mappings_template_names,
             mapping_type=self._mapper_type,
             mapping_score=None,
             additional_info=[],
@@ -1564,9 +1559,9 @@ class TemplateReactionMapper(ReactionMapper):
         if self._mcs_mapper is not None:
             mcs_result = self._mcs_mapper.map_reaction(canonicalized_reaction_smiles)
 
-            if mcs_result["selected_mapping"] != "":
+            if mcs_result.selected_mapping != "":
                 unmapped_product_atom_islands = self._get_unmapped_product_atom_islands(
-                    mcs_result["selected_mapping"].split(">>")[1]
+                    mcs_result.selected_mapping.split(">>")[1]
                 )
 
         reactants_str, products_str = self._split_reaction_components(

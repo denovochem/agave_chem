@@ -28,13 +28,11 @@ def map_reactions_using_mappers(
             for j, (reaction, identical_fragments) in enumerate(
                 zip(out, identical_fragments_mapping_list)
             ):
-                if reaction["selected_mapping"] and identical_fragments:
-                    reaction["selected_mapping"] = (
-                        identical_fragment_mapper.resolve_identical_fragments_mapping_list(
-                            [reaction["selected_mapping"]],
-                            [identical_fragments],
-                        )[0]
-                    )
+                if reaction.selected_mapping and identical_fragments:
+                    reaction.selected_mapping = identical_fragment_mapper.resolve_identical_fragments_mapping_list(
+                        [reaction.selected_mapping],
+                        [identical_fragments],
+                    )[0]
 
                 all_mapper_results_by_reaction[i + j].append(reaction)
 
@@ -44,8 +42,8 @@ def map_reactions_using_mappers(
     ):
         final_mapping = ""
         for mapper_result in reversed(mapper_results):
-            if mapper_result["selected_mapping"]:
-                final_mapping = mapper_result["selected_mapping"]
+            if mapper_result.selected_mapping:
+                final_mapping = mapper_result.selected_mapping
                 break
 
         results.append(

@@ -3,3 +3,4 @@ rdchiral-plus
 loguru
 torch
 transformers
+pydantic>=2.0

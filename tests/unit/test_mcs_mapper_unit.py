@@ -22,9 +22,9 @@ def test_map_reaction_invalid_smiles_returns_default():
     # invalid because reaction_smiles.count('>>') != 1
     res = mapper.map_reaction("CC")
 
-    assert res["original_smiles"] == "CC"
-    assert res["selected_mapping"] == ""
-    assert res["mapping_type"] == "mcs"
+    assert res.original_smiles == "CC"
+    assert res.selected_mapping == ""
+    assert res.mapping_type == "mcs"
 
 
 def test_map_reaction_identity_reaction_produces_valid_mapping():
@@ -33,8 +33,8 @@ def test_map_reaction_identity_reaction_produces_valid_mapping():
     rxn = "CCCCCO>>CCCCCO"
     res = mapper.map_reaction(rxn)
 
-    assert res["original_smiles"] == rxn
-    mapped = res["selected_mapping"]
+    assert res.original_smiles == rxn
+    mapped = res.selected_mapping
     assert mapped.count(">>") == 1
 
     reactants, products = _split_rxn(mapped)
@@ -61,9 +61,9 @@ def test_map_reaction_is_deterministic_for_same_input():
     res1 = mapper.map_reaction(rxn)
     res2 = mapper.map_reaction(rxn)
 
-    assert res1["original_smiles"] == rxn
-    assert res2["original_smiles"] == rxn
-    assert res1["selected_mapping"] == res2["selected_mapping"]
+    assert res1.original_smiles == rxn
+    assert res2.original_smiles == rxn
+    assert res1.selected_mapping == res2.selected_mapping
 
 
 def test_map_reactions_returns_results_in_same_order():
@@ -79,9 +79,9 @@ def test_map_reactions_returns_results_in_same_order():
 
     assert len(results) == len(rxns)
 
-    assert results[0]["original_smiles"] == rxns[0]
-    assert results[1]["original_smiles"] == rxns[1]
-    assert results[2]["original_smiles"] == rxns[2]
+    assert results[0].original_smiles == rxns[0]
+    assert results[1].original_smiles == rxns[1]
+    assert results[2].original_smiles == rxns[2]
 
 
 def test_map_reaction_branch_point_halogen_is_mapped_when_bonded_atom_is_mapped():
@@ -89,10 +89,10 @@ def test_map_reaction_branch_point_halogen_is_mapped_when_bonded_atom_is_mapped(
 
     rxn = "F.Nc1nc(Br)c(Br)cc1Br.O=N[O-].[Na+].c1ccncc1>>Fc1nc(Br)c(Br)cc1Br"
     res = mapper.map_reaction(rxn)
-    mapped = res["selected_mapping"]
+    mapped = res.selected_mapping
     assert mapped
 
-    reactants, products = _split_rxn(mapped)
+    _reactants, products = _split_rxn(mapped)
     assert len(products) == 1
 
     prod_mol = Chem.MolFromSmiles(products[0])

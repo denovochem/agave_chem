@@ -62,7 +62,7 @@ def test_template_mapper_uspto_1k_reactions_sanity() -> None:
     for i, rxn in enumerate(rxns):
         num_total += 1
         res = mapper.map_reaction(rxn)
-        mapped = res["selected_mapping"]
+        mapped = res.selected_mapping
         if not mapped:
             continue
 

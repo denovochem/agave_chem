@@ -32,7 +32,7 @@ class ReactionMapper(ABC):
             )
         self._mapper_weight: float = float(mapper_weight)
 
-        self._default_mapping_dict = ReactionMapperResult(
+        self._default_mapping_result = ReactionMapperResult(
             original_smiles="",
             selected_mapping="",
             possible_mappings={},
@@ -54,11 +54,10 @@ class ReactionMapper(ABC):
     def _return_default_mapping_dict(
         self, original_smiles: str
     ) -> ReactionMapperResult:
-        """Return a default mapping dictionary."""
-        default_mapping_dict = self._default_mapping_dict
-        default_mapping_dict["original_smiles"] = original_smiles
-
-        return default_mapping_dict
+        """Return a default mapping result with the given original SMILES."""
+        return self._default_mapping_result.model_copy(
+            update={"original_smiles": original_smiles}
+        )
 
     def _split_reaction_components(self, reaction_smiles: str) -> Tuple[str, str]:
         """
