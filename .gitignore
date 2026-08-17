@@ -92,6 +92,13 @@
 !workflows/benchmarking/gold_reactions_filtered.txt
 !workflows/benchmarking/localmapper_gold_reactions_filtered_results.txt
 !workflows/benchmarking/rxnmapper_gold_reactions_filtered_results.txt
+!workflows/benchmarking/_bench_utils.py 
+!workflows/benchmarking/benchmark_agave_chem.py 
+!workflows/benchmarking/benchmark_chython.py 
+!workflows/benchmarking/benchmark_localmapper.py 
+!workflows/benchmarking/benchmark_rxnmapper.py
+!workflows/benchmarking/benchmark_rxnmapper_v2.py
+!workflows/benchmarking/run_external_benchmarks.py 
 
 !workflows/data/
 

@@ -4,7 +4,10 @@ from typing import Any, List
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-_TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator()
+_taut_opts = rdMolStandardize.CleanupParameters()
+_taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+_taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
+_TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator(_taut_opts)
 
 # Define transformations focusing on making equivalent atoms within
 # functional groups appear identical, using neutral forms with explicit charges

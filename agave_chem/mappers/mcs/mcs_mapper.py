@@ -41,7 +41,7 @@ class MolPropertyCache:
         mol (Chem.Mol): RDKit molecule to extract properties from.
     """
 
-    __slots__ = ("atom_props", "bond_props", "atom_map_nums")
+    __slots__ = ("atom_map_nums", "atom_props", "bond_props")
 
     def __init__(self, mol: Chem.Mol) -> None:
         self.atom_props: List[AtomProps] = []
@@ -75,7 +75,11 @@ class MCSReactionMapper(ReactionMapper):
     def __init__(self, mapper_name: str, mapper_weight: float = 3):
         super().__init__("mcs", mapper_name, mapper_weight)
         self._uncharger = rdMolStandardize.Uncharger()
-        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+
+        _taut_opts = rdMolStandardize.CleanupParameters()
+        _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+        _taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
+        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator(_taut_opts)
 
     def _normalize_mol(self, mol: Chem.Mol) -> Chem.Mol:
         """Neutralize charges and canonicalize tautomer for matching purposes."""

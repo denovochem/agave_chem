@@ -161,7 +161,10 @@ class TemplateReactionMapper(ReactionMapper):
             None
         )
 
-        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+        _taut_opts = rdMolStandardize.CleanupParameters()
+        _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+        _taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
+        self._tautomer_enumerator = rdMolStandardize.TautomerEnumerator(_taut_opts)
         self._tautomer_enumerator.SetMaxTransforms(max_transforms)
         self._tautomer_enumerator.SetMaxTautomers(max_tautomers)
 
@@ -708,7 +711,7 @@ class TemplateReactionMapper(ReactionMapper):
                     ## TODO: Check if not Chem.MolFromSmiles(k) - identify bad templates
 
         except Exception as e:
-            logger.warning(f"Error applying templates: {e}")
+            logger.debug(f"Error applying templates: {e}")
 
         return outcomes
 

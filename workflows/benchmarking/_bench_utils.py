@@ -1,9 +1,103 @@
+"""Shared utilities for external-mapper benchmark scripts.
+
+These functions are intentionally free of agave_chem imports so that the
+benchmark scripts can run inside isolated per-tool virtual environments.
+Requires rdkit and networkx.
+"""
+
 import itertools
 
 import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
+
+
+def get_atom_map_to_canonical_idx(mapped_smiles: str) -> dict:
+    mol = Chem.MolFromSmiles(mapped_smiles)
+    if mol is None:
+        raise ValueError(f"Could not parse: {mapped_smiles}")
+    orig_idx_to_map_num = {}
+    for atom in mol.GetAtoms():
+        mn = atom.GetAtomMapNum()
+        if mn > 0:
+            orig_idx_to_map_num[atom.GetIdx()] = mn
+        atom.SetAtomMapNum(0)
+    canon_smi = Chem.MolToSmiles(mol, canonical=True)
+    mol_canon = Chem.MolFromSmiles(canon_smi)
+    ranks_orig = Chem.CanonicalRankAtoms(mol, breakTies=True, includeChirality=True)
+    ranks_canon = Chem.CanonicalRankAtoms(
+        mol_canon, breakTies=True, includeChirality=True
+    )
+    rank_to_canon_idx = {r: i for i, r in enumerate(ranks_canon)}
+    return {
+        mn: rank_to_canon_idx[ranks_orig[oi]] + 1
+        for oi, mn in orig_idx_to_map_num.items()
+    }
+
+
+def canonicalize_atom_mapping(reaction_smiles: str) -> str:
+    reactant_mols = [
+        Chem.MolFromSmiles(s) for s in reaction_smiles.split(">>")[0].split(".") if s
+    ]
+    product_smiles_list = [s for s in reaction_smiles.split(">>")[1].split(".") if s]
+    product_mols = [Chem.MolFromSmiles(s) for s in product_smiles_list]
+    product_mapping_dicts = [
+        get_atom_map_to_canonical_idx(s) for s in product_smiles_list
+    ]
+
+    old_to_new: dict = {}
+    new_map_num = 1
+    for pmol, mapping_dict in zip(product_mols, product_mapping_dicts):
+        mapped_atoms = []
+        for atom in pmol.GetAtoms():
+            old_map = atom.GetAtomMapNum()
+            if old_map > 0 and old_map in mapping_dict:
+                mapped_atoms.append((mapping_dict[old_map], atom, old_map))
+        mapped_atoms.sort(key=lambda x: x[0])
+        for _, atom, old_map in mapped_atoms:
+            if old_map not in old_to_new:
+                old_to_new[old_map] = new_map_num
+                new_map_num += 1
+            atom.SetAtomMapNum(old_to_new[old_map])
+
+    for rmol in reactant_mols:
+        for atom in rmol.GetAtoms():
+            old_map = atom.GetAtomMapNum()
+            atom.SetAtomMapNum(old_to_new.get(old_map, 0) if old_map > 0 else 0)
+
+    return (
+        ".".join(sorted(Chem.MolToSmiles(m, canonical=True) for m in reactant_mols))
+        + ">>"
+        + ".".join(sorted(Chem.MolToSmiles(m, canonical=True) for m in product_mols))
+    )
+
+
+def strip_mapping(rxn_smiles: str) -> str:
+    parts = rxn_smiles.split(">>")
+    result = []
+    for part in parts:
+        frags = []
+        for smi in part.split("."):
+            mol = Chem.MolFromSmiles(smi)
+            if mol is None:
+                frags.append(smi)
+                continue
+            for atom in mol.GetAtoms():
+                atom.SetAtomMapNum(0)
+            frags.append(Chem.MolToSmiles(mol, canonical=True))
+        result.append(".".join(frags))
+    return ">>".join(result)
+
+
+# ---------------------------------------------------------------------------
+# Replicated from agave_chem/utils/graph_utils.py
+#
+# This code is intentionally duplicated so that benchmark scripts can run in
+# isolated environments without installing agave_chem.  Keep in sync with the
+# original.  A regression test (tests/unit/test_bench_utils_sync.py) verifies
+# that the two copies produce identical results.
+# ---------------------------------------------------------------------------
 
 _taut_opts = rdMolStandardize.CleanupParameters()
 _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -62,14 +156,8 @@ def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
     def add_side(mols, side_label):
         atom_nodes = {}  # (frag_i, atom_i) -> node_id
         for frag_i, mol in enumerate(mols):
-            # RDKit reaction templates may not have an initialized property cache.
-            # Some atom properties (e.g., total H count) require this to be computed.
             mol.UpdatePropertyCache(strict=False)
             Chem.FastFindRings(mol)
-            # AssignStereochemistry (new CIP labeler) requires hybridization to be
-            # set; UpdatePropertyCache does not set it.  Run the two lightweight
-            # sanitization steps that the CIP labeler depends on, ignoring any
-            # errors (e.g. kekulization failures on partial template structures).
             Chem.SanitizeMol(
                 mol,
                 Chem.SanitizeFlags.SANITIZE_SETAROMATICITY
@@ -112,7 +200,6 @@ def rxn_to_mapping_graph(rxn_smiles: str) -> nx.Graph:
     add_side(r_mols, "R")
     add_side(p_mols, "P")
 
-    # Add mapping edges based on atom-map numbers *within this reaction*
     p_map = {}
     product_map_nums = set()
     for frag_i, mol in enumerate(p_mols):
@@ -427,3 +514,39 @@ def mapping_equivalent(
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True
     return False
+
+
+# End of replicated code from agave_chem/utils/graph_utils.py
+
+
+def mappings_equivalent(gold_rxn: str, pred_rxn: str) -> bool:
+    """
+    Determine whether two mapped reaction SMILES are equivalent.
+
+    A fast canonical string comparison is attempted first.  If that fails, a
+    graph-isomorphism comparison with tautomer and resonance-swap enumeration
+    (replicated from agave_chem.utils.graph_utils.mapping_equivalent) is used
+    as a fallback to catch chemically equivalent mappings that differ in
+    tautomer form or resonance assignment.
+
+    Args:
+        gold_rxn (str): Gold-standard mapped reaction SMILES.
+        pred_rxn (str): Predicted mapped reaction SMILES to compare.
+
+    Returns:
+        bool: True if the two reactions are equivalent, False otherwise.
+    """
+    try:
+        if canonicalize_atom_mapping(gold_rxn) == canonicalize_atom_mapping(pred_rxn):
+            return True
+    except Exception:
+        pass
+    try:
+        return mapping_equivalent(
+            gold_rxn,
+            pred_rxn,
+            consider_tautomers=False,
+            consider_resonance_swaps=True,
+        )
+    except Exception:
+        return False

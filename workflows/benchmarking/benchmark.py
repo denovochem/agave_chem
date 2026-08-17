@@ -63,7 +63,7 @@ def calculate_metrics(y_true, y_probs, threshold=0.5):
 
 gold_reactions = []
 with open(
-    "/home/csnbritt/projects/denovochem_projects/agave_chem/scripts/benchmarks/gold_reactions_filtered.txt",
+    "/home/csnbritt/projects/denovochem_projects/agave_chem/workflows/benchmarking/gold_reactions_filtered.txt",
     "r",
 ) as file:
     for line in file:

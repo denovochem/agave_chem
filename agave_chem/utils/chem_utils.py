@@ -13,7 +13,10 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.utils.logging_config import logger
 
-TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator()
+_taut_opts = rdMolStandardize.CleanupParameters()
+_taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+_taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
+TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator(_taut_opts)
 
 
 def canonicalize_smiles(
