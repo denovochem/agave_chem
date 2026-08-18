@@ -80,6 +80,8 @@
 !docs/reference.md
 !docs/stylesheets/
 !docs/stylesheets/extra.css
+!docs/images/tnt_balanced_reaction_mapped.png
+!docs/images/tnt_unbalanced_reaction.png
 
 !examples/
 !examples/example_notebook.ipynb
@@ -129,9 +131,3 @@
 !tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
-
-!manuscript/
-!manuscript/images/
-!manuscript/images/*.png
-!manuscript/manuscript.tex
-!manuscript/manuscript.pdf
