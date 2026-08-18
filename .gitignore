@@ -111,6 +111,10 @@
 !workflows/model_training_scripts/unsupervised_training.py
 !workflows/model_training_scripts/supervised_training.py
 !workflows/model_training_scripts/layer_head_identification.py
+!workflows/model_training_scripts/cli_utils.py
+!workflows/model_training_scripts/layer_head_identification.ipynb
+!workflows/model_training_scripts/unsupervised_training.ipynb
+!workflows/model_training_scripts/supervised_training.ipynb
 
 !workflows/template_processing/
 !workflows/template_processing/generate_child_smarts_from_smirks.py
@@ -132,3 +136,9 @@
 !tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
+!tests/unit/test_albert_mapper_unsupervised_unit.py
+!tests/unit/test_albert_mapper_supervised_unit.py
+!tests/unit/test_unsupervised_training_unit.py
+!tests/unit/test_supervised_training_unit.py
+!tests/unit/test_layer_head_identification_unit.py
+!tests/unit/test_cli_utils_unit.py

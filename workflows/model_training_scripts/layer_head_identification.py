@@ -1,27 +1,29 @@
 import argparse
-import random
 import sys
 from pathlib import Path
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set
 
 import torch
 from transformers import AlbertForMaskedLM
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent.parent
+WORKFLOWS_ROOT = BASE_DIR.parent
 
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+for _p in [str(REPO_ROOT), str(WORKFLOWS_ROOT)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from model_training.albert_mapper_supervised_training import (
+from model_training_scripts.albert_mapper_supervised_training import (
     SupervisedAtomMappingDataset,
     SupervisedConfig,
     evaluate_supervised_attention_loss,
 )
-from model_training.albert_mapper_unuspervised_training import (
+from model_training_scripts.albert_mapper_unuspervised_training import (
     CustomTokenizer,
     MLMConfig,
 )
+from model_training_scripts.cli_utils import read_lines, split_data
 
 from agave_chem.mappers.neural.constants import smiles_token_to_id_dict
 from agave_chem.mappers.neural.model import (
@@ -30,12 +32,36 @@ from agave_chem.mappers.neural.model import (
 
 
 def _parse_int_list(values: Optional[Sequence[int]]) -> Optional[List[int]]:
+    """
+    Convert a sequence of values to a list of integers.
+
+    Args:
+        values (Optional[Sequence[int]]): A sequence of integers, or None.
+
+    Returns:
+        Optional[List[int]]: A list of integers, or None if input is None.
+    """
     if values is None:
         return None
     return [int(v) for v in values]
 
 
 def _expand_range(r: Optional[Sequence[int]]) -> Optional[List[int]]:
+    """
+    Expand a ``(start, end)`` pair into an inclusive integer range.
+
+    Args:
+        r (Optional[Sequence[int]]): A sequence of two integers
+            ``(start, end)``, or None.
+
+    Returns:
+        Optional[List[int]]: A list ``[start, start+1, ..., end]``, or
+        None if input is None.
+
+    Raises:
+        ValueError: If the sequence does not have exactly two elements,
+            or if ``end < start``.
+    """
     if r is None:
         return None
     if len(r) != 2:
@@ -47,44 +73,42 @@ def _expand_range(r: Optional[Sequence[int]]) -> Optional[List[int]]:
 
 
 def _resolve_device(device: str) -> torch.device:
+    """
+    Resolve a device string into a ``torch.device``.
+
+    Args:
+        device (str): A device string such as ``"cpu"``, ``"cuda"``,
+            ``"cuda:0"``, or ``"auto"``. ``"auto"`` selects CUDA if
+            available, otherwise CPU.
+
+    Returns:
+        torch.device: The resolved device.
+    """
     if device == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(device)
 
 
 def _parse_protected_tokens(values: Sequence[str]) -> Set[str]:
+    """
+    Convert a sequence of token strings into a set.
+
+    Args:
+        values (Sequence[str]): Token strings to protect from masking.
+
+    Returns:
+        Set[str]: A set of protected token strings.
+    """
     return set(values)
 
 
-def _read_lines(path: str) -> List[str]:
-    rxns: List[str] = []
-    with open(path, "r") as handle:
-        for line in handle:
-            s = line.strip()
-            if s:
-                rxns.append(s)
-    return rxns
-
-
-def _split_data(
-    rxns: List[str],
-    train_pct: float,
-    shuffle: bool,
-    seed: int,
-) -> Tuple[List[str], List[str]]:
-    if not (0.0 < train_pct < 1.0):
-        raise ValueError("train_pct must be between 0 and 1 (exclusive)")
-
-    rxns_local = list(rxns)
-    if shuffle:
-        rng = random.Random(seed)
-        rng.shuffle(rxns_local)
-
-    split_idx = int(len(rxns_local) * train_pct)
-    return rxns_local[:split_idx], rxns_local[split_idx:]
-
-
 def build_arg_parser() -> argparse.ArgumentParser:
+    """
+    Build the argument parser for the layer/head identification CLI.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser.
+    """
     parser = argparse.ArgumentParser(
         description="Evaluate supervised attention alignment loss across ALBERT layers/heads.",
     )
@@ -153,6 +177,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    """
+    Run layer/head identification evaluation.
+
+    Loads a pretrained ALBERT model, creates a supervised attention
+    alignment wrapper, and evaluates the attention alignment loss across
+    all specified layer and head combinations. Prints the best
+    (lowest-loss) combination at the end.
+
+    Args:
+        argv (Optional[Sequence[str]]): Command-line arguments. If None,
+            ``sys.argv`` is used.
+
+    Returns:
+        int: Exit code (0 on success).
+    """
     parser = build_arg_parser()
     args = parser.parse_args(argv)
 
@@ -170,8 +209,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     device = _resolve_device(args.device)
 
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
-    rxns = _read_lines(args.training_data_file)
-    _, rxns_val = _split_data(
+    rxns = read_lines(args.training_data_file)
+    _, rxns_val = split_data(
         rxns=rxns,
         train_pct=args.train_pct,
         shuffle=args.shuffle,

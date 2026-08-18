@@ -7,6 +7,7 @@ from typing import Dict, List, Literal, Optional, Set, Tuple
 
 import numpy as np
 import torch
+from loguru import logger
 from pydantic import BaseModel, Field, field_validator, model_validator
 from rdkit import Chem
 from torch.optim import AdamW
@@ -24,6 +25,8 @@ REPO_ROOT = BASE_DIR.parent
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from model_training_scripts.cli_utils import seed_worker
 
 from agave_chem.mappers.neural.constants import (
     smiles_id_to_token_dict,
@@ -43,25 +46,36 @@ from agave_chem.utils.chem_utils import (
 
 class ModelConfig(BaseModel):
     """
-    Configuration for the ALBERT model architecture.
+    Pydantic configuration for the ALBERT model architecture.
+
+    All fields map directly to ``transformers.AlbertConfig`` parameters.
+    Validators ensure integer fields are positive and float fields are
+    non-negative.
 
     Args:
-        vocab_size (int): Size of the vocabulary.
+        vocab_size (int): Size of the SMILES vocabulary.
         embedding_size (int): Dimension of token embeddings.
         hidden_size (int): Hidden layer dimension.
         num_hidden_layers (int): Number of transformer layers.
-        num_attention_heads (int): Number of attention heads.
+        num_attention_heads (int): Number of attention heads per layer.
         intermediate_size (int): Feed-forward intermediate dimension.
-        hidden_act (Literal[...]): Activation function for hidden layers.
+        hidden_act (Literal["gelu", "gelu_new", "relu", "silu", "tanh"]):
+            Activation function for hidden layers.
         hidden_dropout_prob (float): Dropout probability for hidden layers.
-        attention_probs_dropout_prob (float): Dropout probability for attention.
-        max_position_embeddings (int): Maximum sequence length.
-        type_vocab_size (int): Size of the token type vocabulary.
-        initializer_range (float): Range for weight initialization.
+        attention_probs_dropout_prob (float): Dropout probability for
+            attention probabilities.
+        max_position_embeddings (int): Maximum sequence length the model
+            can accept.
+        type_vocab_size (int): Size of the token-type vocabulary.
+        initializer_range (float): Standard deviation for weight
+            initialization.
         layer_norm_eps (float): Epsilon for layer normalization.
-        classifier_dropout_prob (float): Dropout probability for classifier.
-        num_hidden_groups (int): Number of hidden parameter-sharing groups.
-        inner_group_num (int): Number of inner groups within each hidden group.
+        classifier_dropout_prob (float): Dropout probability for the
+            classifier head.
+        num_hidden_groups (int): Number of hidden parameter-sharing groups
+            (ALBERT cross-layer parameter sharing).
+        inner_group_num (int): Number of inner groups within each hidden
+            group.
     """
 
     vocab_size: int = 1024
@@ -115,21 +129,31 @@ class ModelConfig(BaseModel):
 
 class TrainingConfig(BaseModel):
     """
-    Configuration for the training process.
+    Pydantic configuration for the MLM training loop.
+
+    Controls optimizer hyperparameters, scheduling, checkpointing, and
+    logging cadence.
 
     Args:
-        learning_rate (float): Learning rate for the optimizer.
-        weight_decay (float): Weight decay coefficient.
-        adam_epsilon (float): Epsilon for AdamW optimizer.
-        max_grad_norm (float): Maximum gradient norm for clipping.
-        num_epochs (int): Number of training epochs.
+        learning_rate (float): Peak learning rate for AdamW.
+        weight_decay (float): Weight decay coefficient applied to
+            non-bias / non-LayerNorm parameters.
+        adam_epsilon (float): Epsilon for the AdamW optimizer.
+        max_grad_norm (float): Maximum gradient norm for gradient clipping.
+        num_epochs (int): Number of training epochs to run.
         batch_size (int): Training batch size.
-        warmup_steps (int): Number of warmup steps for the scheduler.
-        save_steps (int): Steps between model checkpoints (currently unused).
-        logging_steps (int): Steps between logging.
-        output_dir (str): Directory for saving model outputs.
-        seed (int): Random seed for reproducibility.
-        fp16 (bool): Whether to use mixed-precision training.
+        warmup_steps (int): Number of linear warmup steps before the
+            learning rate decays.
+        logging_steps (int): Number of steps between printed loss logs.
+        output_dir (str): Directory for saving model checkpoints.
+        seed (int): Random seed for reproducibility (Python ``random``,
+            ``numpy``, and ``torch``).
+        save_best_model (bool): If True, save the best model (by validation
+            loss) to ``{output_dir}/best_model.pt``.
+        early_stopping_patience (int): Number of epochs without improvement
+            before stopping. 0 disables early stopping.
+        early_stopping_min_delta (float): Minimum validation loss improvement
+            to count as an improvement.
     """
 
     learning_rate: float = 2e-4
@@ -139,13 +163,20 @@ class TrainingConfig(BaseModel):
     num_epochs: int = 3
     batch_size: int = 32
     warmup_steps: int = 10000
-    save_steps: int = 1000
     logging_steps: int = 100
     output_dir: str = "./albert_output"
     seed: int = 42
-    fp16: bool = False
+    save_best_model: bool = True
+    early_stopping_patience: int = 0
+    early_stopping_min_delta: float = 0.0
 
-    @field_validator("learning_rate", "weight_decay", "adam_epsilon", "max_grad_norm")
+    @field_validator(
+        "learning_rate",
+        "weight_decay",
+        "adam_epsilon",
+        "max_grad_norm",
+        "early_stopping_min_delta",
+    )
     @classmethod
     def _non_negative_float(cls, v: float) -> float:
         if v < 0:
@@ -156,9 +187,9 @@ class TrainingConfig(BaseModel):
         "num_epochs",
         "batch_size",
         "warmup_steps",
-        "save_steps",
         "logging_steps",
         "seed",
+        "early_stopping_patience",
     )
     @classmethod
     def _non_negative_int(cls, v: int) -> int:
@@ -169,16 +200,22 @@ class TrainingConfig(BaseModel):
 
 class MLMConfig(BaseModel):
     """
-    Configuration for Masked Language Modeling preprocessing.
+    Pydantic configuration for standard BERT-style MLM masking.
+
+    Controls the fraction of tokens selected for masking and the
+    replacement strategy applied to each selected token.
 
     Args:
         mlm_probability (float): Probability of selecting a token for masking.
-        mask_token_prob (float): Probability of replacing a selected token with [MASK].
-        random_token_prob (float): Probability of replacing a selected token with a random token.
-        keep_token_prob (float): Probability of keeping the original token.
+        mask_token_prob (float): Probability of replacing a selected token
+            with ``[MASK]``.
+        random_token_prob (float): Probability of replacing a selected
+            token with a random vocabulary token.
+        keep_token_prob (float): Probability of keeping the original token
+            unchanged (but still using it as a prediction target).
 
     Note:
-        ``mask_token_prob + random_token_prob + keep_token_prob`` should sum
+        ``mask_token_prob + random_token_prob + keep_token_prob`` must sum
         to approximately 1.0.  This is validated at construction time.
     """
 
@@ -212,7 +249,7 @@ class MLMConfig(BaseModel):
 
 class SpanMLMConfig(BaseModel):
     """
-    Configuration for graph-aware span-based Masked Language Modeling.
+    Pydantic configuration for graph-aware span-based MLM masking.
 
     Instead of randomly selecting individual tokens, this strategy selects
     contiguous neighborhoods of atoms on the molecular graph for masking.
@@ -220,15 +257,22 @@ class SpanMLMConfig(BaseModel):
     ring numbers, etc.) are never masked.
 
     Args:
-        mlm_probability (float): Probability of selecting a token for masking.
-        span_size_weights (Dict[int, float]): Weights for span sizes 1-5.
-            Defaults to {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}.
-        mask_token_prob (float): Probability of replacing a selected token with [MASK].
-        plausible_replace_prob (float): Probability of replacing with a plausible token.
-        keep_token_prob (float): Probability of keeping the original token.
+        mlm_probability (float): Probability of selecting an atom token for
+            masking (applied as a binomial draw over all atom tokens).
+        span_size_weights (Dict[int, float]): Weights for sampling span
+            sizes. Keys are span sizes (number of atoms); values are
+            relative weights. Defaults to ``{1: 0.3, 2: 0.25, 3: 0.2,
+            4: 0.15, 5: 0.1}``.
+        mask_token_prob (float): Probability of replacing a selected token
+            with ``[MASK]``.
+        plausible_replace_prob (float): Probability of replacing a selected
+            token with a chemically plausible substitute (bioisosteric or
+            same-element variant).
+        keep_token_prob (float): Probability of keeping the original token
+            unchanged (but still using it as a prediction target).
 
     Note:
-        ``mask_token_prob + plausible_replace_prob + keep_token_prob`` should
+        ``mask_token_prob + plausible_replace_prob + keep_token_prob`` must
         sum to approximately 1.0.  This is validated at construction time.
     """
 
@@ -277,21 +321,25 @@ def preprocess_token(
     mlm_config: MLMConfig,
 ) -> Tuple[int, bool]:
     """
-    Preprocess a single token using the BERT/ALBERT masking strategy.
+    Apply the BERT/ALBERT masking strategy to a single token.
 
-    For each selected token, apply one of three transformations:
-        - Replace with [MASK] token (80%)
-        - Replace with a random token (10%)
-        - Keep the original token (10%)
+    Given a token that has been selected for masking, applies one of three
+    transformations based on the probabilities in ``mlm_config``:
+        - Replace with ``[MASK]`` (controlled by ``mask_token_prob``)
+        - Replace with a random vocabulary token (``random_token_prob``)
+        - Keep the original token unchanged (``keep_token_prob``)
 
     Args:
-        token_id:       The original token ID.
-        mask_token_id:  The ID of the [MASK] token.
-        vocab_size:     The size of the vocabulary.
-        mlm_config:     The MLM configuration.
+        token_id (int): The original token ID to be masked.
+        mask_token_id (int): The integer ID of the ``[MASK]`` token.
+        vocab_size (int): Size of the vocabulary (for random token sampling).
+        mlm_config (MLMConfig): MLM configuration containing the
+            replacement probabilities.
 
     Returns:
-        A tuple of (new_token_id, was_modified).
+        Tuple[int, bool]: A tuple of ``(new_token_id, was_modified)`` where
+        ``was_modified`` is ``True`` if the token was changed (masked or
+        replaced with a random token), and ``False`` if kept unchanged.
     """
     rand = random.random()
 
@@ -316,22 +364,26 @@ def apply_mlm_masking(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Apply MLM masking to a sequence of token IDs.
+    Apply standard BERT-style MLM masking to a sequence of token IDs.
 
-    Randomly selects 15% of tokens to be masked, then applies the
-    80/10/10 masking strategy from the BERT/ALBERT paper.
+    Randomly selects ``mlm_config.mlm_probability`` of non-special tokens
+    for masking, then applies the 80/10/10 masking strategy via
+    :func:`preprocess_token`.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer | CustomTokenizer | PreTrainedTokenizer):
+            The tokenizer (used for ``mask_token_id`` and ``vocab_size``).
+        mlm_config (MLMConfig): MLM configuration containing masking
+            probabilities.
+        special_token_ids (Set[int] | None): Set of token IDs to skip
+            (never masked). Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - masked_input_ids: The masked input token IDs.
-            - labels:           The labels for the MLM task (-100 for
-                                non-masked tokens, original ID for masked).
+        Tuple[List[int], List[int]]:
+            - ``masked_input_ids``: Token IDs after masking is applied.
+            - ``labels``: ``-100`` for non-masked positions, original token
+              ID for masked positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -371,21 +423,26 @@ def replace_with_mask(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Replace selected tokens ONLY with the [MASK] token (no random/keep).
+    Replace selected tokens only with the ``[MASK]`` token (no random/keep).
 
-    A simplified version of the masking strategy that always replaces
-    selected tokens with [MASK], useful for inference or analysis.
+    A simplified masking strategy that always replaces selected tokens with
+    ``[MASK]``, useful for inference or analysis where the 80/10/10 split
+    is not desired.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (used for
+            ``mask_token_id``).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - masked_input_ids: The masked input token IDs.
-            - labels:           The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``masked_input_ids``: Token IDs after masking.
+            - ``labels``: ``-100`` for non-masked positions, original token
+              ID for masked positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -416,20 +473,24 @@ def replace_with_random_token(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Replace selected tokens ONLY with random tokens (no mask/keep).
+    Replace selected tokens only with random vocabulary tokens (no mask/keep).
 
     Useful for studying the effect of random token replacement in isolation.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (used for
+            ``vocab_size``).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - noised_input_ids: The token IDs with random replacements.
-            - labels:           The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``noised_input_ids``: Token IDs with random replacements.
+            - ``labels``: ``-100`` for non-selected positions, original
+              token ID for selected positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -462,19 +523,25 @@ def keep_original_tokens(
     """
     Keep selected tokens unchanged but mark them as prediction targets.
 
-    The 10% 'keep original' strategy from the BERT/ALBERT paper, useful
-    for studying the effect of unchanged token prediction in isolation.
+    Implements the 'keep original' strategy from the BERT/ALBERT paper in
+    isolation: selected tokens are not modified in the input, but their
+    original IDs are set as labels so the model still predicts them.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (unused except for
+            type compatibility).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - input_ids: The unchanged input token IDs.
-            - labels:    The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``unchanged_input_ids``: The original input token IDs
+              (unchanged).
+            - ``labels``: ``-100`` for non-selected positions, original
+              token ID for selected positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -893,8 +960,38 @@ def apply_span_mlm_masking(
 
 class MLMDataset(Dataset):
     """
-    Dataset for Masked Language Modeling training.
-    Tokenizes raw text and applies MLM masking on the fly.
+    PyTorch Dataset for Masked Language Modeling training on reaction SMILES.
+
+    Tokenizes raw reaction SMILES strings and applies MLM masking on the fly
+    during ``__getitem__``. Supports two SMILES augmentation modes (random
+    or canonical) and two masking strategies (standard random or graph-aware
+    span masking).
+
+    Args:
+        texts (List[str]): List of reaction SMILES strings.
+        tokenizer (PreTrainedTokenizer): Tokenizer for encoding SMILES.
+        mlm_config (MLMConfig): MLM masking configuration.
+        max_length (int): Maximum sequence length for padding/truncation.
+        use_random_smiles (bool): If True, apply random SMILES augmentation
+            during ``__getitem__``.
+        use_canonical_smiles (bool): If True, canonicalize SMILES during
+            ``__getitem__``. Mutually exclusive with ``use_random_smiles``.
+        randomize_tautomer_pct (float): Probability of applying tautomer
+            randomization (only used when ``use_random_smiles`` is True).
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing (only used when
+            ``use_random_smiles`` is True).
+        protected_tokens (Set[str] | None): Token strings that should never
+            be masked, in addition to the tokenizer's special tokens.
+        masking_mode (str): Either ``"random"`` for standard MLM masking or
+            ``"span"`` for graph-aware span masking.
+        span_mlm_config (SpanMLMConfig | None): Configuration for span
+            masking. Required if ``masking_mode`` is ``"span"``.
+
+    Raises:
+        ValueError: If ``masking_mode`` is not ``"random"`` or ``"span"``,
+            or if ``use_random_smiles`` and ``use_canonical_smiles`` are
+            both True or both False.
     """
 
     def __init__(
@@ -950,6 +1047,21 @@ class MLMDataset(Dataset):
         return len(self.texts)
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+        """
+        Return a single training sample with MLM masking applied.
+
+        Applies SMILES augmentation (random or canonical) if configured,
+        tokenizes the result, applies the configured masking strategy,
+        and returns a dict of tensors suitable for model forward pass.
+
+        Args:
+            idx (int): Index into the dataset.
+
+        Returns:
+            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
+            ``"attention_mask"``, ``"token_type_ids"``, and ``"labels"``,
+            each a ``torch.long`` tensor of shape ``(max_length,)``.
+        """
         text = self.texts[idx]
 
         if self._use_random_smiles:
@@ -1018,13 +1130,22 @@ class MLMDataset(Dataset):
             - masked:    The text after masking (what the model sees).
             - labels:    Only the tokens selected for prediction, everything
                          else shown as '_'.
+            - diff:      Token-level diff showing original → masked for
+                         each masked position.
+
+        Note:
+            This method always uses :func:`apply_mlm_masking` regardless of
+            ``self.masking_mode``, so the masking shown may differ from what
+            ``__getitem__`` produces when ``masking_mode`` is ``"span"``.
 
         Args:
-            idx:          The index of the sample to decode.
-            print_output: Whether to print the decoded output.
+            idx (int): The index of the sample to decode.
+            print_output (bool): Whether to print the decoded output to
+                stdout.
 
         Returns:
-            A dict with 'original', 'masked', and 'labels' strings.
+            Dict[str, str | List[str]]: A dict with keys ``"original"``,
+            ``"masked"``, ``"labels"``, and ``"diff"``.
         """
         text = self.texts[idx]
 
@@ -1101,11 +1222,15 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
     """
     Build an ALBERT model from scratch using the given configuration.
 
+    Constructs a ``transformers.AlbertConfig`` from ``model_config`` and
+    instantiates an ``AlbertForMaskedLM`` model. Prints the total trainable
+    parameter count.
+
     Args:
-        model_config: The model architecture configuration.
+        model_config (ModelConfig): The model architecture configuration.
 
     Returns:
-        An ALBERT model for Masked Language Modeling.
+        AlbertForMaskedLM: An ALBERT model for Masked Language Modeling.
     """
     config = AlbertConfig(
         vocab_size=model_config.vocab_size,
@@ -1138,7 +1263,25 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
 
 
 class AlbertTrainer:
-    """Trainer class for ALBERT MLM pre-training."""
+    """
+    Trainer for unsupervised ALBERT Masked Language Modeling pre-training.
+
+    Manages the training loop, evaluation, checkpointing, and logging for
+    MLM pre-training. Uses AdamW with linear warmup scheduling and gradient
+    clipping.
+
+    Args:
+        model (AlbertForMaskedLM): The ALBERT model to train.
+        train_dataloader (DataLoader): DataLoader for training batches.
+        training_config (TrainingConfig): Training hyperparameters.
+        val_dataloader (DataLoader | None): DataLoader for validation
+            batches. If None, validation is skipped.
+        device (torch.device | None): Device to train on. Defaults to CUDA
+            if available, otherwise CPU.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from. Restores model, optimizer, and
+            scheduler state dicts, and resumes from the next epoch.
+    """
 
     def __init__(
         self,
@@ -1147,6 +1290,7 @@ class AlbertTrainer:
         training_config: TrainingConfig,
         val_dataloader: DataLoader | None = None,
         device: torch.device | None = None,
+        resume_from_checkpoint: str | None = None,
     ):
         self.model = model
         self.train_dataloader = train_dataloader
@@ -1160,15 +1304,72 @@ class AlbertTrainer:
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)
 
+        self.start_epoch = 1
+        self.best_val_loss = float("inf")
+        self.epochs_without_improvement = 0
+
+        if resume_from_checkpoint is not None:
+            self._load_checkpoint(resume_from_checkpoint)
+
     def _set_seed(self, seed: int) -> None:
+        """
+        Set random seeds across Python, NumPy, and PyTorch for reproducibility.
+
+        Also enables deterministic cuDNN behavior to ensure reproducible
+        results across runs with the same seed.
+
+        Args:
+            seed (int): The random seed to use.
+        """
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    def _load_checkpoint(self, checkpoint_path: str) -> None:
+        """
+        Load model, optimizer, and scheduler state from a checkpoint file.
+
+        Args:
+            checkpoint_path (str): Path to the ``.pt`` checkpoint file.
+
+        Raises:
+            FileNotFoundError: If the checkpoint file does not exist.
+            KeyError: If the checkpoint is missing required state dicts.
+        """
+        if not Path(checkpoint_path).exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.model.load_state_dict(checkpoint["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+        if "scheduler_state_dict" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        if "epoch" in checkpoint:
+            self.start_epoch = checkpoint["epoch"] + 1
+
+        if "best_val_loss" in checkpoint:
+            self.best_val_loss = checkpoint["best_val_loss"]
+
+        logger.info(
+            f"Resumed from checkpoint: {checkpoint_path} "
+            f"(starting at epoch {self.start_epoch})"
+        )
 
     def _setup_optimizer_and_scheduler(self) -> None:
-        """Set up AdamW optimizer and linear warmup scheduler."""
+        """
+        Set up the AdamW optimizer with parameter-specific weight decay and
+        a linear warmup learning-rate scheduler.
+
+        Biases and LayerNorm weights receive zero weight decay. The total
+        number of training steps is computed from the dataloader length and
+        the number of epochs.
+        """
         # Separate weight decay for biases and layer norms
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
@@ -1204,7 +1405,19 @@ class AlbertTrainer:
         )
 
     def train_epoch(self, epoch: int) -> float:
-        """Run one training epoch and return the average loss."""
+        """
+        Run one training epoch and return the average loss.
+
+        Iterates over the training dataloader, computes MLM loss, performs
+        backward pass, gradient clipping, optimizer step, and scheduler
+        step. Logs loss and learning rate at ``logging_steps`` intervals.
+
+        Args:
+            epoch (int): The 1-indexed epoch number (for logging only).
+
+        Returns:
+            float: The average MLM loss across all batches in the epoch.
+        """
         self.model.train()
         total_loss = 0.0
         num_batches = len(self.train_dataloader)
@@ -1234,7 +1447,7 @@ class AlbertTrainer:
             if (step + 1) % self.training_config.logging_steps == 0:
                 step_loss = loss.item()
                 lr = self.scheduler.get_last_lr()[0]
-                print(
+                logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
                     f"| Loss: {step_loss:.4f} | LR: {lr:.2e}"
                 )
@@ -1243,7 +1456,13 @@ class AlbertTrainer:
 
     @torch.no_grad()
     def evaluate(self) -> float:
-        """Run evaluation and return the average validation loss."""
+        """
+        Run evaluation on the validation set and return the average loss.
+
+        Returns:
+            float: The average MLM loss across all validation batches.
+            Returns 0.0 if no validation dataloader is configured.
+        """
         if self.val_dataloader is None:
             return 0.0
 
@@ -1264,23 +1483,35 @@ class AlbertTrainer:
         return total_loss / len(self.val_dataloader)
 
     def train(self) -> None:
-        """Run the full training loop."""
-        print(f"Starting training on device: {self.device}")
-        print(f"Epochs: {self.training_config.num_epochs}")
-        print(f"Batch size: {self.training_config.batch_size}")
+        """
+        Run the full training loop across all epochs.
+
+        For each epoch: trains, evaluates, logs metrics, and saves a
+        checkpoint (both HuggingFace ``save_pretrained`` format and a raw
+        ``.pt`` file with model/optimizer/scheduler state dicts). If
+        ``save_best_model`` is enabled in the training config, the best
+        model (by validation loss) is saved to ``{output_dir}/best_model.pt``.
+        If ``early_stopping_patience`` is set, training stops when validation
+        loss has not improved for the specified number of epochs.
+
+        Training resumes from ``self.start_epoch`` if a checkpoint was loaded.
+        """
+        logger.info(f"Starting training on device: {self.device}")
+        logger.info(f"Epochs: {self.training_config.num_epochs}")
+        logger.info(f"Batch size: {self.training_config.batch_size}")
 
         Path(self.training_config.output_dir).mkdir(parents=True, exist_ok=True)
 
-        for epoch in range(1, self.training_config.num_epochs + 1):
+        for epoch in range(self.start_epoch, self.training_config.num_epochs + 1):
             start_time = time.time()
             train_loss = self.train_epoch(epoch)
             val_loss = self.evaluate()
 
-            print(
+            logger.info(
                 f"Epoch {epoch} complete | "
                 f"Train Loss: {train_loss:.4f} | "
-                f"Val Loss: {val_loss:.4f}"
-                f"Time: {time.time() - start_time:.2f} seconds"
+                f"Val Loss: {val_loss:.4f} | "
+                f"Time: {time.time() - start_time:.2f}s"
             )
 
             save_path = f"{self.training_config.output_dir}/checkpoint-epoch-{epoch}"
@@ -1291,12 +1522,50 @@ class AlbertTrainer:
                     "epoch": epoch,
                     "model_state_dict": self.model.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
+                    "scheduler_state_dict": self.scheduler.state_dict(),
                     "train_loss": train_loss,
                     "val_loss": val_loss,
+                    "best_val_loss": self.best_val_loss,
                 },
                 f"{save_path}.pt",
             )
-            print(f"Model saved to {save_path} (+ {save_path}.pt)")
+            logger.info(f"Checkpoint saved to {save_path} (+ {save_path}.pt)")
+
+            # Best-model saving and early stopping tracking
+            improved = (
+                val_loss
+                < self.best_val_loss - self.training_config.early_stopping_min_delta
+            )
+            if improved:
+                self.best_val_loss = val_loss
+                self.epochs_without_improvement = 0
+                if self.training_config.save_best_model:
+                    best_path = f"{self.training_config.output_dir}/best_model.pt"
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "model_state_dict": self.model.state_dict(),
+                            "val_loss": val_loss,
+                        },
+                        best_path,
+                    )
+                    logger.info(
+                        f"New best model saved to {best_path} (val_loss: {val_loss:.4f})"
+                    )
+            else:
+                self.epochs_without_improvement += 1
+
+            # Early stopping
+            if (
+                self.training_config.early_stopping_patience > 0
+                and self.epochs_without_improvement
+                >= self.training_config.early_stopping_patience
+            ):
+                logger.warning(
+                    f"Early stopping triggered after {self.epochs_without_improvement} "
+                    f"epochs without improvement"
+                )
+                break
 
 
 # ============================================================
@@ -1310,7 +1579,42 @@ def main(
     model_config: Optional[ModelConfig] = None,
     training_config: Optional[TrainingConfig] = None,
     mlm_config: Optional[MLMConfig] = None,
+    max_length: int = 384,
+    num_workers: int = 8,
+    prefetch_factor: int = 4,
+    protected_tokens: Optional[Set[str]] = None,
+    masking_mode: str = "span",
+    span_mlm_config: Optional[SpanMLMConfig] = None,
+    resume_from_checkpoint: str | None = None,
 ):
+    """
+    Run unsupervised ALBERT MLM pre-training end-to-end.
+
+    Creates the tokenizer, datasets, dataloaders, model, and trainer, then
+    launches training. Uses graph-aware span masking by default with
+    ``mlm_probability=0.20`` and ``max_length=384``.
+
+    Args:
+        train_texts (List[str]): List of reaction SMILES for training.
+        val_texts (List[str]): List of reaction SMILES for validation.
+        model_config (Optional[ModelConfig]): Model architecture config.
+            Defaults to ``ModelConfig()`` if None.
+        training_config (Optional[TrainingConfig]): Training hyperparameters.
+            Defaults to ``TrainingConfig()`` if None.
+        mlm_config (Optional[MLMConfig]): MLM masking config. Defaults to
+            ``MLMConfig()`` if None.
+        max_length (int): Maximum sequence length for padding/truncation.
+        num_workers (int): Number of DataLoader worker processes.
+        prefetch_factor (int): Number of batches prefetched per worker.
+        protected_tokens (Optional[Set[str]]): Token strings that should
+            never be masked. Defaults to ``{"^", "$", ".", ">>"}`` if None.
+        masking_mode (str): Either ``"random"`` or ``"span"``.
+        span_mlm_config (Optional[SpanMLMConfig]): Span masking
+            configuration. Defaults to
+            ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from.
+    """
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
@@ -1324,49 +1628,54 @@ def main(
     if not mlm_config:
         mlm_config = MLMConfig()
 
+    if protected_tokens is None:
+        protected_tokens = {"^", "$", ".", ">>"}
+
+    if span_mlm_config is None:
+        span_mlm_config = SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        )
+
     # --- Datasets and Dataloaders ---
     train_dataset = MLMDataset(
         train_texts,
         tokenizer,
         mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
     val_dataset = MLMDataset(
         val_texts,
         tokenizer,
         mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
 
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=training_config.batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=training_config.batch_size,
         shuffle=False,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
     )
 
     # --- Build model ---
@@ -1378,5 +1687,6 @@ def main(
         train_dataloader=train_dataloader,
         training_config=training_config,
         val_dataloader=val_dataloader,
+        resume_from_checkpoint=resume_from_checkpoint,
     )
     trainer.train()

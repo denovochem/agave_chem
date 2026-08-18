@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import torch
+from loguru import logger
 from rdkit import Chem
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
@@ -32,6 +33,7 @@ from model_training_scripts.albert_mapper_unuspervised_training import (
     build_albert_model,
     resolve_protected_token_ids,
 )
+from model_training_scripts.cli_utils import seed_worker
 
 from agave_chem.mappers.neural.constants import (
     smiles_token_to_id_dict,
@@ -54,11 +56,28 @@ from agave_chem.utils.chem_utils import (
 
 
 def group_mappings_by_symmetry(mol: Chem.Mol) -> List[List[int]]:
+    """
+    Group atom map numbers by molecular symmetry using RDKit canonical ranking.
+
+    Creates a copy of the molecule, clears all atom map numbers, then uses
+    ``Chem.CanonicalRankAtoms`` with ``breakTies=False`` to identify atoms
+    that are symmetry-equivalent. Returns groups of atom map numbers (from
+    the original molecule) that belong to the same symmetry class.
+
+    Args:
+        mol (Chem.Mol): An RDKit molecule with atom map numbers set.
+
+    Returns:
+        List[List[int]]: A list of symmetry groups, where each group is a
+        list of atom map numbers. Only groups with more than one member
+        are included.
+    """
     mol_copy = Chem.Mol(mol)
     idx_to_mapnum_dict: Dict[int, int] = {
         atom.GetIdx(): atom.GetAtomMapNum() for atom in mol_copy.GetAtoms()
     }
-    [atom.SetAtomMapNum(0) for atom in mol_copy.GetAtoms()]
+    for atom in mol_copy.GetAtoms():
+        atom.SetAtomMapNum(0)
 
     groups = Chem.CanonicalRankAtoms(mol_copy, breakTies=False)
     group_symmetry_membership: Dict[int, List[int]] = {}
@@ -69,7 +88,7 @@ def group_mappings_by_symmetry(mol: Chem.Mol) -> List[List[int]]:
             group_symmetry_membership[group].append(idx_to_mapnum_dict[atom.GetIdx()])
 
     symmetric_atom_groups: List[List[int]] = []
-    for k, v in group_symmetry_membership.items():
+    for v in group_symmetry_membership.values():
         if len(v) > 1:
             symmetric_atom_groups.append(v)
     return symmetric_atom_groups
@@ -85,6 +104,40 @@ def build_attention_target_from_mapped_rxn_smiles(
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
 ) -> Optional[Tuple[np.ndarray, str]]:
+    """
+    Build an attention alignment target matrix from a mapped reaction SMILES.
+
+    Wrapper around :func:`_build_attention_target_from_mapped_rxn_smiles_impl`
+    that catches all exceptions and returns ``None`` on failure. This allows
+    callers to filter out invalid reactions without handling exceptions
+    individually. Failures are logged at WARNING level with the exception
+    type and message.
+
+    Args:
+        tokenizer (PreTrainedTokenizer): Tokenizer for SMILES processing.
+        mapped_rxn_smiles (str): Atom-mapped reaction SMILES (e.g.
+            ``"[C:1]([O:2])=[O:3]>>[C:1]([O:2])[O:3]"``).
+        token_atom_identity_dict (Optional[Dict[str, int]]): Mapping from
+            token strings to atomic numbers. Used to identify which tokens
+            represent atoms vs. structural elements.
+        randomize_mapped_rxn_smiles (bool): If True, apply random SMILES
+            augmentation to the mapped reaction.
+        randomize_tautomer_pct (float): Probability of tautomer randomization
+            during SMILES augmentation.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalization during SMILES augmentation.
+        attn_sink_non_mapped_atoms (bool): If True, non-atom tokens and
+            unmapped reactant atoms attend to the sink position (last token).
+        smooth_symmetric_targets (bool): If True, spread attention target
+            weight uniformly across symmetry-equivalent atoms.
+
+    Returns:
+        Optional[Tuple[np.ndarray, str]]: A tuple of
+        ``(attention_target, unmapped_rxn_smiles)`` where
+        ``attention_target`` is an ``(N, N)`` float32 array and
+        ``unmapped_rxn_smiles`` is the reaction SMILES with atom mapping
+        removed. Returns ``None`` if processing fails.
+    """
     try:
         return _build_attention_target_from_mapped_rxn_smiles_impl(
             tokenizer=tokenizer,
@@ -96,7 +149,11 @@ def build_attention_target_from_mapped_rxn_smiles(
             attn_sink_non_mapped_atoms=attn_sink_non_mapped_atoms,
             smooth_symmetric_targets=smooth_symmetric_targets,
         )
-    except Exception:
+    except Exception as e:
+        logger.warning(
+            f"Failed to build attention target for: "
+            f"{mapped_rxn_smiles[:100]}... | {type(e).__name__}: {e}"
+        )
         return None
 
 
@@ -110,6 +167,45 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
 ) -> Tuple[np.ndarray, str]:
+    """
+    Implementation for building an attention alignment target matrix.
+
+    Processes a mapped reaction SMILES through several phases:
+        1. Assigns temporary atom map numbers (600+ for reactants, 800+ for
+           products) to unmapped atoms.
+        2. Identifies symmetry groups in reactants and products.
+        3. Tokenizes both the mapped and unmapped reaction SMILES.
+        4. Matches atom-mapped tokens between reactants and products by
+           atom map number (only pairs appearing exactly twice are kept).
+        5. Builds an ``(N, N)`` attention target matrix where
+           ``attn_target[src, dst] = 1.0`` means token ``src`` should
+           attend to token ``dst``.
+        6. If ``smooth_symmetric_targets`` is True, spreads the target
+           weight uniformly across symmetry-equivalent atoms.
+        7. If ``attn_sink_non_mapped_atoms`` is True, sets the last column
+           (sink position) to 1.0 for non-atom tokens and unmapped atoms.
+
+    Args:
+        tokenizer (PreTrainedTokenizer): Tokenizer for SMILES processing.
+        mapped_rxn_smiles (str): Atom-mapped reaction SMILES.
+        token_atom_identity_dict (Optional[Dict[str, int]]): Mapping from
+            token strings to atomic numbers.
+        randomize_mapped_rxn_smiles (bool): If True, apply random SMILES
+            augmentation.
+        randomize_tautomer_pct (float): Probability of tautomer randomization.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalization during augmentation.
+        attn_sink_non_mapped_atoms (bool): If True, route non-atom and
+            unmapped atom attention to the sink position.
+        smooth_symmetric_targets (bool): If True, spread attention across
+            symmetry-equivalent atoms.
+
+    Returns:
+        Tuple[np.ndarray, str]: A tuple of ``(attention_target,
+        unmapped_rxn_smiles)`` where ``attention_target`` is an
+        ``(N, N)`` float32 array and ``unmapped_rxn_smiles`` is the
+        reaction SMILES with atom mapping removed.
+    """
 
     if token_atom_identity_dict is None:
         token_atom_identity_dict = {}
@@ -185,9 +281,11 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     non_atom_token_indices = []
     atom_token_indices_to_sink = []
     for i, [token, unmapped_token] in enumerate(zip(tokens, unmapped_tokens)):
-        if token_atom_identity_dict.get(unmapped_token) == 0:
-            if unmapped_token not in ["^", "$"]:
-                non_atom_token_indices.append(i)
+        if token_atom_identity_dict.get(unmapped_token) == 0 and unmapped_token not in [
+            "^",
+            "$",
+        ]:
+            non_atom_token_indices.append(i)
         m = re.search(pattern, token)
         if not m:
             continue
@@ -212,7 +310,7 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     }
 
     index_attn_dict: dict[int, int] = {}
-    for _, (a, b) in matching_tokens_dict.items():
+    for a, b in matching_tokens_dict.values():
         # if duplicates occur, skip them (mirrors your neural_mapper behavior)
         if a in index_attn_dict or b in index_attn_dict:
             continue
@@ -328,6 +426,43 @@ _MAX_GETITEM_RETRIES = 10
 
 
 class SupervisedAtomMappingDataset(Dataset):
+    """
+    PyTorch Dataset for supervised attention alignment training.
+
+    Each sample is a mapped reaction SMILES. On ``__getitem__``, the dataset
+    builds an attention target matrix from the atom mapping, removes the
+    mapping to produce the input SMILES, optionally applies MLM masking,
+    and returns a dict of tensors suitable for the supervised model's
+    forward pass.
+
+    If a sample fails to process (e.g. invalid SMILES), a random replacement
+    index is tried, up to ``_MAX_GETITEM_RETRIES`` times. Each retry is logged
+    at DEBUG level; exhaustion of all retries is logged at WARNING level.
+
+    Args:
+        texts (List[str]): List of atom-mapped reaction SMILES strings.
+        tokenizer (PreTrainedTokenizer): Tokenizer for encoding SMILES.
+        mlm_config (MLMConfig): MLM masking configuration.
+        max_length (int): Maximum sequence length for padding/truncation.
+        use_random_smiles (bool): If True, apply random SMILES augmentation
+            when building attention targets.
+        use_mlm_masking (bool): If True, apply MLM masking to the input.
+            If False, the original input IDs are returned with all labels
+            set to -100.
+        protected_tokens (Set[str] | None): Token strings that should never
+            be masked.
+        smooth_symmetric_targets (bool): If True, spread attention target
+            weight across symmetry-equivalent atoms.
+        masking_mode (str): Either ``"random"`` or ``"span"``.
+        span_mlm_config (SpanMLMConfig | None): Span masking configuration.
+            Required if ``masking_mode`` is ``"span"``.
+
+    Raises:
+        ValueError: If ``masking_mode`` is not ``"random"`` or ``"span"``.
+        RuntimeError: If a valid sample cannot be loaded after
+            ``_MAX_GETITEM_RETRIES`` attempts.
+    """
+
     def __init__(
         self,
         texts: List[str],  # mapped reaction SMILES
@@ -364,6 +499,25 @@ class SupervisedAtomMappingDataset(Dataset):
         return len(self.texts)
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+        """
+        Return a single training sample with attention target and optional MLM masking.
+
+        Attempts to build an attention target from the mapped reaction SMILES
+        at ``idx``. If processing fails, retries with a random replacement
+        index up to ``_MAX_GETITEM_RETRIES`` times.
+
+        Args:
+            idx (int): Index into the dataset.
+
+        Returns:
+            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
+            ``"attention_mask"``, ``"token_type_ids"``, ``"labels"``,
+            ``"attention_target"``, and ``"attention_loss_mask"``.
+
+        Raises:
+            RuntimeError: If no valid sample can be loaded after
+                ``_MAX_GETITEM_RETRIES`` attempts.
+        """
         for _attempt in range(_MAX_GETITEM_RETRIES):
             try:
                 mapped_text = self.texts[idx]
@@ -375,19 +529,33 @@ class SupervisedAtomMappingDataset(Dataset):
                     smooth_symmetric_targets=self.smooth_symmetric_targets,
                 )
                 if result is None:
+                    logger.debug(
+                        f"Sample at index {idx} returned None, "
+                        f"retrying with random index"
+                    )
                     idx = random.randrange(len(self.texts))
                     continue
                 attention_target, unmapped_text = result
-            except Exception:
+            except Exception as e:
+                logger.debug(
+                    f"Sample at index {idx} failed: {type(e).__name__}: {e}, retrying"
+                )
                 idx = random.randrange(len(self.texts))
                 continue
 
             try:
                 return self._build_sample(attention_target, unmapped_text)
-            except Exception:
+            except Exception as e:
+                logger.debug(
+                    f"_build_sample failed for index {idx}: "
+                    f"{type(e).__name__}: {e}, retrying"
+                )
                 idx = random.randrange(len(self.texts))
                 continue
 
+        logger.warning(
+            f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
+        )
         raise RuntimeError(
             f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
         )
@@ -395,6 +563,23 @@ class SupervisedAtomMappingDataset(Dataset):
     def _build_sample(
         self, attention_target: np.ndarray, unmapped_text: str
     ) -> Dict[str, torch.Tensor]:
+        """
+        Tokenize and build the final tensor dict for a single sample.
+
+        Tokenizes the unmapped reaction SMILES, optionally applies MLM
+        masking, pads the attention target to ``max_length × max_length``,
+        and computes the attention loss mask (1 for rows with non-zero
+        attention target, 0 otherwise).
+
+        Args:
+            attention_target (np.ndarray): ``(N, N)`` attention target array.
+            unmapped_text (str): Reaction SMILES with atom mapping removed.
+
+        Returns:
+            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
+            ``"attention_mask"``, ``"token_type_ids"``, ``"labels"``,
+            ``"attention_target"``, and ``"attention_loss_mask"``.
+        """
         encoding = self.tokenizer(
             unmapped_text,
             max_length=self.max_length,
@@ -462,7 +647,27 @@ class SupervisedAtomMappingDataset(Dataset):
 
 class SupervisedAlbertTrainer:
     """
-    Trainer for supervised attention alignment with optional multitask MLM.
+    Trainer for supervised attention alignment training with optional multitask MLM.
+
+    Manages the training loop, evaluation, checkpointing, and logging for
+    supervised attention alignment. Supports multitask training where both
+    MLM loss and attention alignment loss are combined. Uses AdamW with
+    linear warmup scheduling and gradient clipping.
+
+    Args:
+        model (AlbertWithAttentionAlignment): The supervised ALBERT model
+            with attention alignment head.
+        train_dataloader (DataLoader): DataLoader for training batches.
+        training_config (TrainingConfig): Training hyperparameters.
+        supervised_config (SupervisedConfig): Supervised attention
+            alignment configuration (target layer, loss weight, etc.).
+        val_dataloader (DataLoader | None): DataLoader for validation
+            batches. If None, validation is skipped.
+        device (torch.device | None): Device to train on. Defaults to CUDA
+            if available, otherwise CPU.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from. Restores model, optimizer, and
+            scheduler state dicts, and resumes from the next epoch.
     """
 
     def __init__(
@@ -473,6 +678,7 @@ class SupervisedAlbertTrainer:
         supervised_config: SupervisedConfig,
         val_dataloader: DataLoader | None = None,
         device: torch.device | None = None,
+        resume_from_checkpoint: str | None = None,
     ):
         self.model = model
         self.train_dataloader = train_dataloader
@@ -487,15 +693,71 @@ class SupervisedAlbertTrainer:
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)
 
+        self.start_epoch = 1
+        self.best_val_loss = float("inf")
+        self.epochs_without_improvement = 0
+
+        if resume_from_checkpoint is not None:
+            self._load_checkpoint(resume_from_checkpoint)
+
     def _set_seed(self, seed: int) -> None:
+        """
+        Set random seeds across Python, NumPy, and PyTorch for reproducibility.
+
+        Also enables deterministic cuDNN behavior to ensure reproducible
+        results across runs with the same seed.
+
+        Args:
+            seed (int): The random seed to use.
+        """
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    def _load_checkpoint(self, checkpoint_path: str) -> None:
+        """
+        Load model, optimizer, and scheduler state from a checkpoint file.
+
+        Args:
+            checkpoint_path (str): Path to the ``.pt`` checkpoint file.
+
+        Raises:
+            FileNotFoundError: If the checkpoint file does not exist.
+            KeyError: If the checkpoint is missing required state dicts.
+        """
+        if not Path(checkpoint_path).exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.model.load_state_dict(checkpoint["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+        if "scheduler_state_dict" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        if "epoch" in checkpoint:
+            self.start_epoch = checkpoint["epoch"] + 1
+
+        if "best_val_loss" in checkpoint:
+            self.best_val_loss = checkpoint["best_val_loss"]
+
+        logger.info(
+            f"Resumed from checkpoint: {checkpoint_path} "
+            f"(starting at epoch {self.start_epoch})"
+        )
 
     def _setup_optimizer_and_scheduler(self) -> None:
-        """Set up AdamW optimizer and linear warmup scheduler."""
+        """
+        Set up the AdamW optimizer with parameter-specific weight decay and
+        a linear warmup learning-rate scheduler.
+
+        Biases and LayerNorm weights receive zero weight decay. Only
+        parameters with ``requires_grad=True`` are included.
+        """
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
             {
@@ -530,7 +792,21 @@ class SupervisedAlbertTrainer:
         )
 
     def train_epoch(self, epoch: int) -> Dict[str, float]:
-        """Run one training epoch and return average losses."""
+        """
+        Run one training epoch and return average losses.
+
+        Iterates over the training dataloader, computes combined loss
+        (attention alignment + optional MLM), performs backward pass,
+        gradient clipping, optimizer step, and scheduler step. Logs total,
+        MLM, and attention losses at ``logging_steps`` intervals.
+
+        Args:
+            epoch (int): The 1-indexed epoch number (for logging only).
+
+        Returns:
+            Dict[str, float]: A dict with keys ``"loss"``, ``"mlm_loss"``,
+            and ``"attention_loss"``, each the average across all batches.
+        """
         self.model.train()
         total_loss = 0.0
         total_mlm_loss = 0.0
@@ -573,7 +849,7 @@ class SupervisedAlbertTrainer:
 
             if (step + 1) % self.training_config.logging_steps == 0:
                 lr = self.scheduler.get_last_lr()[0]
-                print(
+                logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
                     f"| Loss: {step_loss:.4f} | MLM: {step_mlm_loss:.4f} "
                     f"| Attn: {step_attention_loss:.4f} | LR: {lr:.2e}"
@@ -587,7 +863,14 @@ class SupervisedAlbertTrainer:
 
     @torch.no_grad()
     def evaluate(self) -> Dict[str, float]:
-        """Run evaluation and return average losses."""
+        """
+        Run evaluation on the validation set and return average losses.
+
+        Returns:
+            Dict[str, float]: A dict with keys ``"loss"``, ``"mlm_loss"``,
+            and ``"attention_loss"``, each the average across all validation
+            batches. Returns zeros if no validation dataloader is configured.
+        """
         if self.val_dataloader is None:
             return {"loss": 0.0, "mlm_loss": 0.0, "attention_loss": 0.0}
 
@@ -622,18 +905,32 @@ class SupervisedAlbertTrainer:
         }
 
     def train(self) -> None:
-        """Run the full training loop."""
-        mode = "multitask" if self.supervised_config.multitask else "supervised-only"
-        print(f"Starting {mode} training on device: {self.device}")
-        print(f"Target layer: {self.supervised_config.target_layer}")
-        print(f"Epochs: {self.training_config.num_epochs}")
+        """
+        Run the full training loop across all epochs.
 
-        for epoch in range(1, self.training_config.num_epochs + 1):
+        For each epoch: trains, evaluates, logs metrics, and saves a
+        checkpoint (raw ``.pt`` file with model/optimizer/scheduler state
+        dicts and the base model in HuggingFace ``save_pretrained`` format).
+        If ``save_best_model`` is enabled in the training config, the best
+        model (by validation loss) is saved to ``{output_dir}/best_model.pt``.
+        If ``early_stopping_patience`` is set, training stops when validation
+        loss has not improved for the specified number of epochs.
+
+        Training resumes from ``self.start_epoch`` if a checkpoint was loaded.
+        """
+        mode = "multitask" if self.supervised_config.multitask else "supervised-only"
+        logger.info(f"Starting {mode} training on device: {self.device}")
+        logger.info(f"Target layer: {self.supervised_config.target_layer}")
+        logger.info(f"Epochs: {self.training_config.num_epochs}")
+
+        Path(self.training_config.output_dir).mkdir(parents=True, exist_ok=True)
+
+        for epoch in range(self.start_epoch, self.training_config.num_epochs + 1):
             start_time = time.time()
             train_metrics = self.train_epoch(epoch)
             val_metrics = self.evaluate()
 
-            print(
+            logger.info(
                 f"Epoch {epoch} complete | "
                 f"Train Loss: {train_metrics['loss']:.4f} | "
                 f"Val Loss: {val_metrics['loss']:.4f} | "
@@ -649,15 +946,54 @@ class SupervisedAlbertTrainer:
                     "epoch": epoch,
                     "model_state_dict": self.model.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
+                    "scheduler_state_dict": self.scheduler.state_dict(),
                     "train_metrics": train_metrics,
                     "val_metrics": val_metrics,
+                    "best_val_loss": self.best_val_loss,
                 },
                 f"{save_path}.pt",
             )
 
             # Also save the base model for inference
             self.model.base_model.save_pretrained(save_path)
-            print(f"Checkpoint saved to {save_path}")
+            logger.info(f"Checkpoint saved to {save_path}")
+
+            # Best-model saving and early stopping tracking
+            val_loss = val_metrics["loss"]
+            improved = (
+                val_loss
+                < self.best_val_loss - self.training_config.early_stopping_min_delta
+            )
+            if improved:
+                self.best_val_loss = val_loss
+                self.epochs_without_improvement = 0
+                if self.training_config.save_best_model:
+                    best_path = f"{self.training_config.output_dir}/best_model.pt"
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "model_state_dict": self.model.state_dict(),
+                            "val_loss": val_loss,
+                        },
+                        best_path,
+                    )
+                    logger.info(
+                        f"New best model saved to {best_path} (val_loss: {val_loss:.4f})"
+                    )
+            else:
+                self.epochs_without_improvement += 1
+
+            # Early stopping
+            if (
+                self.training_config.early_stopping_patience > 0
+                and self.epochs_without_improvement
+                >= self.training_config.early_stopping_patience
+            ):
+                logger.warning(
+                    f"Early stopping triggered after {self.epochs_without_improvement} "
+                    f"epochs without improvement"
+                )
+                break
 
     @torch.no_grad()
     def predict_attention(
@@ -667,10 +1003,19 @@ class SupervisedAlbertTrainer:
         token_type_ids: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Get predicted attention alignment for inference.
+        Get predicted attention alignment probabilities for inference.
+
+        Runs a forward pass and applies softmax to the attention logits
+        to produce normalized attention probabilities.
+
+        Args:
+            input_ids (torch.Tensor): Token IDs of shape ``(B, S)``.
+            attention_mask (torch.Tensor): Attention mask of shape ``(B, S)``.
+            token_type_ids (torch.Tensor): Token type IDs of shape ``(B, S)``.
 
         Returns:
-            attention_probs: (B, S, S) softmax-normalized attention
+            torch.Tensor: Softmax-normalized attention probabilities of
+            shape ``(B, S, S)``.
         """
         self.model.eval()
         input_ids = input_ids.to(self.device)
@@ -700,19 +1045,40 @@ def evaluate_supervised_attention_loss(
     pin_memory: bool | None = None,
 ) -> float:
     """
-    Evaluate supervised attention alignment loss only (no MLM), using batched evaluation.
+    Evaluate supervised attention alignment loss only (no MLM).
+
+    Supports both DataLoader and raw Dataset inputs. If a Dataset is given,
+    a DataLoader is created with the specified batch size and worker settings.
+
+    If ``target_layer`` is provided, the original
+    ``model.supervised_config.target_layer`` is saved and restored after
+    evaluation, so the caller's model is not permanently modified.
 
     Args:
-        model: AlbertWithAttentionAlignment instance.
-        dataloader_or_dataset: Either a DataLoader yielding batches, or a Dataset yielding single examples.
-        device: Device to run eval on. If None, uses the model's parameter device.
-        target_layer: Optional override for supervised_config.target_layer during eval.
-        batch_size: Batch size to use if a Dataset is provided.
-        num_workers: DataLoader num_workers to use if a Dataset is provided.
-        pin_memory: DataLoader pin_memory to use if a Dataset is provided. If None, uses torch.cuda.is_available().
+        model: An ``AlbertWithAttentionAlignment`` instance.
+        dataloader_or_dataset (DataLoader | Dataset): Either a DataLoader
+            yielding batches, or a Dataset yielding single examples.
+        device (torch.device | None): Device to run eval on. If None, uses
+            the model's parameter device.
+        target_layer (int | None): Optional override for
+            ``supervised_config.target_layer`` during eval.
+        batch_size (int): Batch size to use if a Dataset is provided.
+        num_workers (int): DataLoader ``num_workers`` if a Dataset is provided.
+        pin_memory (bool | None): DataLoader ``pin_memory`` if a Dataset is
+            provided. If None, uses ``torch.cuda.is_available()``.
 
     Returns:
-        Mean attention loss across batches.
+        float: Mean attention alignment loss across all batches. Returns
+        0.0 if no batches were processed.
+
+    Raises:
+        TypeError: If the model does not have a ``supervised_config``
+            attribute (i.e. is not an ``AlbertWithAttentionAlignment``).
+        RuntimeError: If the model forward pass does not return
+            ``'attention_loss'``.
+        ValueError: If ``target_layer`` is out of range for the model's
+            attention tensors (must be in
+            ``[0, num_hidden_layers - 1]``).
     """
     if not hasattr(model, "supervised_config"):
         raise TypeError(
@@ -722,9 +1088,17 @@ def evaluate_supervised_attention_loss(
         )
 
     if target_layer is not None:
-        model.supervised_config.target_layer = target_layer
+        num_layers = model.base_model.config.num_hidden_layers
+        if not (0 <= target_layer < num_layers):
+            raise ValueError(
+                f"target_layer must be in [0, {num_layers - 1}], got {target_layer}"
+            )
 
+    original_target_layer = model.supervised_config.target_layer
     try:
+        if target_layer is not None:
+            model.supervised_config.target_layer = target_layer
+
         model = model.to(device)
         eval_device = device if device is not None else next(model.parameters()).device
 
@@ -768,10 +1142,8 @@ def evaluate_supervised_attention_loss(
 
         return 0.0 if num_batches == 0 else total_attention_loss / num_batches
 
-    except IndexError as e:
-        raise ValueError(
-            "Invalid 'target_layer' for the model's attention tensors."
-        ) from e
+    finally:
+        model.supervised_config.target_layer = original_target_layer
 
 
 # ============================================================
@@ -787,20 +1159,53 @@ def main_supervised(
     training_config: Optional[TrainingConfig] = None,
     mlm_config: Optional[MLMConfig] = None,
     supervised_config: Optional[SupervisedConfig] = None,
+    max_length: int = 384,
+    num_workers: int = 8,
+    prefetch_factor: int = 4,
+    protected_tokens: Optional[Set[str]] = None,
+    masking_mode: str = "span",
+    span_mlm_config: Optional[SpanMLMConfig] = None,
+    resume_from_checkpoint: str | None = None,
 ):
     """
-    Run supervised attention alignment training.
+    Run supervised attention alignment training end-to-end.
+
+    Creates the tokenizer, datasets, dataloaders, model (from scratch or
+    loaded from a pretrained MLM checkpoint), and trainer, then launches
+    training. Uses graph-aware span masking by default with
+    ``mlm_probability=0.20`` and ``max_length=384``.
 
     Args:
-        train_texts: List of reaction SMILES for training
-        train_attention_targets: List of N x N numpy arrays with attention targets
-        val_texts: List of reaction SMILES for validation
-        val_attention_targets: List of N x N numpy arrays with attention targets
-        pretrained_model_path: Path to pretrained MLM model (optional, for fine-tuning)
-        model_config: Model architecture config
-        training_config: Training hyperparameters
-        mlm_config: MLM masking config
-        supervised_config: Supervised attention alignment config
+        train_texts (List[str]): List of atom-mapped reaction SMILES for
+            training.
+        val_texts (List[str]): List of atom-mapped reaction SMILES for
+            validation.
+        pretrained_model_path (str | None): Path to a pretrained MLM model
+            directory. If provided, the base model is loaded from there;
+            otherwise a new model is built from scratch.
+        model_config (Optional[ModelConfig]): Model architecture config.
+            Defaults to ``ModelConfig()`` if None. Ignored if
+            ``pretrained_model_path`` is provided.
+        training_config (Optional[TrainingConfig]): Training hyperparameters.
+            Defaults to ``TrainingConfig()`` if None.
+        mlm_config (Optional[MLMConfig]): MLM masking config. Defaults to
+            ``MLMConfig()`` if None.
+        supervised_config (Optional[SupervisedConfig]): Supervised attention
+            alignment config. Defaults to ``SupervisedConfig()`` if None.
+        max_length (int): Maximum sequence length for padding/truncation.
+        num_workers (int): Number of DataLoader worker processes.
+        prefetch_factor (int): Number of batches prefetched per worker.
+        protected_tokens (Optional[Set[str]]): Token strings that should
+            never be masked. Defaults to ``{"^", "$", ".", ">>"}`` if None.
+        masking_mode (str): Either ``"random"`` or ``"span"``.
+        span_mlm_config (Optional[SpanMLMConfig]): Span masking
+            configuration. Defaults to
+            ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from.
+
+    Returns:
+        SupervisedAlbertTrainer: The trainer instance after training completes.
     """
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
@@ -815,13 +1220,22 @@ def main_supervised(
     if not supervised_config:
         supervised_config = SupervisedConfig()
 
+    if protected_tokens is None:
+        protected_tokens = {"^", "$", ".", ">>"}
+
+    if span_mlm_config is None:
+        span_mlm_config = SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        )
+
     # --- Build or load base model ---
     if pretrained_model_path:
         base_model = AlbertForMaskedLM.from_pretrained(pretrained_model_path)
-        print(f"Loaded pretrained model from {pretrained_model_path}")
+        logger.info(f"Loaded pretrained model from {pretrained_model_path}")
     else:
         base_model = build_albert_model(model_config)
-        print("Built new model from scratch")
+        logger.info("Built new model from scratch")
 
     # --- Wrap with attention alignment head ---
     model = AlbertWithAttentionAlignment(
@@ -834,25 +1248,19 @@ def main_supervised(
         texts=train_texts,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
     val_dataset = SupervisedAtomMappingDataset(
         texts=val_texts,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
 
     # --- Dataloaders ---
@@ -860,19 +1268,21 @@ def main_supervised(
         train_dataset,
         batch_size=training_config.batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=training_config.batch_size,
         shuffle=False,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
     )
 
     # --- Train ---
@@ -882,6 +1292,7 @@ def main_supervised(
         training_config=training_config,
         supervised_config=supervised_config,
         val_dataloader=val_dataloader,
+        resume_from_checkpoint=resume_from_checkpoint,
     )
     trainer.train()
 
