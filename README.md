@@ -8,7 +8,7 @@
 
 An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. AgaveChem provides four composable mappers from deterministic graph-based methods to a supervised neural mapper that can be used individually or combined into a pipeline. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
 
-| library | per-reaction mapping accuracy |
+| Mapper | Per-reaction mapping accuracy |
 | --- | :---: |
 | [RXNMapper](https://www.science.org/doi/10.1126/sciadv.abe4166) | 86.23% |
 | [RXNMapperv2](https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15005247/v1) | 88.96% |
@@ -118,14 +118,14 @@ print(result.selected_mapping)
 
 ### Handling unbalanced reactions
 
-AgaveChem is capable of mapping unbalanced reactions and returning balanced mapped reactions. This feature is under active development.
+AgaveChem is capable of mapping unbalanced reactions and returning balanced mapped reactions when one_to_one_correspondence=False. This feature is under active development.
 
 ```python
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 
-rxn_smiles = "c1c(O)cc(O)cc1O.O=[N+]([O-])O>>c(O)1c([N+](=O)[O-])c(O)c([N+](=O)[O-])c(O)c1[N+](=O)[O-]"
-rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
+rxn = "c1c(O)cc(O)cc1O.O=[N+]([O-])O>>c(O)1c([N+](=O)[O-])c(O)c([N+](=O)[O-])c(O)c1[N+](=O)[O-]"
+rdChemReactions.ReactionFromSmarts(rxn, useSmiles=True)
 ```
 
 ![Unbalanced reaction](docs/images/tnt_unbalanced_reaction.png)
@@ -134,7 +134,7 @@ rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
 from agave_chem import NeuralReactionMapper
 
 mapper = NeuralReactionMapper("neural_mapper")
-result = mapper.map_reaction(rxn_smiles, one_to_one_correspondence=False)
+result = mapper.map_reaction(rxn, one_to_one_correspondence=False)
 rdChemReactions.ReactionFromSmarts(result.selected_mapping, useSmiles=True)
 ```
 
