@@ -167,6 +167,12 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
     ]
     product_mols = [Chem.MolFromSmarts(smarts) for smarts in product_smarts.split(".")]
 
+    if any(mol is None for mol in reactant_mols) or any(
+        mol is None for mol in product_mols
+    ):
+        logger.warning(f"Unparseable SMARTS fragment in template: {template}")
+        return False
+
     product_atom_maps_and_elements = {}
     for mol in product_mols:
         for atom in mol.GetAtoms():
@@ -269,6 +275,16 @@ if __name__ == "__main__":
             filtered_smirks_list.append(smirk)
 
         default_smirk_pattern["child_smirks"] = filtered_smirks_list
+
+        if not verify_validity_of_template(
+            smirks,
+            default_smirk_pattern["smirks"],
+        ):
+            logger.warning(
+                f"Parent SMIRKS failed validation, skipping: "
+                f"{default_smirk_pattern['name']} — {default_smirk_pattern['smirks']}"
+            )
+            continue
 
         default_smirk_pattern["superclass_id"] = (
             default_smirk_pattern["superclass_id"] or 0
