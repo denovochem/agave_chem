@@ -22,7 +22,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 ### Neural mapper
 
 - **Supervised ALBERT-based mapper**: Trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps
-- **Template and MCS-derived "ground truth"**: Ground truth is generated automatically from ~0.97M filtered USPTO reactions; the deterministic pipeline fully maps ~60% of reactions and covers ~90% of product atoms
+- **Template and MCS-derived "ground truth"**: Supervised training data for the second phase is generated automatically from ~0.97M filtered USPTO reactions; the deterministic pipeline fully maps ~60% of reactions and maps ~90% of all product atoms
 
 ### Identical fragment mapper
 
@@ -37,7 +37,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 
 ### Expert template mapper
 
-- **Curated SMIRKS library**: Reaction SMIRKS templates sourced from ReactionFlash, [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions
+- **Curated SMIRKS library**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions
 - **Custom template support**: User-supplied SMIRKS patterns can supplement or replace the built-in library via `custom_smirks_patterns`
 
 ## Requirements
@@ -118,14 +118,14 @@ print(result.selected_mapping)
 
 ### Handling unbalanced reactions
 
-AgaveChem is capable of mapping unbalanced reactions, and automatically returning balanced, mapped reactions. This feature is under active development.
+AgaveChem is capable of mapping unbalanced reactions and returning balanced mapped reactions. This feature is under active development.
 
 ```python
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 
-original_reaction = "C1CCOC1.c1c(O)cc(O)cc1O.O=[N+]([O-])O>>c(O)1c([N+](=O)[O-])c(O)c([N+](=O)[O-])c(O)c1[N+](=O)[O-]"
-rdChemReactions.ReactionFromSmarts(original_reaction, useSmiles=True)
+rxn_smiles = "c1c(O)cc(O)cc1O.O=[N+]([O-])O>>c(O)1c([N+](=O)[O-])c(O)c([N+](=O)[O-])c(O)c1[N+](=O)[O-]"
+rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
 ```
 
 ![Unbalanced reaction](docs/images/tnt_unbalanced_reaction.png)
@@ -134,7 +134,7 @@ rdChemReactions.ReactionFromSmarts(original_reaction, useSmiles=True)
 from agave_chem import NeuralReactionMapper
 
 mapper = NeuralReactionMapper("neural_mapper")
-result = mapper.map_reaction(original_reaction, one_to_one_correspondence=False)
+result = mapper.map_reaction(rxn_smiles, one_to_one_correspondence=False)
 rdChemReactions.ReactionFromSmarts(result.selected_mapping, useSmiles=True)
 ```
 
@@ -165,3 +165,4 @@ AgaveChem is licensed under the [MIT license](https://github.com/denovochem/agav
 - [rdchiral_plus](https://github.com/denovochem/rdchiral_plus)
 - [Lowe USPTO dataset](https://doi.org/10.17863/CAM.16293)
 - [Benchmarking study: Lin et al., *ChemRxiv*, 2020](https://doi.org/10.26434/chemrxiv.13012679.v1)
+- [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813)
