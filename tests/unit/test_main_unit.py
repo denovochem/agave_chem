@@ -91,11 +91,11 @@ class TestValidateAndNormalizeInput:
             _validate_and_normalize_input([], valid_mappers, 100)
 
     def test_non_string_element_raises(self, valid_mappers):
-        with pytest.raises(ValueError, match="non-empty list of strings"):
+        with pytest.raises(TypeError, match="non-empty list of strings"):
             _validate_and_normalize_input(["CC>>CC", 42], valid_mappers, 100)
 
     def test_non_list_non_string_input_raises(self, valid_mappers):
-        with pytest.raises(ValueError, match="non-empty list of strings"):
+        with pytest.raises(TypeError, match="non-empty list of strings"):
             _validate_and_normalize_input(42, valid_mappers, 100)
 
     def test_duplicates_removed_order_preserved(self, valid_mappers):

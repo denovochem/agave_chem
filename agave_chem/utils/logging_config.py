@@ -141,4 +141,4 @@ def enable_library_logging() -> None:
     logger.enable("agave_chem")
 
 
-__all__ = ["logger", "configure_logging"]
+__all__ = ["configure_logging", "logger"]

@@ -321,12 +321,14 @@ def resolve_symmtery_class_for_tautomers(mol: Chem.Mol) -> List[int]:
         Chem.CanonicalRankAtoms(reference_mol, breakTies=False)
     )
     mol_with_atom_maps = Chem.Mol(mol)
-    [atom.SetAtomMapNum(atom.GetIdx() + 1) for atom in mol_with_atom_maps.GetAtoms()]
+    for atom in mol_with_atom_maps.GetAtoms():
+        atom.SetAtomMapNum(atom.GetIdx() + 1)
     tautomers_with_atom_maps = list(_TAUTOMER_ENUMERATOR.Enumerate(mol_with_atom_maps))
 
     for tautomer_with_atom_map in tautomers_with_atom_maps:
         tautomer = Chem.Mol(tautomer_with_atom_map)
-        [atom.SetAtomMapNum(0) for atom in tautomer.GetAtoms()]
+        for atom in tautomer.GetAtoms():
+            atom.SetAtomMapNum(0)
         combo = reduce(Chem.CombineMols, [reference_mol, tautomer])
         canonical_ranks = list(Chem.CanonicalRankAtoms(combo, breakTies=False))
 

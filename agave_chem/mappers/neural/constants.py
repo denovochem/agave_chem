@@ -1029,7 +1029,7 @@ smiles_id_to_token_dict = {v: k for k, v in smiles_token_to_id_dict.items()}
 
 assert len(smiles_id_to_token_dict) == len(smiles_token_to_id_dict)
 assert len(smiles_id_to_token_dict) == 1024
-assert set(smiles_id_to_token_dict.keys()) == set([i + 1 for i in range(1024)])
+assert set(smiles_id_to_token_dict.keys()) == {i + 1 for i in range(1024)}
 
 template_token_to_id_dict = {
     "[UNK]": 1,
@@ -1294,7 +1294,7 @@ template_id_to_token_dict = {v: k for k, v in template_token_to_id_dict.items()}
 
 assert len(template_token_to_id_dict) == len(template_id_to_token_dict)
 assert len(template_token_to_id_dict) == 256
-assert set(template_id_to_token_dict.keys()) == set([i + 1 for i in range(256)])
+assert set(template_id_to_token_dict.keys()) == {i + 1 for i in range(256)}
 
 
 token_atom_identity_dict = {

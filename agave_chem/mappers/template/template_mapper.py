@@ -589,16 +589,13 @@ class TemplateReactionMapper(ReactionMapper):
         ):
             return False
 
-        if not all(
+        return all(
             any(
                 DataStructs.AllProbeBitsMatch(q_fp, mol_fp)
                 for mol_fp in reactant_mol_fps
             )
             for q_fp in reactants_fps
-        ):
-            return False
-
-        return True
+        )
 
     def _passes_substructure_check(
         self,
@@ -1215,7 +1212,18 @@ class TemplateReactionMapper(ReactionMapper):
         found_fragments: List[Tuple[str, str]],
         unmapped_reactants: Dict[str, List[str]],
     ) -> Dict[str, List[str]]:
-        """ """
+        """
+        Identify and map missing fragments by searching unmapped reactants for tautomeric matches.
+
+        Args:
+            missing_fragments (List[Tuple[str, str]]): Fragments not yet mapped, as (fragment_smiles, mapped_reactant_fragment) pairs.
+            found_fragments (List[Tuple[str, str]]): Fragments already mapped, as (fragment_smiles, mapped_reactant_fragment) pairs.
+            unmapped_reactants (Dict[str, List[str]]): Mapping from original tautomer to list of unmapped reactant tautomers.
+
+        Returns:
+            Dict[str, List[str]]: Mapping from mapped reactant fragment to sorted list of mapped fragment SMILES.
+                Returns an empty dict if any fragment cannot be found.
+        """
         unmapped_found_fragments = [ele[0] for ele in found_fragments]
         fragment_mapped_dict = {}
         for _, mapped_reactant_fragment in missing_fragments:
@@ -1239,10 +1247,8 @@ class TemplateReactionMapper(ReactionMapper):
                             unmapped_tautomer_copy = Chem.Mol(
                                 mapped_enumerated_tautomer
                             )
-                            [
+                            for atom in unmapped_tautomer_copy.GetAtoms():
                                 atom.SetAtomMapNum(0)
-                                for atom in unmapped_tautomer_copy.GetAtoms()
-                            ]
                             if Chem.MolToSmiles(
                                 unmapped_tautomer_copy
                             ) == Chem.MolToSmiles(Chem.MolFromSmiles(orig_tautomer)):
@@ -1259,7 +1265,7 @@ class TemplateReactionMapper(ReactionMapper):
                         ]
                         existing_mapped_fragments.append(out)
                         fragment_mapped_dict[mapped_reactant_fragment] = sorted(
-                            list(set(existing_mapped_fragments))
+                            set(existing_mapped_fragments)
                         )
 
             if not fragment_found:
@@ -1431,9 +1437,9 @@ class TemplateReactionMapper(ReactionMapper):
                 mapping_num_fragments = len(possible_mapping["reactants_smarts"])
                 mapping_num_atoms = mapping_num_fragments
                 for mol in possible_mapping["reactants_smarts"]:
-                    mapping_num_atoms += len(mol.GetAtoms())
+                    mapping_num_atoms += len(list(mol.GetAtoms()))
                 for mol in possible_mapping["products_smarts"]:
-                    mapping_num_atoms += len(mol.GetAtoms())
+                    mapping_num_atoms += len(list(mol.GetAtoms()))
                 if max_num_mapped_product_atoms < mapping_num_atoms:
                     selected_mapping = canonicalized_mapping
                     max_num_mapped_product_atoms = mapping_num_atoms
@@ -1511,7 +1517,7 @@ class TemplateReactionMapper(ReactionMapper):
                 deduplicated_mapped_outcomes
             )
         else:
-            selected_mapping = list(deduplicated_mapped_outcomes.keys())[0]
+            selected_mapping = next(iter(deduplicated_mapped_outcomes))
 
         possible_mappings_template_names: Dict[str, List[str]] = {
             mapping: [p["template_name"] for p in patterns]

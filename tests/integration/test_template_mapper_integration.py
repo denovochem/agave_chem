@@ -61,7 +61,7 @@ def test_template_mapper_uspto_1k_reactions_sanity() -> None:
 
     for i, rxn in enumerate(rxns):
         num_total += 1
-        res = mapper.map_reaction(rxn)
+        res = mapper.map_reaction(rxn, num_smirks_to_apply=2)
         mapped = res.selected_mapping
         if not mapped:
             continue

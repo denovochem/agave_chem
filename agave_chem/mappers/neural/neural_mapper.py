@@ -870,7 +870,8 @@ class NeuralReactionMapper(ReactionMapper):
                 )
             if max_oversubscribed_count == 0:
                 continue
-            [atom.SetAtomMapNum(0) for atom in reactant.GetAtoms()]
+            for atom in reactant.GetAtoms():
+                atom.SetAtomMapNum(0)
             reactant_smiles = Chem.MolToSmiles(reactant)
             oversubscribed_dict[reactant_smiles] = (
                 oversubscribed_dict.get(reactant_smiles, 0) + max_oversubscribed_count

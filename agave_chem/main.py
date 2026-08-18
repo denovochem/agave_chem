@@ -42,7 +42,7 @@ def _validate_and_normalize_input(
         reaction_list = [reaction_list]
 
     if not isinstance(reaction_list, list):
-        raise ValueError(
+        raise TypeError(
             "Invalid input: reaction_list must be a string or a non-empty list of strings."
         )
     if len(reaction_list) == 0:
@@ -51,7 +51,7 @@ def _validate_and_normalize_input(
         )
     for reaction in reaction_list:
         if not isinstance(reaction, str):
-            raise ValueError(
+            raise TypeError(
                 "Invalid input: reaction_list must be a string or a non-empty list of strings."
             )
 
@@ -106,7 +106,7 @@ def _get_default_mappers() -> Tuple[ReactionMapper, ...]:
 
 def _resolve_identical_fragments(
     mapper_results: List[ReactionMapperResult],
-    identical_fragments_mapping_list: List[List[str]],
+    identical_fragments_mapping_list: List[List[Tuple[str, str]]],
     identical_fragment_mapper: IdenticalFragmentMapper,
     base_index: int,
     all_mapper_results_by_reaction: List[List[ReactionMapperResult]],
@@ -121,9 +121,9 @@ def _resolve_identical_fragments(
     Args:
         mapper_results (List[ReactionMapperResult]): Results from the mapper for
             the current batch.
-        identical_fragments_mapping_list (List[List[str]]): Per-reaction lists of
-            atom-mapped identical fragment SMILES produced by
-            ``create_identical_fragments_mapping_list``.
+        identical_fragments_mapping_list (List[List[Tuple[str, str]]]):
+            Per-reaction lists of ``(reactant_smiles, product_smiles)`` pairs
+            produced by ``create_identical_fragments_mapping_list``.
         identical_fragment_mapper (IdenticalFragmentMapper): The mapper instance
             used to resolve fragments.
         base_index (int): The index in ``all_mapper_results_by_reaction``

@@ -94,7 +94,7 @@ class CustomTokenizer(PreTrainedTokenizer):
         Unknown tokens are replaced with unk_token.
         """
         if not isinstance(text, str):
-            raise ValueError("Input must be a string.")
+            raise TypeError("Input must be a string.")
 
         text = self.preprocess_sentence_reaction_smiles(text)
 

@@ -77,8 +77,8 @@ The `map_reactions` function returns `AgaveChemMapperResult` dictionaries with a
 
 ```python
 result = results[0]
-print(result["final_mapping"])        # best mapping from the pipeline
-print(result["original_reaction"])    # original unmapped SMILES
+print(result["final_mapping"])  # best mapping from the pipeline
+print(result["original_reaction"])  # original unmapped SMILES
 print(result["mapper_results"][0]["mapping_type"])  # which mapper produced it
 ```
 
@@ -140,7 +140,7 @@ from agave_chem import TemplateReactionMapper
 mapper = TemplateReactionMapper("my_template")
 result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl")
 print(result["selected_mapping"])
-print(result["possible_mappings"])   # all candidate mapped SMILES and their templates
+print(result["possible_mappings"])  # all candidate mapped SMILES and their templates
 ```
 
 ### Constructor parameters
@@ -171,7 +171,7 @@ custom_patterns = [
 mapper = TemplateReactionMapper(
     "custom_template",
     custom_smirks_patterns=custom_patterns,
-    use_default_smirks_patterns=True,   # combine with built-in patterns
+    use_default_smirks_patterns=True,  # combine with built-in patterns
 )
 result = mapper.map_reaction("CC(=O)Cl.NC>>CC(=O)NC")
 print(result["selected_mapping"])
@@ -207,10 +207,12 @@ print(result["selected_mapping"])
 from agave_chem import NeuralReactionMapper
 
 mapper = NeuralReactionMapper("neural_batch")
-results = mapper.map_reactions([
-    "CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl",
-    "OCC(=O)OCCCO.Cl>>ClCC(=O)OCCCO",
-])
+results = mapper.map_reactions(
+    [
+        "CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl",
+        "OCC(=O)OCCCO.Cl>>ClCC(=O)OCCCO",
+    ]
+)
 for r in results:
     print(r["selected_mapping"])
 ```
@@ -304,6 +306,7 @@ print(clean)
 
 # Sanitize a molecule
 from rdkit import Chem
+
 mol = Chem.MolFromSmiles("CC(=O)O")
 clean_mol = mapper.sanitize_molecule(mol, add_hs=False)
 ```

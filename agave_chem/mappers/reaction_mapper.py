@@ -101,9 +101,7 @@ class ReactionMapper(ABC):
         product_mols = [
             Chem.MolFromSmiles(product_str) for product_str in product_strs.split(".")
         ]
-        if None in product_mols:
-            return False
-        return True
+        return None not in product_mols
 
     def _remove_duplicate_fragments(self, smiles: str) -> str:
         """

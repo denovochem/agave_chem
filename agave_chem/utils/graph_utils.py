@@ -1,9 +1,12 @@
 import itertools
+import logging
 
 import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
+
+logger = logging.getLogger(__name__)
 
 _taut_opts = rdMolStandardize.CleanupParameters()
 _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -303,6 +306,7 @@ def _enumerate_resonance_swap_variants(rxn_smiles: str) -> list[str]:
     all_mols: list[Chem.RWMol] = r_mols + p_mols
     n_r = len(r_mols)
 
+    seen_pairs: set[tuple[int, int, int]] = set()
     swap_candidates: list[tuple[int, int, int]] = []
     for mol_idx, mol in enumerate(all_mols):
         for pattern, qmap1, qmap2 in _RESONANCE_SWAP_PATTERNS:
@@ -314,7 +318,10 @@ def _enumerate_resonance_swap_variants(rxn_smiles: str) -> list[str]:
                 map_a = mol.GetAtomWithIdx(a_idx).GetAtomMapNum()
                 map_b = mol.GetAtomWithIdx(b_idx).GetAtomMapNum()
                 if map_a or map_b:
-                    swap_candidates.append((mol_idx, a_idx, b_idx))
+                    key = (mol_idx, min(a_idx, b_idx), max(a_idx, b_idx))
+                    if key not in seen_pairs:
+                        seen_pairs.add(key)
+                        swap_candidates.append((mol_idx, a_idx, b_idx))
 
     if not swap_candidates:
         return [rxn_smiles]
@@ -404,8 +411,8 @@ def mapping_equivalent(
         G2 = rxn_to_mapping_graph(rxn2)
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Graph comparison failed for {rxn2}: {e}")
 
     if not consider_tautomers and not consider_resonance_swaps:
         return False
@@ -422,7 +429,8 @@ def mapping_equivalent(
     for smi in candidate_smiles:
         try:
             G2 = rxn_to_mapping_graph(smi)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to build mapping graph for {smi}: {e}")
             continue
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True

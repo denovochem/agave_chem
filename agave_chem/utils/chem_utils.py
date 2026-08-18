@@ -53,7 +53,8 @@ def canonicalize_smiles(
             if canonicalize_tautomer:
                 m = TAUTOMER_ENUMERATOR.Canonicalize(m)
             if remove_mapping:
-                [a.SetAtomMapNum(0) for a in m.GetAtoms()]
+                for a in m.GetAtoms():
+                    a.SetAtomMapNum(0)
             canonical_smiles_string = str(
                 Chem.MolToSmiles(m, canonical=True, isomericSmiles=isomeric)
             )
@@ -63,7 +64,7 @@ def canonicalize_smiles(
     except Exception as e:
         logger.warning(f"Could not canonicalize {smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return smiles
 
 
@@ -86,7 +87,8 @@ def randomize_smiles(
                 tautomers = TAUTOMER_ENUMERATOR.Enumerate(m)
                 m = random.choice(tautomers)
             if remove_mapping:
-                [a.SetAtomMapNum(0) for a in m.GetAtoms()]
+                for a in m.GetAtoms():
+                    a.SetAtomMapNum(0)
             new_atom_order = list(range(m.GetNumAtoms()))
             random.shuffle(new_atom_order)
             random_mol = Chem.RenumberAtoms(m, newOrder=new_atom_order)
@@ -99,7 +101,7 @@ def randomize_smiles(
     except Exception as e:
         logger.warning(f"Could not randomize {smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return smiles
 
 
@@ -157,7 +159,7 @@ def canonicalize_reaction_smiles(
     except Exception as e:
         logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return rxn_smiles
 
 
@@ -202,7 +204,7 @@ def randomize_reaction_smiles(
     except Exception as e:
         logger.warning(f"Could not randomize {rxn_smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return rxn_smiles
 
 
@@ -213,7 +215,8 @@ def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:
     unmapped_reactants = []
     for reactant in reactants:
         reactant_mol = Chem.MolFromSmiles(reactant)
-        [a.SetAtomMapNum(0) for a in reactant_mol.GetAtoms()]
+        for a in reactant_mol.GetAtoms():
+            a.SetAtomMapNum(0)
         reactant = Chem.MolToSmiles(
             reactant_mol, canonical=False, doRandom=False, isomericSmiles=True
         )
@@ -221,7 +224,8 @@ def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:
     unmapped_products = []
     for product in products:
         product_mol = Chem.MolFromSmiles(product)
-        [a.SetAtomMapNum(0) for a in product_mol.GetAtoms()]
+        for a in product_mol.GetAtoms():
+            a.SetAtomMapNum(0)
         product = Chem.MolToSmiles(
             product_mol, canonical=False, doRandom=False, isomericSmiles=True
         )

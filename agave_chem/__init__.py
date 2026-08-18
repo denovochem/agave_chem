@@ -13,13 +13,13 @@ from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
 from agave_chem.scoring.scoring import MappingScorer
 
 __all__ = [
-    "map_reactions",
-    "MCSReactionMapper",
-    "TemplateReactionMapper",
-    "ParallelTemplateReactionMapper",
-    "NeuralReactionMapper",
     "IdenticalFragmentMapper",
+    "MCSReactionMapper",
     "MappingScorer",
+    "NeuralReactionMapper",
+    "ParallelTemplateReactionMapper",
+    "TemplateReactionMapper",
+    "map_reactions",
 ]
 
 __version__ = "0.1.0"
