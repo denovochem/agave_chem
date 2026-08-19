@@ -1,5 +1,6 @@
 """Unit tests for workflows/model_training_scripts/albert_mapper_supervised_training.py."""
 
+import random
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -237,6 +238,210 @@ class TestBuildAttentionTarget:
         attn_target, unmapped = result
         assert isinstance(attn_target, np.ndarray)
         assert ":" not in unmapped
+
+
+# ---------------------------------------------------------------------------
+# build_attention_target_from_mapped_rxn_smiles — determinism
+# ---------------------------------------------------------------------------
+
+
+class TestBuildAttentionTargetDeterminism:
+    """Tests that build_attention_target_from_mapped_rxn_smiles is deterministic with a seed."""
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 9999])
+    def test_same_seed_same_output(self, tokenizer, mapped_rxn, seed):
+        """Two calls with the same seed and randomization enabled produce identical results."""
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=seed,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=seed,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_different_seeds_likely_different(self, tokenizer):
+        """Different seeds should (very likely) produce different attention targets."""
+        rxn = (
+            "[CH3:1][C:2]([O:3][H:4])([c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1)"
+            "[C:11](=[O:12])[OH:13]"
+            ">>"
+            "[CH3:1][C:2]([O:3][H:4])([c:5]1[cH:6][cH:7][cH:8][cH:9][cH:10]1)"
+            "[C:11](=[O:12])[OH:13]"
+        )
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=1,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=2,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, _ = result1
+        attn2, _ = result2
+        # Shapes should match (same reaction), but values should differ
+        assert attn1.shape == attn2.shape
+        assert not np.array_equal(attn1, attn2)
+
+    def test_seed_does_not_affect_global_state(self, tokenizer, mapped_rxn):
+        """Calling with a seed must not change global random module state."""
+        random.seed(54321)
+        expected = random.random()
+
+        build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=42,
+        )
+
+        random.seed(54321)
+        actual = random.random()
+        assert actual == expected
+
+    def test_no_seed_uses_global_state(self, tokenizer, mapped_rxn):
+        """Without a seed, the function should use the global random module."""
+        random.seed(777)
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+        )
+
+        random.seed(777)
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_seed_with_unmapped_atoms(self, tokenizer, mapped_rxn_with_unmapped):
+        """Determinism holds even with unmapped atoms in the reaction."""
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn_with_unmapped,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=42,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn_with_unmapped,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            seed=42,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_seed_with_symmetric_reaction(self, tokenizer):
+        """Determinism holds with symmetric molecules and smoothing."""
+        rxn = "[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            smooth_symmetric_targets=True,
+            seed=42,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            smooth_symmetric_targets=True,
+            seed=42,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_seed_with_tautomer_randomization(self, tokenizer, mapped_rxn):
+        """Determinism holds when tautomer randomization is triggered."""
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            randomize_tautomer_pct=1.0,
+            seed=42,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            randomize_tautomer_pct=1.0,
+            seed=42,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_seed_with_canonicalization(self, tokenizer, mapped_rxn):
+        """Determinism holds when canonicalization is triggered."""
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            canonicalize_mapped_rxn_smiles_pct=1.0,
+            seed=42,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=mapped_rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            canonicalize_mapped_rxn_smiles_pct=1.0,
+            seed=42,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
 
 
 # ---------------------------------------------------------------------------

@@ -104,6 +104,7 @@ def build_attention_target_from_mapped_rxn_smiles(
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
+    seed: Optional[int] = None,
 ) -> Optional[Tuple[np.ndarray, str]]:
     """
     Build an attention alignment target matrix from a mapped reaction SMILES.
@@ -131,6 +132,9 @@ def build_attention_target_from_mapped_rxn_smiles(
             unmapped reactant atoms attend to the sink position (last token).
         smooth_symmetric_targets (bool): If True, spread attention target
             weight uniformly across symmetry-equivalent atoms.
+        seed (Optional[int]): If provided, seeds ``random`` before the
+            augmentation block for deterministic output. When ``None``,
+            behavior is unchanged (uses global random state).
 
     Returns:
         Optional[Tuple[np.ndarray, str]]: A tuple of
@@ -149,6 +153,7 @@ def build_attention_target_from_mapped_rxn_smiles(
             canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
             attn_sink_non_mapped_atoms=attn_sink_non_mapped_atoms,
             smooth_symmetric_targets=smooth_symmetric_targets,
+            seed=seed,
         )
     except Exception as e:
         logger.warning(
@@ -167,6 +172,7 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
+    seed: Optional[int] = None,
 ) -> Tuple[np.ndarray, str]:
     """
     Implementation for building an attention alignment target matrix.
@@ -200,6 +206,12 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
             unmapped atom attention to the sink position.
         smooth_symmetric_targets (bool): If True, spread attention across
             symmetry-equivalent atoms.
+        seed (Optional[int]): If provided, seeds ``random`` before the
+            augmentation block so that all stochastic operations (the
+            ``random.random()`` branching decisions and the internal
+            ``random.shuffle``/``random.choice`` calls inside
+            ``randomize_reaction_smiles``) are fully deterministic.
+            When ``None``, behavior is unchanged (uses global random state).
 
     Returns:
         Tuple[np.ndarray, str]: A tuple of ``(attention_target,
@@ -249,16 +261,21 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     )
 
     if randomize_mapped_rxn_smiles:
-        if random.random() > canonicalize_mapped_rxn_smiles_pct:
-            if random.random() > randomize_tautomer_pct:
+        rng = random.Random(seed) if seed is not None else random
+        if rng.random() > canonicalize_mapped_rxn_smiles_pct:
+            if rng.random() > randomize_tautomer_pct:
                 new_mapped_rxn_smiles = randomize_reaction_smiles(
                     new_mapped_rxn_smiles,
                     remove_mapping=False,
                     randomize_tautomer=False,
+                    seed=seed,
                 )
             else:
                 new_mapped_rxn_smiles = randomize_reaction_smiles(
-                    new_mapped_rxn_smiles, remove_mapping=False, randomize_tautomer=True
+                    new_mapped_rxn_smiles,
+                    remove_mapping=False,
+                    randomize_tautomer=True,
+                    seed=seed,
                 )
         else:
             new_mapped_rxn_smiles = canonicalize_reaction_smiles(
