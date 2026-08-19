@@ -82,11 +82,14 @@ class TestTrainingConfig:
         assert config.num_epochs == 3
         assert config.batch_size == 32
         assert config.warmup_steps == 10000
-        assert config.save_steps == 1000
         assert config.logging_steps == 100
         assert config.output_dir == "./albert_output"
         assert config.seed == 42
-        assert config.fp16 is False
+        assert config.use_amp is False
+        assert config.amp_dtype == "bfloat16"
+        assert config.gradient_accumulation_steps == 1
+        assert config.compile_model is False
+        assert config.deterministic is True
 
     def test_valid_custom_values(self):
         config = TrainingConfig(
@@ -97,6 +100,27 @@ class TestTrainingConfig:
         assert config.learning_rate == 1e-3
         assert config.batch_size == 64
         assert config.num_epochs == 10
+
+    def test_amp_bf16(self):
+        config = TrainingConfig(use_amp=True, amp_dtype="bfloat16")
+        assert config.use_amp is True
+        assert config.amp_dtype == "bfloat16"
+
+    def test_gradient_accumulation_steps(self):
+        config = TrainingConfig(gradient_accumulation_steps=4)
+        assert config.gradient_accumulation_steps == 4
+
+    def test_gradient_accumulation_zero_raises(self):
+        with pytest.raises(ValidationError):
+            TrainingConfig(gradient_accumulation_steps=0)
+
+    def test_compile_model(self):
+        config = TrainingConfig(compile_model=True)
+        assert config.compile_model is True
+
+    def test_non_deterministic(self):
+        config = TrainingConfig(deterministic=False)
+        assert config.deterministic is False
 
     def test_negative_learning_rate_raises(self):
         with pytest.raises(ValidationError):

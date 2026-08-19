@@ -28,6 +28,7 @@ from model_training_scripts.albert_mapper_unuspervised_training import (
     ModelConfig,
     SpanMLMConfig,
     TrainingConfig,
+    _unwrap_model,
     apply_mlm_masking,
     apply_span_mlm_masking,
     build_albert_model,
@@ -495,6 +496,10 @@ class SupervisedAtomMappingDataset(Dataset):
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
         self.protected_token_ids = special_token_ids | protected_token_ids
 
+        # Cache the vocabulary once to avoid repeated dict copies in
+        # _get_plausible_replacement during span masking.
+        self._vocab_cache = tokenizer.get_vocab()
+
     def __len__(self) -> int:
         return len(self.texts)
 
@@ -600,6 +605,7 @@ class SupervisedAtomMappingDataset(Dataset):
                     span_mlm_config=self.span_mlm_config,
                     reaction_smiles=unmapped_text,
                     special_token_ids=self.protected_token_ids,
+                    vocab=self._vocab_cache,
                 )
             else:
                 masked_input_ids, labels = apply_mlm_masking(
@@ -690,6 +696,21 @@ class SupervisedAlbertTrainer:
         )
         self.model.to(self.device)
 
+        # Mixed precision setup
+        self.use_amp = training_config.use_amp and self.device.type == "cuda"
+        self.amp_dtype = (
+            torch.float16 if training_config.amp_dtype == "float16" else torch.bfloat16
+        )
+        if self.use_amp and self.amp_dtype == torch.float16:
+            self.scaler: Optional[torch.amp.GradScaler] = torch.amp.GradScaler("cuda")
+        else:
+            self.scaler = None
+
+        # torch.compile
+        if training_config.compile_model:
+            logger.info("Compiling model with torch.compile (first epoch may be slow)")
+            self.model = torch.compile(self.model)  # type: ignore[assignment]
+
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)
 
@@ -704,8 +725,8 @@ class SupervisedAlbertTrainer:
         """
         Set random seeds across Python, NumPy, and PyTorch for reproducibility.
 
-        Also enables deterministic cuDNN behavior to ensure reproducible
-        results across runs with the same seed.
+        Also configures deterministic cuDNN behavior based on
+        ``training_config.deterministic``.
 
         Args:
             seed (int): The random seed to use.
@@ -715,8 +736,9 @@ class SupervisedAlbertTrainer:
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = self.training_config.deterministic
+        torch.backends.cudnn.benchmark = not self.training_config.deterministic
+        torch.set_float32_matmul_precision("high")
 
     def _load_checkpoint(self, checkpoint_path: str) -> None:
         """
@@ -733,7 +755,7 @@ class SupervisedAlbertTrainer:
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        self.model.load_state_dict(checkpoint["model_state_dict"])
+        _unwrap_model(self.model).load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
         if "scheduler_state_dict" in checkpoint:
@@ -782,9 +804,12 @@ class SupervisedAlbertTrainer:
             optimizer_grouped_parameters,
             lr=self.training_config.learning_rate,
             eps=self.training_config.adam_epsilon,
+            fused=self.device.type == "cuda",
         )
 
-        total_steps = len(self.train_dataloader) * self.training_config.num_epochs
+        total_steps = (
+            len(self.train_dataloader) * self.training_config.num_epochs
+        ) // self.training_config.gradient_accumulation_steps
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=self.training_config.warmup_steps,
@@ -797,8 +822,10 @@ class SupervisedAlbertTrainer:
 
         Iterates over the training dataloader, computes combined loss
         (attention alignment + optional MLM), performs backward pass,
-        gradient clipping, optimizer step, and scheduler step. Logs total,
-        MLM, and attention losses at ``logging_steps`` intervals.
+        gradient clipping, optimizer step, and scheduler step. Supports
+        mixed precision (AMP), gradient accumulation, and
+        ``torch.compile``. Logs total, MLM, and attention losses at
+        ``logging_steps`` intervals.
 
         Args:
             epoch (int): The 1-indexed epoch number (for logging only).
@@ -808,46 +835,66 @@ class SupervisedAlbertTrainer:
             and ``"attention_loss"``, each the average across all batches.
         """
         self.model.train()
-        total_loss = 0.0
-        total_mlm_loss = 0.0
-        total_attention_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
+        total_mlm_loss = torch.zeros(1, device=self.device)
+        total_attention_loss = torch.zeros(1, device=self.device)
         num_batches = len(self.train_dataloader)
+        grad_accum = self.training_config.gradient_accumulation_steps
+        self.optimizer.zero_grad()
 
         for step, batch in enumerate(self.train_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"] if self.supervised_config.multitask else None,
-                attention_target=batch["attention_target"],
-                attention_loss_mask=batch["attention_loss_mask"],
-            )
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"]
+                    if self.supervised_config.multitask
+                    else None,
+                    attention_target=batch["attention_target"],
+                    attention_loss_mask=batch["attention_loss_mask"],
+                )
 
             loss = outputs["loss"]
-            loss.backward()
-            total_loss += loss.item()
-            step_loss = loss.item()
-            step_mlm_loss = 0.0
-            step_attention_loss = 0.0
+            loss = loss / grad_accum
 
+            if self.scaler is not None:
+                self.scaler.scale(loss).backward()
+            else:
+                loss.backward()
+
+            total_loss += loss.detach() * grad_accum
             if "mlm_loss" in outputs:
-                total_mlm_loss += outputs["mlm_loss"].item()
-                step_mlm_loss = outputs["mlm_loss"].item()
+                total_mlm_loss += outputs["mlm_loss"].detach()
             if "attention_loss" in outputs:
-                total_attention_loss += outputs["attention_loss"].item()
-                step_attention_loss = outputs["attention_loss"].item()
+                total_attention_loss += outputs["attention_loss"].detach()
 
-            torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(), self.training_config.max_grad_norm
-            )
+            if (step + 1) % grad_accum == 0 or step == num_batches - 1:
+                if self.scaler is not None:
+                    self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.training_config.max_grad_norm
+                )
 
-            self.optimizer.step()
-            self.scheduler.step()
-            self.optimizer.zero_grad()
+                if self.scaler is not None:
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    self.optimizer.step()
+
+                self.scheduler.step()
+                self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
+                step_loss = total_loss.item() / (step + 1)
+                step_mlm_loss = total_mlm_loss.item() / (step + 1)
+                step_attention_loss = total_attention_loss.item() / (step + 1)
                 lr = self.scheduler.get_last_lr()[0]
                 logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
@@ -856,9 +903,9 @@ class SupervisedAlbertTrainer:
                 )
 
         return {
-            "loss": total_loss / num_batches,
-            "mlm_loss": total_mlm_loss / num_batches,
-            "attention_loss": total_attention_loss / num_batches,
+            "loss": total_loss.item() / num_batches,
+            "mlm_loss": total_mlm_loss.item() / num_batches,
+            "attention_loss": total_attention_loss.item() / num_batches,
         }
 
     @torch.no_grad()
@@ -875,33 +922,40 @@ class SupervisedAlbertTrainer:
             return {"loss": 0.0, "mlm_loss": 0.0, "attention_loss": 0.0}
 
         self.model.eval()
-        total_loss = 0.0
-        total_mlm_loss = 0.0
-        total_attention_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
+        total_mlm_loss = torch.zeros(1, device=self.device)
+        total_attention_loss = torch.zeros(1, device=self.device)
 
         for batch in self.val_dataloader:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"] if self.supervised_config.multitask else None,
-                attention_target=batch["attention_target"],
-                attention_loss_mask=batch["attention_loss_mask"],
-            )
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"]
+                    if self.supervised_config.multitask
+                    else None,
+                    attention_target=batch["attention_target"],
+                    attention_loss_mask=batch["attention_loss_mask"],
+                )
 
-            total_loss += outputs["loss"].item()
+            total_loss += outputs["loss"].detach()
             if "mlm_loss" in outputs:
-                total_mlm_loss += outputs["mlm_loss"].item()
+                total_mlm_loss += outputs["mlm_loss"].detach()
             if "attention_loss" in outputs:
-                total_attention_loss += outputs["attention_loss"].item()
+                total_attention_loss += outputs["attention_loss"].detach()
 
         num_batches = len(self.val_dataloader)
         return {
-            "loss": total_loss / num_batches,
-            "mlm_loss": total_mlm_loss / num_batches,
-            "attention_loss": total_attention_loss / num_batches,
+            "loss": total_loss.item() / num_batches,
+            "mlm_loss": total_mlm_loss.item() / num_batches,
+            "attention_loss": total_attention_loss.item() / num_batches,
         }
 
     def train(self) -> None:
@@ -944,7 +998,7 @@ class SupervisedAlbertTrainer:
             torch.save(
                 {
                     "epoch": epoch,
-                    "model_state_dict": self.model.state_dict(),
+                    "model_state_dict": _unwrap_model(self.model).state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "scheduler_state_dict": self.scheduler.state_dict(),
                     "train_metrics": train_metrics,
@@ -955,7 +1009,7 @@ class SupervisedAlbertTrainer:
             )
 
             # Also save the base model for inference
-            self.model.base_model.save_pretrained(save_path)
+            _unwrap_model(self.model).base_model.save_pretrained(save_path)
             logger.info(f"Checkpoint saved to {save_path}")
 
             # Best-model saving and early stopping tracking
@@ -972,7 +1026,7 @@ class SupervisedAlbertTrainer:
                     torch.save(
                         {
                             "epoch": epoch,
-                            "model_state_dict": self.model.state_dict(),
+                            "model_state_dict": _unwrap_model(self.model).state_dict(),
                             "val_loss": val_loss,
                         },
                         best_path,
@@ -1273,6 +1327,7 @@ def main_supervised(
         prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
         worker_init_fn=seed_worker,
+        drop_last=True,
     )
     val_dataloader = DataLoader(
         val_dataset,

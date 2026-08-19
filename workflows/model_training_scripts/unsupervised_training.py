@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
 
+from loguru import logger
 from rdkit import RDLogger
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -129,6 +130,41 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to a .pt checkpoint file to resume training from.",
     )
+    parser.add_argument(
+        "--use-amp",
+        action="store_true",
+        help="Enable automatic mixed precision (AMP) for training.",
+    )
+    parser.add_argument(
+        "--amp-dtype",
+        type=str,
+        default="bfloat16",
+        choices=["float16", "bfloat16"],
+        help="Precision dtype for AMP. 'bfloat16' is recommended for Ampere+ GPUs (no GradScaler needed). 'float16' uses GradScaler.",
+    )
+    parser.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        default=1,
+        help="Number of micro-batches to accumulate before optimizer step.",
+    )
+    parser.add_argument(
+        "--compile-model",
+        action="store_true",
+        help="Wrap the model with torch.compile for potential speedup.",
+    )
+    parser.add_argument(
+        "--no-deterministic",
+        action="store_true",
+        help="Disable deterministic cuDNN behavior for potential speedup.",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="ERROR",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging level (default: ERROR).",
+    )
 
     return parser
 
@@ -213,6 +249,9 @@ def main_cli(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(argv)
 
+    logger.remove()
+    logger.add(sys.stderr, level=args.log_level)
+
     os.makedirs(args.save_dir, exist_ok=True)
 
     rxns = _read_and_canonicalize_rxns(
@@ -242,6 +281,11 @@ def main_cli(argv: Optional[Sequence[str]] = None) -> int:
         warmup_steps=args.warmup_steps,
         logging_steps=args.logging_steps,
         seed=args.seed,
+        use_amp=args.use_amp,
+        amp_dtype=args.amp_dtype,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        compile_model=args.compile_model,
+        deterministic=not args.no_deterministic,
     )
 
     if args.config:

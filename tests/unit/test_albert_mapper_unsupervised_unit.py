@@ -25,6 +25,7 @@ from model_training_scripts.albert_mapper_unuspervised_training import (
     _get_plausible_replacement,
     _parse_reaction_molecules,
     _select_graph_neighborhood,
+    _unwrap_model,
     apply_mlm_masking,
     apply_span_mlm_masking,
     build_albert_model,
@@ -516,6 +517,21 @@ class TestGetPlausibleReplacement:
         vocab = tokenizer.get_vocab()
         assert result in vocab.values()
 
+    def test_cached_vocab_matches_uncached(self, tokenizer):
+        """Passing a cached vocab dict produces the same result as calling get_vocab()."""
+        vocab = tokenizer.get_vocab()
+        # Test with a known atom token
+        result_cached = _get_plausible_replacement("C", tokenizer, vocab=vocab)
+        result_uncached = _get_plausible_replacement("C", tokenizer)
+        assert result_cached in vocab.values()
+        assert result_uncached in vocab.values()
+
+    def test_cached_vocab_unknown_token_returns_mask_id(self, tokenizer):
+        """Unknown token with cached vocab falls back to mask_token_id."""
+        vocab = tokenizer.get_vocab()
+        result = _get_plausible_replacement("not_a_real_token", tokenizer, vocab=vocab)
+        assert result == tokenizer.mask_token_id
+
 
 # ---------------------------------------------------------------------------
 # apply_span_mlm_masking
@@ -730,6 +746,57 @@ class TestMLMDataset:
         assert "original" in result
         assert "masked" in result
 
+    def test_decode_sample_span_mode_uses_span_masking(self, tokenizer):
+        """decode_sample uses span masking when masking_mode is 'span'."""
+        texts = ["CCO>>CCO"]
+        dataset = MLMDataset(
+            texts=texts,
+            tokenizer=tokenizer,
+            mlm_config=MLMConfig(),
+            max_length=64,
+            use_random_smiles=True,
+            use_canonical_smiles=False,
+            masking_mode="span",
+            span_mlm_config=SpanMLMConfig(),
+        )
+        with (
+            patch(
+                "model_training_scripts.albert_mapper_unuspervised_training.apply_span_mlm_masking"
+            ) as mock_span,
+            patch(
+                "model_training_scripts.albert_mapper_unuspervised_training.apply_mlm_masking"
+            ) as mock_random,
+        ):
+            mock_span.return_value = ([0], [-100])
+            dataset.decode_sample(0, print_output=False)
+            mock_span.assert_called_once()
+            mock_random.assert_not_called()
+
+    def test_decode_sample_random_mode_uses_random_masking(self, tokenizer):
+        """decode_sample uses random masking when masking_mode is 'random'."""
+        texts = ["CCO>>CCO"]
+        dataset = MLMDataset(
+            texts=texts,
+            tokenizer=tokenizer,
+            mlm_config=MLMConfig(),
+            max_length=64,
+            use_random_smiles=True,
+            use_canonical_smiles=False,
+            masking_mode="random",
+        )
+        with (
+            patch(
+                "model_training_scripts.albert_mapper_unuspervised_training.apply_span_mlm_masking"
+            ) as mock_span,
+            patch(
+                "model_training_scripts.albert_mapper_unuspervised_training.apply_mlm_masking"
+            ) as mock_random,
+        ):
+            mock_random.return_value = ([0], [-100])
+            dataset.decode_sample(0, print_output=False)
+            mock_random.assert_called_once()
+            mock_span.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # TrainingConfig
@@ -771,6 +838,62 @@ class TestTrainingConfig:
         """Negative early_stopping_min_delta raises ValueError."""
         with pytest.raises(ValueError, match="must be non-negative"):
             TrainingConfig(early_stopping_min_delta=-0.01)
+
+    def test_use_amp_default_false(self):
+        """use_amp defaults to False."""
+        assert TrainingConfig().use_amp is False
+
+    def test_amp_dtype_default_float16(self):
+        """amp_dtype defaults to bfloat16."""
+        assert TrainingConfig().amp_dtype == "bfloat16"
+
+    def test_amp_dtype_bf16(self):
+        """amp_dtype accepts bfloat16."""
+        config = TrainingConfig(amp_dtype="bfloat16")
+        assert config.amp_dtype == "bfloat16"
+
+    def test_amp_dtype_fp16(self):
+        """amp_dtype accepts float16."""
+        config = TrainingConfig(amp_dtype="float16")
+        assert config.amp_dtype == "float16"
+
+    def test_gradient_accumulation_steps_default_one(self):
+        """gradient_accumulation_steps defaults to 1."""
+        assert TrainingConfig().gradient_accumulation_steps == 1
+
+    def test_gradient_accumulation_steps_zero_rejected(self):
+        """gradient_accumulation_steps=0 raises ValueError."""
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            TrainingConfig(gradient_accumulation_steps=0)
+
+    def test_compile_model_default_false(self):
+        """compile_model defaults to False."""
+        assert TrainingConfig().compile_model is False
+
+    def test_deterministic_default_true(self):
+        """deterministic defaults to True."""
+        assert TrainingConfig().deterministic is True
+
+
+class TestUnwrapModel:
+    """Tests for _unwrap_model helper."""
+
+    def test_unwrap_non_compiled_returns_same(self):
+        """_unwrap_model returns the same module when not compiled."""
+        from torch import nn
+
+        model = nn.Linear(10, 10)
+        assert _unwrap_model(model) is model
+
+    def test_unwrap_compiled_returns_orig(self):
+        """_unwrap_model returns _orig_mod when the model is compiled."""
+        from torch import nn
+
+        original = nn.Linear(10, 10)
+        # Simulate the wrapper that torch.compile creates
+        compiled = type("FakeCompiled", (nn.Module,), {})()
+        compiled._orig_mod = original
+        assert _unwrap_model(compiled) is original
 
 
 # ---------------------------------------------------------------------------

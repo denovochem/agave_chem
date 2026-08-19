@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Optional, Sequence, Set
 
 import torch
+from loguru import logger
 from transformers import AlbertForMaskedLM
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -172,6 +173,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="auto",
         help='Device string for torch (e.g. "cpu", "cuda", "cuda:0", or "auto").',
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="ERROR",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging level (default: ERROR).",
+    )
 
     return parser
 
@@ -194,6 +202,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     parser = build_arg_parser()
     args = parser.parse_args(argv)
+
+    logger.remove()
+    logger.add(sys.stderr, level=args.log_level)
 
     layer_list = _parse_int_list(args.layers)
     if layer_list is None:

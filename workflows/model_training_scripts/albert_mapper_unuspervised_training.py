@@ -154,6 +154,23 @@ class TrainingConfig(BaseModel):
             before stopping. 0 disables early stopping.
         early_stopping_min_delta (float): Minimum validation loss improvement
             to count as an improvement.
+        use_amp (bool): If True, enable automatic mixed precision during
+            training and evaluation. Requires a CUDA device.
+        amp_dtype (Literal["float16", "bfloat16"]): Precision dtype for AMP.
+            ``"bfloat16"`` (default) is recommended for Ampere+ GPUs and does
+            not require gradient scaling; ``"float16"`` uses ``GradScaler``
+            for gradient unscaling. Only used when ``use_amp`` is True.
+        gradient_accumulation_steps (int): Number of micro-batches to
+            accumulate before performing an optimizer step. Effective batch
+            size is ``batch_size * gradient_accumulation_steps``. Must be >= 1.
+        compile_model (bool): If True, wrap the model with
+            ``torch.compile`` for potential graph-optimization speedups.
+            The compiled model is automatically unwrapped for checkpoint
+            save/load operations.
+        deterministic (bool): If True, enable deterministic cuDNN behavior
+            (``cudnn.deterministic = True``, ``cudnn.benchmark = False``).
+            If False, allow non-deterministic algorithms with
+            ``cudnn.benchmark = True`` for potential speedup.
     """
 
     learning_rate: float = 2e-4
@@ -169,6 +186,11 @@ class TrainingConfig(BaseModel):
     save_best_model: bool = True
     early_stopping_patience: int = 0
     early_stopping_min_delta: float = 0.0
+    use_amp: bool = False
+    amp_dtype: Literal["float16", "bfloat16"] = "bfloat16"
+    gradient_accumulation_steps: int = 1
+    compile_model: bool = False
+    deterministic: bool = True
 
     @field_validator(
         "learning_rate",
@@ -195,6 +217,13 @@ class TrainingConfig(BaseModel):
     def _non_negative_int(cls, v: int) -> int:
         if v < 0:
             raise ValueError("must be non-negative")
+        return v
+
+    @field_validator("gradient_accumulation_steps")
+    @classmethod
+    def _positive_int(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("must be a positive integer (>= 1)")
         return v
 
 
@@ -794,6 +823,7 @@ def _select_graph_neighborhood(
 def _get_plausible_replacement(
     token: str,
     tokenizer: PreTrainedTokenizer,
+    vocab: Dict[str, int] | None = None,
 ) -> int:
     """
     Return a chemically plausible replacement token ID for an atom token.
@@ -806,17 +836,22 @@ def _get_plausible_replacement(
            and charge / protonation variants.
         2. Otherwise, sample from all tokens that share the same atomic
            number (same element, different charge / stereo / H-count).
-        3. If neither yields a candidate, fall back to ``[MASK]``.
+        3. If neither yields a candidate, fall back to ``<mask>``.
 
     Args:
         token (str): The original atom token string.
         tokenizer (PreTrainedTokenizer): The tokenizer (used to
-            resolve token strings → IDs).
+            resolve token strings → IDs and for the ``mask_token_id``
+            fallback).
+        vocab (Dict[str, int] | None): Pre-cached vocabulary mapping.
+            If None, ``tokenizer.get_vocab()`` is called instead.
+            Passing a cached dict avoids repeated dict copies per call.
 
     Returns:
         int: The token ID of the replacement.
     """
-    vocab = tokenizer.get_vocab()
+    if vocab is None:
+        vocab = tokenizer.get_vocab()
 
     # Stage 1: bioisosteric substitution group
     group = _SUBSTITUTION_LOOKUP.get(token)
@@ -846,6 +881,7 @@ def apply_span_mlm_masking(
     span_mlm_config: SpanMLMConfig,
     reaction_smiles: str,
     special_token_ids: Set[int] | None = None,
+    vocab: Dict[str, int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
     Apply graph-aware span masking to a tokenized reaction SMILES.
@@ -871,6 +907,9 @@ def apply_span_mlm_masking(
             tokenizer preprocessing (e.g. ``"CCO.c1ccccc1>>c1ccccc1"``).
         special_token_ids (Set[int] | None): Token IDs that must never
             be masked. Defaults to the tokenizer's built-in special IDs.
+        vocab (Dict[str, int] | None): Pre-cached vocabulary mapping for
+            :func:`_get_plausible_replacement`. If None, the tokenizer's
+            ``get_vocab()`` is called instead.
 
     Returns:
         Tuple[List[int], List[int]]:
@@ -898,6 +937,10 @@ def apply_span_mlm_masking(
         np.random.binomial(len(atom_token_positions), span_mlm_config.mlm_probability),
     )
 
+    # --- Pre-compute span size weights (avoid re-zipping every iteration) ---
+    assert span_mlm_config.span_size_weights is not None
+    span_sizes, span_weights = zip(*span_mlm_config.span_size_weights.items())
+
     # --- Select spans until budget is filled ---
     selected_positions: Set[int] = set()
     max_attempts = num_to_mask * 3  # avoid infinite loops on tiny molecules
@@ -917,9 +960,7 @@ def apply_span_mlm_masking(
             selected_positions.add(seed_pos)
             continue
 
-        assert span_mlm_config.span_size_weights is not None
-        sizes, weights = zip(*span_mlm_config.span_size_weights.items())
-        span_size = random.choices(sizes, weights=weights, k=1)[0]
+        span_size = random.choices(span_sizes, weights=span_weights, k=1)[0]
         neighborhood = _select_graph_neighborhood(mol, atom_idx, span_size)
 
         for neighbor_atom_idx in neighborhood:
@@ -946,7 +987,9 @@ def apply_span_mlm_masking(
         ):
             # plausible_replace_prob %: replace with a chemically plausible token
             original_token = smiles_id_to_token_dict.get(original_token_id, "")
-            replacement_id = _get_plausible_replacement(original_token, tokenizer)
+            replacement_id = _get_plausible_replacement(
+                original_token, tokenizer, vocab=vocab
+            )
             masked_input_ids[pos] = replacement_id
         # else: keep_token_prob %: keep original token unchanged
 
@@ -1043,6 +1086,10 @@ class MLMDataset(Dataset):
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
         self.protected_token_ids = special_token_ids | protected_token_ids
 
+        # Cache the vocabulary once to avoid repeated dict copies in
+        # _get_plausible_replacement during span masking.
+        self._vocab_cache = tokenizer.get_vocab()
+
     def __len__(self) -> int:
         return len(self.texts)
 
@@ -1103,6 +1150,7 @@ class MLMDataset(Dataset):
                 span_mlm_config=self.span_mlm_config,
                 reaction_smiles=text,
                 special_token_ids=self.protected_token_ids,
+                vocab=self._vocab_cache,
             )
         else:
             masked_input_ids, labels = apply_mlm_masking(
@@ -1133,11 +1181,6 @@ class MLMDataset(Dataset):
             - diff:      Token-level diff showing original → masked for
                          each masked position.
 
-        Note:
-            This method always uses :func:`apply_mlm_masking` regardless of
-            ``self.masking_mode``, so the masking shown may differ from what
-            ``__getitem__`` produces when ``masking_mode`` is ``"span"``.
-
         Args:
             idx (int): The index of the sample to decode.
             print_output (bool): Whether to print the decoded output to
@@ -1159,13 +1202,22 @@ class MLMDataset(Dataset):
 
         input_ids = encoding["input_ids"]
 
-        # Apply masking with the same logic as __getitem__
-        masked_input_ids, labels = apply_mlm_masking(
-            input_ids=input_ids,
-            tokenizer=self.tokenizer,
-            mlm_config=self.mlm_config,
-            special_token_ids=self.protected_token_ids,
-        )
+        if self.masking_mode == "span":
+            masked_input_ids, labels = apply_span_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                span_mlm_config=self.span_mlm_config,
+                reaction_smiles=text,
+                special_token_ids=self.protected_token_ids,
+                vocab=self._vocab_cache,
+            )
+        else:
+            masked_input_ids, labels = apply_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                mlm_config=self.mlm_config,
+                special_token_ids=self.protected_token_ids,
+            )
 
         original_text = self.tokenizer.decode(input_ids, skip_special_tokens=True)
         masked_text = self.tokenizer.decode(masked_input_ids, skip_special_tokens=False)
@@ -1262,6 +1314,24 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
 # ============================================================
 
 
+def _unwrap_model(model: torch.nn.Module) -> torch.nn.Module:
+    """
+    Return the underlying module if wrapped by ``torch.compile``.
+
+    When ``torch.compile`` is used, the model is wrapped in an
+    ``OptimizedModule`` that stores the original under ``_orig_mod``.
+    This helper transparently unwraps it for state_dict / save_pretrained
+    operations. If the model is not compiled, it is returned as-is.
+
+    Args:
+        model (torch.nn.Module): Potentially compiled model.
+
+    Returns:
+        torch.nn.Module: The original (uncompiled) module.
+    """
+    return getattr(model, "_orig_mod", model)
+
+
 class AlbertTrainer:
     """
     Trainer for unsupervised ALBERT Masked Language Modeling pre-training.
@@ -1301,6 +1371,21 @@ class AlbertTrainer:
         )
         torch.nn.Module.to(self.model, self.device)
 
+        # Mixed precision setup
+        self.use_amp = training_config.use_amp and self.device.type == "cuda"
+        self.amp_dtype = (
+            torch.float16 if training_config.amp_dtype == "float16" else torch.bfloat16
+        )
+        if self.use_amp and self.amp_dtype == torch.float16:
+            self.scaler: Optional[torch.amp.GradScaler] = torch.amp.GradScaler("cuda")
+        else:
+            self.scaler = None
+
+        # torch.compile
+        if training_config.compile_model:
+            logger.info("Compiling model with torch.compile (first epoch may be slow)")
+            self.model = torch.compile(self.model)  # type: ignore[assignment]
+
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)
 
@@ -1315,8 +1400,8 @@ class AlbertTrainer:
         """
         Set random seeds across Python, NumPy, and PyTorch for reproducibility.
 
-        Also enables deterministic cuDNN behavior to ensure reproducible
-        results across runs with the same seed.
+        Also configures deterministic cuDNN behavior based on
+        ``training_config.deterministic``.
 
         Args:
             seed (int): The random seed to use.
@@ -1326,8 +1411,9 @@ class AlbertTrainer:
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = self.training_config.deterministic
+        torch.backends.cudnn.benchmark = not self.training_config.deterministic
+        torch.set_float32_matmul_precision("high")
 
     def _load_checkpoint(self, checkpoint_path: str) -> None:
         """
@@ -1344,7 +1430,7 @@ class AlbertTrainer:
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        self.model.load_state_dict(checkpoint["model_state_dict"])
+        _unwrap_model(self.model).load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
         if "scheduler_state_dict" in checkpoint:
@@ -1395,9 +1481,12 @@ class AlbertTrainer:
             optimizer_grouped_parameters,
             lr=self.training_config.learning_rate,
             eps=self.training_config.adam_epsilon,
+            fused=self.device.type == "cuda",
         )
 
-        total_steps = len(self.train_dataloader) * self.training_config.num_epochs
+        total_steps = (
+            len(self.train_dataloader) * self.training_config.num_epochs
+        ) // self.training_config.gradient_accumulation_steps
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=self.training_config.warmup_steps,
@@ -1410,7 +1499,9 @@ class AlbertTrainer:
 
         Iterates over the training dataloader, computes MLM loss, performs
         backward pass, gradient clipping, optimizer step, and scheduler
-        step. Logs loss and learning rate at ``logging_steps`` intervals.
+        step. Supports mixed precision (AMP), gradient accumulation, and
+        ``torch.compile``. Logs loss and learning rate at
+        ``logging_steps`` intervals.
 
         Args:
             epoch (int): The 1-indexed epoch number (for logging only).
@@ -1419,40 +1510,61 @@ class AlbertTrainer:
             float: The average MLM loss across all batches in the epoch.
         """
         self.model.train()
-        total_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
         num_batches = len(self.train_dataloader)
+        grad_accum = self.training_config.gradient_accumulation_steps
+        self.optimizer.zero_grad()
 
         for step, batch in enumerate(self.train_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"],
-            )
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"],
+                )
 
             loss = outputs.loss
-            loss.backward()
-            total_loss += loss.item()
+            loss = loss / grad_accum
 
-            torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(), self.training_config.max_grad_norm
-            )
+            if self.scaler is not None:
+                self.scaler.scale(loss).backward()
+            else:
+                loss.backward()
 
-            self.optimizer.step()
-            self.scheduler.step()
-            self.optimizer.zero_grad()
+            total_loss += loss.detach() * grad_accum
+
+            if (step + 1) % grad_accum == 0 or step == num_batches - 1:
+                if self.scaler is not None:
+                    self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.training_config.max_grad_norm
+                )
+
+                if self.scaler is not None:
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    self.optimizer.step()
+
+                self.scheduler.step()
+                self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                step_loss = loss.item()
+                step_loss = total_loss.item() / (step + 1)
                 lr = self.scheduler.get_last_lr()[0]
                 logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
                     f"| Loss: {step_loss:.4f} | LR: {lr:.2e}"
                 )
 
-        return total_loss / num_batches
+        return total_loss.item() / num_batches
 
     @torch.no_grad()
     def evaluate(self) -> float:
@@ -1467,20 +1579,25 @@ class AlbertTrainer:
             return 0.0
 
         self.model.eval()
-        total_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
 
         for batch in self.val_dataloader:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"],
-            )
-            total_loss += outputs.loss.item()
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"],
+                )
+            total_loss += outputs.loss.detach()
 
-        return total_loss / len(self.val_dataloader)
+        return total_loss.item() / len(self.val_dataloader)
 
     def train(self) -> None:
         """
@@ -1516,11 +1633,11 @@ class AlbertTrainer:
 
             save_path = f"{self.training_config.output_dir}/checkpoint-epoch-{epoch}"
 
-            self.model.save_pretrained(save_path)
+            _unwrap_model(self.model).save_pretrained(save_path)  # type: ignore[operator]
             torch.save(
                 {
                     "epoch": epoch,
-                    "model_state_dict": self.model.state_dict(),
+                    "model_state_dict": _unwrap_model(self.model).state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "scheduler_state_dict": self.scheduler.state_dict(),
                     "train_loss": train_loss,
@@ -1544,7 +1661,7 @@ class AlbertTrainer:
                     torch.save(
                         {
                             "epoch": epoch,
-                            "model_state_dict": self.model.state_dict(),
+                            "model_state_dict": _unwrap_model(self.model).state_dict(),
                             "val_loss": val_loss,
                         },
                         best_path,
@@ -1666,6 +1783,7 @@ def main(
         prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
         worker_init_fn=seed_worker,
+        drop_last=True,
     )
     val_dataloader = DataLoader(
         val_dataset,
