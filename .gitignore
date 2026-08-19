@@ -108,6 +108,7 @@
 !workflows/model_training_scripts/
 !workflows/model_training_scripts/albert_mapper_unuspervised_training.py
 !workflows/model_training_scripts/albert_mapper_supervised_training.py
+!workflows/model_training_scripts/attention_target_builder.py
 !workflows/model_training_scripts/unsupervised_training.py
 !workflows/model_training_scripts/supervised_training.py
 !workflows/model_training_scripts/layer_head_identification.py
@@ -144,3 +145,8 @@
 !tests/unit/test_cli_utils_unit.py
 
 
+!golden_seeded_random.pkl
+!golden_seeded_canonicalize.pkl
+!golden_seeded_tautomer.pkl
+!golden_canonical.pkl
+!verify_golden_datasets.py

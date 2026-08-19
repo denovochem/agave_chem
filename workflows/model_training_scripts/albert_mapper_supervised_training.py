@@ -1,5 +1,4 @@
 import random
-import re
 import sys
 import time
 from pathlib import Path
@@ -34,6 +33,14 @@ from model_training_scripts.albert_mapper_unuspervised_training import (
     build_albert_model,
     resolve_protected_token_ids,
 )
+from model_training_scripts.attention_target_builder import (
+    apply_attention_sink,
+    assign_temp_atom_maps,
+    augment_mapped_smiles,
+    build_index_attn_dict,
+    build_smoothed_attn_target,
+    classify_tokens,
+)
 from model_training_scripts.cli_utils import seed_worker
 
 from agave_chem.mappers.neural.constants import (
@@ -46,8 +53,6 @@ from agave_chem.mappers.neural.model import (
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
 from agave_chem.utils.chem_utils import (
-    canonicalize_reaction_smiles,
-    randomize_reaction_smiles,
     remove_reaction_smiles_atom_mapping,
 )
 
@@ -223,65 +228,19 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     if token_atom_identity_dict is None:
         token_atom_identity_dict = {}
 
-    all_product_atoms_mapped = True
-    seen_product_atom_nums_unmapped = []
-    product_str = mapped_rxn_smiles.split(">>")[1]
-    product_mol = Chem.MolFromSmiles(product_str)
-    unmapped_product_atom_map_num = 800
-    for atom in product_mol.GetAtoms():
-        if atom.GetAtomMapNum() == 0:
-            all_product_atoms_mapped = False
-            atom.SetAtomMapNum(unmapped_product_atom_map_num)
-            unmapped_product_atom_map_num += 1
-            seen_product_atom_nums_unmapped.append(atom.GetAtomicNum())
+    # Phase 1: Assign temporary atom maps and compute symmetry
+    temp = assign_temp_atom_maps(mapped_rxn_smiles)
 
-    atom_map_nums_to_sink_atomic_num_not_in_product = []
-    reactant_str = mapped_rxn_smiles.split(">>")[0]
-    reactant_mol = Chem.MolFromSmiles(reactant_str)
-    unmapped_reactant_atom_map_num = 600
-    for atom in reactant_mol.GetAtoms():
-        if atom.GetAtomMapNum() == 0:
-            atom.SetAtomMapNum(unmapped_reactant_atom_map_num)
-            if atom.GetAtomicNum() not in seen_product_atom_nums_unmapped:
-                atom_map_nums_to_sink_atomic_num_not_in_product.append(
-                    unmapped_reactant_atom_map_num
-                )
-            unmapped_reactant_atom_map_num += 1
-
-    reactant_symmetry_groups = group_mappings_by_symmetry(reactant_mol)
-    product_symmetry_groups = group_mappings_by_symmetry(product_mol)
-
-    symmetric_atom_token_indices_to_not_sink = []
-    for reactant_symmetry_group in reactant_symmetry_groups:
-        if any(x < 600 for x in reactant_symmetry_group):
-            symmetric_atom_token_indices_to_not_sink.extend(reactant_symmetry_group)
-
-    new_mapped_rxn_smiles = (
-        Chem.MolToSmiles(reactant_mol) + ">>" + Chem.MolToSmiles(product_mol)
+    # Phase 2: Augment (randomize / canonicalize) the mapped SMILES
+    new_mapped_rxn_smiles = augment_mapped_smiles(
+        temp.new_mapped_rxn_smiles,
+        randomize_mapped_rxn_smiles=randomize_mapped_rxn_smiles,
+        randomize_tautomer_pct=randomize_tautomer_pct,
+        canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+        seed=seed,
     )
 
-    if randomize_mapped_rxn_smiles:
-        rng = random.Random(seed) if seed is not None else random
-        if rng.random() > canonicalize_mapped_rxn_smiles_pct:
-            if rng.random() > randomize_tautomer_pct:
-                new_mapped_rxn_smiles = randomize_reaction_smiles(
-                    new_mapped_rxn_smiles,
-                    remove_mapping=False,
-                    randomize_tautomer=False,
-                    seed=seed,
-                )
-            else:
-                new_mapped_rxn_smiles = randomize_reaction_smiles(
-                    new_mapped_rxn_smiles,
-                    remove_mapping=False,
-                    randomize_tautomer=True,
-                    seed=seed,
-                )
-        else:
-            new_mapped_rxn_smiles = canonicalize_reaction_smiles(
-                new_mapped_rxn_smiles, remove_mapping=False, canonicalize_tautomer=True
-            )
-
+    # Phase 3: Tokenize
     tokens = tokenizer.preprocess_sentence_reaction_smiles(
         new_mapped_rxn_smiles
     ).split()
@@ -292,145 +251,45 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
         unmapped_rxn_smiles
     ).split()
 
-    pattern = r":(\d+)\]$"
-    matching_tokens_dict: dict[str, list[int]] = {}
-    token_index_to_mapnum: dict[int, int] = {}
+    # Phase 4: Classify tokens and build matching dict
+    classified = classify_tokens(
+        tokens=tokens,
+        unmapped_tokens=unmapped_tokens,
+        token_atom_identity_dict=token_atom_identity_dict,
+        symmetric_atom_token_indices_to_not_sink=temp.symmetric_atom_token_indices_to_not_sink,
+        all_product_atoms_mapped=temp.all_product_atoms_mapped,
+        atom_map_nums_to_sink_atomic_num_not_in_product=temp.atom_map_nums_to_sink_atomic_num_not_in_product,
+    )
 
-    non_atom_token_indices = []
-    atom_token_indices_to_sink = []
-    for i, [token, unmapped_token] in enumerate(zip(tokens, unmapped_tokens)):
-        if token_atom_identity_dict.get(unmapped_token) == 0 and unmapped_token not in [
-            "^",
-            "$",
-        ]:
-            non_atom_token_indices.append(i)
-        m = re.search(pattern, token)
-        if not m:
-            continue
-        key = m.group()  # e.g. ":12]"
-        matching_tokens_dict.setdefault(key, []).append(i)
-        mapnum = int(m.group()[1:-1])
-        token_index_to_mapnum[i] = mapnum
-        if (
-            mapnum >= 600
-            and mapnum <= 800
-            and mapnum not in symmetric_atom_token_indices_to_not_sink
-            and all_product_atoms_mapped
-        ) or (
-            mapnum in atom_map_nums_to_sink_atomic_num_not_in_product
-            and mapnum not in symmetric_atom_token_indices_to_not_sink
-        ):
-            atom_token_indices_to_sink.append(i)
-
-    # keep only map nums that appear exactly twice (once reactant, once product)
-    matching_tokens_dict = {
-        k: v for k, v in matching_tokens_dict.items() if len(v) == 2
-    }
-
-    index_attn_dict: dict[int, int] = {}
-    for a, b in matching_tokens_dict.values():
-        # if duplicates occur, skip them (mirrors your neural_mapper behavior)
-        if a in index_attn_dict or b in index_attn_dict:
-            continue
-        index_attn_dict[a] = b
-        index_attn_dict[b] = a
+    # Phase 5: Build bidirectional attention index mapping
+    index_attn_dict = build_index_attn_dict(classified.matching_tokens_dict)
 
     n = len(tokens)
-    attn_target = np.zeros((n, n), dtype=np.float32)
 
+    # Phase 6: Build attention target matrix
     if smooth_symmetric_targets:
-        arrow_index = tokens.index(">>")
-
-        reactant_sym_lookup: Dict[int, List[int]] = {}
-        for group in reactant_symmetry_groups:
-            for mn in group:
-                reactant_sym_lookup[mn] = group
-
-        product_sym_lookup: Dict[int, List[int]] = {}
-        for group in product_symmetry_groups:
-            for mn in group:
-                product_sym_lookup[mn] = group
-
-        # Map numbers for ALL atom tokens, split by side
-        mapnum_to_reactant_token: dict[int, int] = {}
-        mapnum_to_product_token: dict[int, int] = {}
-        for idx, mn in token_index_to_mapnum.items():
-            if idx < arrow_index:
-                mapnum_to_reactant_token[mn] = idx
-            else:
-                mapnum_to_product_token[mn] = idx
-
-        # Give unmapped symmetric atoms the same target as their matched counterpart
-        for group in reactant_symmetry_groups:
-            ref_dst = None
-            for mn in group:
-                tok = mapnum_to_reactant_token.get(mn)
-                if tok is not None and tok in index_attn_dict:
-                    ref_dst = index_attn_dict[tok]
-                    break
-            if ref_dst is None:
-                continue
-            for mn in group:
-                tok = mapnum_to_reactant_token.get(mn)
-                if tok is not None and tok not in index_attn_dict:
-                    index_attn_dict[tok] = ref_dst
-
-        for group in product_symmetry_groups:
-            ref_dst = None
-            for mn in group:
-                tok = mapnum_to_product_token.get(mn)
-                if tok is not None and tok in index_attn_dict:
-                    ref_dst = index_attn_dict[tok]
-                    break
-            if ref_dst is None:
-                continue
-            for mn in group:
-                tok = mapnum_to_product_token.get(mn)
-                if tok is not None and tok not in index_attn_dict:
-                    index_attn_dict[tok] = ref_dst
-
-        for src, dst in index_attn_dict.items():
-            dst_mapnum = token_index_to_mapnum.get(dst)
-            if dst_mapnum is None:
-                attn_target[src, dst] = 1.0
-                continue
-
-            if src < arrow_index:
-                # Reactant row: spread over symmetric product atoms
-                sym_group = product_sym_lookup.get(dst_mapnum, [dst_mapnum])
-                sym_indices = [
-                    mapnum_to_product_token[m]
-                    for m in sym_group
-                    if m in mapnum_to_product_token
-                ]
-            else:
-                # Product row: spread over symmetric reactant atoms
-                sym_group = reactant_sym_lookup.get(dst_mapnum, [dst_mapnum])
-                sym_indices = [
-                    mapnum_to_reactant_token[m]
-                    for m in sym_group
-                    if m in mapnum_to_reactant_token
-                ]
-
-            if not sym_indices:
-                sym_indices = [dst]
-            weight = 1.0 / len(sym_indices)
-            for sym_idx in sym_indices:
-                attn_target[src, sym_idx] = weight
+        attn_target = build_smoothed_attn_target(
+            index_attn_dict=index_attn_dict,
+            token_index_to_mapnum=classified.token_index_to_mapnum,
+            tokens=tokens,
+            reactant_symmetry_groups=temp.reactant_symmetry_groups,
+            product_symmetry_groups=temp.product_symmetry_groups,
+            n=n,
+        )
     else:
+        attn_target = np.zeros((n, n), dtype=np.float32)
         for src, dst in index_attn_dict.items():
             attn_target[src, dst] = 1.0
 
+    # Phase 7: Apply attention sink for non-atom and unmapped tokens
     if not attn_sink_non_mapped_atoms:
         return attn_target, unmapped_rxn_smiles
 
-    for i, row in enumerate(attn_target):
-        if i in non_atom_token_indices:
-            row[-1] = 1
-            continue
-        if i in atom_token_indices_to_sink:
-            row[-1] = 1
-            continue
+    attn_target = apply_attention_sink(
+        attn_target=attn_target,
+        non_atom_token_indices=classified.non_atom_token_indices,
+        atom_token_indices_to_sink=classified.atom_token_indices_to_sink,
+    )
 
     return attn_target, unmapped_rxn_smiles
 
