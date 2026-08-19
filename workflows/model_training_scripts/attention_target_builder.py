@@ -34,6 +34,50 @@ from agave_chem.utils.chem_utils import (
 )
 
 # ============================================================
+# Symmetry grouping
+# ============================================================
+
+
+def group_mappings_by_symmetry(mol: Chem.Mol) -> List[List[int]]:
+    """
+    Group atom map numbers by molecular symmetry using RDKit canonical ranking.
+
+    Creates a copy of the molecule, clears all atom map numbers, then uses
+    ``Chem.CanonicalRankAtoms`` with ``breakTies=False`` to identify atoms
+    that are symmetry-equivalent. Returns groups of atom map numbers (from
+    the original molecule) that belong to the same symmetry class.
+
+    Args:
+        mol (Chem.Mol): An RDKit molecule with atom map numbers set.
+
+    Returns:
+        List[List[int]]: A list of symmetry groups, where each group is a
+            list of atom map numbers. Only groups with more than one member
+            are included.
+    """
+    mol_copy = Chem.Mol(mol)
+    idx_to_mapnum_dict: Dict[int, int] = {
+        atom.GetIdx(): atom.GetAtomMapNum() for atom in mol_copy.GetAtoms()
+    }
+    for atom in mol_copy.GetAtoms():
+        atom.SetAtomMapNum(0)
+
+    groups = Chem.CanonicalRankAtoms(mol_copy, breakTies=False)
+    group_symmetry_membership: Dict[int, List[int]] = {}
+    for atom, group in zip(mol_copy.GetAtoms(), groups):
+        if group not in group_symmetry_membership:
+            group_symmetry_membership[group] = [idx_to_mapnum_dict[atom.GetIdx()]]
+        else:
+            group_symmetry_membership[group].append(idx_to_mapnum_dict[atom.GetIdx()])
+
+    symmetric_atom_groups: List[List[int]] = []
+    for v in group_symmetry_membership.values():
+        if len(v) > 1:
+            symmetric_atom_groups.append(v)
+    return symmetric_atom_groups
+
+
+# ============================================================
 # Data classes for structured returns
 # ============================================================
 
@@ -116,10 +160,11 @@ def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
             symmetry groups, sink classification data, and the re-serialized
             mapped reaction SMILES.
     """
+    reactant_str, product_str = mapped_rxn_smiles.split(">>")
+    product_mol = Chem.MolFromSmiles(product_str)
+
     all_product_atoms_mapped = True
     seen_product_atom_nums_unmapped: List[int] = []
-    product_str = mapped_rxn_smiles.split(">>")[1]
-    product_mol = Chem.MolFromSmiles(product_str)
     unmapped_product_atom_map_num = 800
     for atom in product_mol.GetAtoms():
         if atom.GetAtomMapNum() == 0:
@@ -129,7 +174,6 @@ def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
             seen_product_atom_nums_unmapped.append(atom.GetAtomicNum())
 
     atom_map_nums_to_sink_atomic_num_not_in_product: List[int] = []
-    reactant_str = mapped_rxn_smiles.split(">>")[0]
     reactant_mol = Chem.MolFromSmiles(reactant_str)
     unmapped_reactant_atom_map_num = 600
     for atom in reactant_mol.GetAtoms():
@@ -140,10 +184,6 @@ def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
                     unmapped_reactant_atom_map_num
                 )
             unmapped_reactant_atom_map_num += 1
-
-    from model_training_scripts.albert_mapper_supervised_training import (
-        group_mappings_by_symmetry,
-    )
 
     reactant_symmetry_groups = group_mappings_by_symmetry(reactant_mol)
     product_symmetry_groups = group_mappings_by_symmetry(product_mol)
@@ -230,7 +270,7 @@ def augment_mapped_smiles(
 # Phase 3: Classify tokens
 # ============================================================
 
-_PATTERN = r":(\d+)\]$"
+_PATTERN = re.compile(r":(\d+)\]$")
 
 
 def classify_tokens(
@@ -278,13 +318,16 @@ def classify_tokens(
     non_atom_token_indices: List[int] = []
     atom_token_indices_to_sink: List[int] = []
 
+    sym_not_sink_set = set(symmetric_atom_token_indices_to_not_sink)
+    sink_mapnum_set = set(atom_map_nums_to_sink_atomic_num_not_in_product)
+
     for i, [token, unmapped_token] in enumerate(zip(tokens, unmapped_tokens)):
         if token_atom_identity_dict.get(unmapped_token) == 0 and unmapped_token not in [
             "^",
             "$",
         ]:
             non_atom_token_indices.append(i)
-        m = re.search(_PATTERN, token)
+        m = _PATTERN.search(token)
         if not m:
             continue
         key = m.group()  # e.g. ":12]"
@@ -294,12 +337,9 @@ def classify_tokens(
         if (
             mapnum >= 600
             and mapnum <= 800
-            and mapnum not in symmetric_atom_token_indices_to_not_sink
+            and mapnum not in sym_not_sink_set
             and all_product_atoms_mapped
-        ) or (
-            mapnum in atom_map_nums_to_sink_atomic_num_not_in_product
-            and mapnum not in symmetric_atom_token_indices_to_not_sink
-        ):
+        ) or (mapnum in sink_mapnum_set and mapnum not in sym_not_sink_set):
             atom_token_indices_to_sink.append(i)
 
     # keep only map nums that appear exactly twice (once reactant, once product)
@@ -497,11 +537,7 @@ def apply_attention_sink(
     Returns:
         np.ndarray: The same ``attn_target`` matrix, modified in place.
     """
-    for i, row in enumerate(attn_target):
-        if i in non_atom_token_indices:
-            row[-1] = 1
-            continue
-        if i in atom_token_indices_to_sink:
-            row[-1] = 1
-            continue
+    sink_indices = non_atom_token_indices + atom_token_indices_to_sink
+    if sink_indices:
+        attn_target[sink_indices, -1] = 1
     return attn_target

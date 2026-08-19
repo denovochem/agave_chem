@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Set, Tuple
 import numpy as np
 import torch
 from loguru import logger
-from rdkit import Chem
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
@@ -40,6 +39,7 @@ from model_training_scripts.attention_target_builder import (
     build_index_attn_dict,
     build_smoothed_attn_target,
     classify_tokens,
+    group_mappings_by_symmetry,
 )
 from model_training_scripts.cli_utils import seed_worker
 
@@ -59,45 +59,6 @@ from agave_chem.utils.chem_utils import (
 # ============================================================
 # Supervised Utils
 # ============================================================
-
-
-def group_mappings_by_symmetry(mol: Chem.Mol) -> List[List[int]]:
-    """
-    Group atom map numbers by molecular symmetry using RDKit canonical ranking.
-
-    Creates a copy of the molecule, clears all atom map numbers, then uses
-    ``Chem.CanonicalRankAtoms`` with ``breakTies=False`` to identify atoms
-    that are symmetry-equivalent. Returns groups of atom map numbers (from
-    the original molecule) that belong to the same symmetry class.
-
-    Args:
-        mol (Chem.Mol): An RDKit molecule with atom map numbers set.
-
-    Returns:
-        List[List[int]]: A list of symmetry groups, where each group is a
-        list of atom map numbers. Only groups with more than one member
-        are included.
-    """
-    mol_copy = Chem.Mol(mol)
-    idx_to_mapnum_dict: Dict[int, int] = {
-        atom.GetIdx(): atom.GetAtomMapNum() for atom in mol_copy.GetAtoms()
-    }
-    for atom in mol_copy.GetAtoms():
-        atom.SetAtomMapNum(0)
-
-    groups = Chem.CanonicalRankAtoms(mol_copy, breakTies=False)
-    group_symmetry_membership: Dict[int, List[int]] = {}
-    for atom, group in zip(mol_copy.GetAtoms(), groups):
-        if group not in group_symmetry_membership:
-            group_symmetry_membership[group] = [idx_to_mapnum_dict[atom.GetIdx()]]
-        else:
-            group_symmetry_membership[group].append(idx_to_mapnum_dict[atom.GetIdx()])
-
-    symmetric_atom_groups: List[List[int]] = []
-    for v in group_symmetry_membership.values():
-        if len(v) > 1:
-            symmetric_atom_groups.append(v)
-    return symmetric_atom_groups
 
 
 def build_attention_target_from_mapped_rxn_smiles(
