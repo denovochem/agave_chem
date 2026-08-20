@@ -58,11 +58,13 @@ def _benchmark_one(
     gold_reactions: list[str],
     unmapped: list[str],
     output_prefix: str | None,
+    dump_errors: bool = False,
 ) -> dict:
     mapper = _build_mapper(mapper_name)
     label = _MAPPER_LABELS[mapper_name]
 
     mapped_results = []
+    error_records: list[str] = []
     correct = 0
     failed = 0
     incorrect = 0
@@ -82,10 +84,12 @@ def _benchmark_one(
         mapped_results.append(pred_rxn if pred_rxn else "")
         if not pred_rxn:
             failed += 1
+            error_records.append(f"{i}\tFAILED\t{rxn}\t{gold}\t")
         elif mappings_equivalent(gold, pred_rxn):
             correct += 1
         else:
             incorrect += 1
+            error_records.append(f"{i}\tINCORRECT\t{rxn}\t{gold}\t{pred_rxn}")
 
         if (i + 1) % log_interval == 0:
             elapsed = time.time() - total_start
@@ -115,6 +119,15 @@ def _benchmark_one(
         out_path.write_text("\n".join(mapped_results) + "\n")
         print(f"Mapped reactions saved to {out_path}")
 
+    if dump_errors and error_records:
+        err_path = Path(f"{output_prefix or 'benchmark'}_{mapper_name}_errors.tsv")
+        err_path.write_text(
+            "index\tstatus\tunmapped\tgold\tpredicted\n"
+            + "\n".join(error_records)
+            + "\n"
+        )
+        print(f"Error details saved to {err_path}")
+
     return summary
 
 
@@ -122,6 +135,7 @@ def _benchmark_pipeline(
     gold_reactions: list[str],
     unmapped: list[str],
     output_prefix: str | None,
+    dump_errors: bool = False,
 ) -> dict:
     """
     Benchmark the full agave_chem map_reactions pipeline.
@@ -143,6 +157,7 @@ def _benchmark_pipeline(
     label = _MAPPER_LABELS["pipeline"]
 
     mapped_results: list[str] = []
+    error_records: list[str] = []
     correct = 0
     failed = 0
     incorrect = 0
@@ -162,14 +177,21 @@ def _benchmark_pipeline(
             results = []
 
         for i, (result, gold) in enumerate(zip(results, batch_gold)):
+            global_idx = batch_start + i
             pred_rxn = result.final_mapping
             mapped_results.append(pred_rxn if pred_rxn else "")
             if not pred_rxn:
                 failed += 1
+                error_records.append(
+                    f"{global_idx}\tFAILED\t{unmapped[global_idx]}\t{gold}\t"
+                )
             elif mappings_equivalent(gold, pred_rxn):
                 correct += 1
             else:
                 incorrect += 1
+                error_records.append(
+                    f"{global_idx}\tINCORRECT\t{unmapped[global_idx]}\t{gold}\t{pred_rxn}"
+                )
 
         done = min(batch_start + batch_size, len(unmapped))
         elapsed = time.time() - total_start
@@ -198,6 +220,15 @@ def _benchmark_pipeline(
         out_path = Path(f"{output_prefix}_pipeline.txt")
         out_path.write_text("\n".join(mapped_results) + "\n")
         print(f"Mapped reactions saved to {out_path}")
+
+    if dump_errors and error_records:
+        err_path = Path(f"{output_prefix or 'benchmark'}_pipeline_errors.tsv")
+        err_path.write_text(
+            "index\tstatus\tunmapped\tgold\tpredicted\n"
+            + "\n".join(error_records)
+            + "\n"
+        )
+        print(f"Error details saved to {err_path}")
 
     return summary
 
@@ -229,6 +260,11 @@ def main() -> None:
     parser.add_argument(
         "--limit", type=int, default=None, help="Max reactions to process"
     )
+    parser.add_argument(
+        "--dump-errors",
+        action="store_true",
+        help="Write incorrect/failed reactions to a TSV file",
+    )
     args = parser.parse_args()
 
     gold_reactions = Path(args.gold_reactions).read_text().splitlines()
@@ -245,6 +281,7 @@ def main() -> None:
                 gold_reactions=gold_reactions,
                 unmapped=unmapped,
                 output_prefix=args.output_prefix,
+                dump_errors=args.dump_errors,
             )
         else:
             summary = _benchmark_one(
@@ -252,6 +289,7 @@ def main() -> None:
                 gold_reactions=gold_reactions,
                 unmapped=unmapped,
                 output_prefix=args.output_prefix,
+                dump_errors=args.dump_errors,
             )
         all_summaries.append(summary)
 

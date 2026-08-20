@@ -199,7 +199,7 @@ print(result["selected_mapping"])
 - `mapper_weight` (`float`) — priority weight in a multi-mapper pipeline (default: `3`)
 - `checkpoint_path` (`Optional[str]`) — path to a custom model checkpoint directory; defaults to the bundled pre-trained model
 - `use_supervised` (`bool`) — whether to use the supervised (fine-tuned) model head (default: `True`)
-- `sequence_max_length` (`int`) — maximum token sequence length (default: `512`)
+- `sequence_max_length` (`int`) — maximum token sequence length (default: `1024`)
 
 ### Mapping a batch
 

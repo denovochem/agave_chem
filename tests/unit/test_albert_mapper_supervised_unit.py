@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import torch
 from rdkit import Chem
 
 # Ensure the workflows directory is importable
@@ -465,7 +466,7 @@ class TestSupervisedAtomMappingDataset:
         assert len(dataset) == len(texts)
 
     def test_getitem_returns_dict_with_required_keys(self, tokenizer):
-        """__getitem__ returns dict with required tensor keys."""
+        """__getitem__ returns dict with mlm_* and align_* namespaced keys."""
         texts = ["[C:1]>>[C:1]"]
         dataset = SupervisedAtomMappingDataset(
             texts=texts,
@@ -475,12 +476,17 @@ class TestSupervisedAtomMappingDataset:
             use_random_smiles=False,
         )
         sample = dataset[0]
-        assert "input_ids" in sample
-        assert "attention_mask" in sample
-        assert "token_type_ids" in sample
-        assert "labels" in sample
-        assert "attention_target" in sample
-        assert "attention_loss_mask" in sample
+        # MLM view keys
+        assert "mlm_input_ids" in sample
+        assert "mlm_attention_mask" in sample
+        assert "mlm_token_type_ids" in sample
+        assert "mlm_labels" in sample
+        # Alignment view keys
+        assert "align_input_ids" in sample
+        assert "align_attention_mask" in sample
+        assert "align_token_type_ids" in sample
+        assert "align_attention_target" in sample
+        assert "align_attention_loss_mask" in sample
 
     def test_getitem_tensor_shapes(self, tokenizer):
         """All returned tensors have correct shapes."""
@@ -494,10 +500,17 @@ class TestSupervisedAtomMappingDataset:
             use_random_smiles=False,
         )
         sample = dataset[0]
-        for key in ["input_ids", "attention_mask", "token_type_ids", "labels"]:
+        for key in [
+            "mlm_input_ids",
+            "mlm_attention_mask",
+            "mlm_token_type_ids",
+            "mlm_labels",
+        ]:
             assert sample[key].shape == (max_length,)
-        assert sample["attention_target"].shape == (max_length, max_length)
-        assert sample["attention_loss_mask"].shape == (max_length,)
+        for key in ["align_input_ids", "align_attention_mask", "align_token_type_ids"]:
+            assert sample[key].shape == (max_length,)
+        assert sample["align_attention_target"].shape == (max_length, max_length)
+        assert sample["align_attention_loss_mask"].shape == (max_length,)
 
     def test_invalid_masking_mode_raises(self, tokenizer):
         """Invalid masking_mode raises ValueError."""
@@ -520,22 +533,62 @@ class TestSupervisedAtomMappingDataset:
         )
         assert len(dataset) == 0
 
-    def test_no_mlm_masking(self, tokenizer):
-        """With use_mlm_masking=False, labels are all -100."""
-        texts = ["[C:1]>>[C:1]"]
+    def test_mlm_view_has_masked_tokens(self, tokenizer):
+        """MLM view input_ids differ from alignment view (masking was applied)."""
+        texts = ["[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"]
         dataset = SupervisedAtomMappingDataset(
             texts=texts,
             tokenizer=tokenizer,
-            mlm_config=MLMConfig(),
-            max_length=32,
+            mlm_config=MLMConfig(mlm_probability=0.5),
+            max_length=64,
             use_random_smiles=False,
-            use_mlm_masking=False,
+        )
+        # Run multiple times since masking is stochastic
+        found_difference = False
+        for _ in range(20):
+            sample = dataset[0]
+            if not torch.equal(sample["mlm_input_ids"], sample["align_input_ids"]):
+                found_difference = True
+                break
+        assert found_difference, (
+            "MLM view should sometimes differ from align view due to masking"
+        )
+
+    def test_align_view_no_masked_tokens(self, tokenizer):
+        """Alignment view input_ids contain no mask tokens."""
+        mask_token_id = tokenizer.mask_token_id
+
+        texts = ["[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"]
+        dataset = SupervisedAtomMappingDataset(
+            texts=texts,
+            tokenizer=tokenizer,
+            mlm_config=MLMConfig(mlm_probability=0.5),
+            max_length=64,
+            use_random_smiles=False,
         )
         sample = dataset[0]
-        assert (sample["labels"] == -100).all()
+        assert mask_token_id not in sample["align_input_ids"].tolist()
+
+    def test_mlm_labels_not_all_negative(self, tokenizer):
+        """MLM labels have at least some non-(-100) values (masking occurred)."""
+        texts = ["[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"]
+        dataset = SupervisedAtomMappingDataset(
+            texts=texts,
+            tokenizer=tokenizer,
+            mlm_config=MLMConfig(mlm_probability=0.5),
+            max_length=64,
+            use_random_smiles=False,
+        )
+        found_non_negative = False
+        for _ in range(20):
+            sample = dataset[0]
+            if (sample["mlm_labels"] != -100).any():
+                found_non_negative = True
+                break
+        assert found_non_negative, "MLM labels should sometimes have non-(-100) values"
 
     def test_attention_loss_mask_binary(self, tokenizer):
-        """attention_loss_mask contains only 0s and 1s."""
+        """align_attention_loss_mask contains only 0s and 1s."""
         texts = ["[C:1]>>[C:1]"]
         dataset = SupervisedAtomMappingDataset(
             texts=texts,
@@ -545,7 +598,7 @@ class TestSupervisedAtomMappingDataset:
             use_random_smiles=False,
         )
         sample = dataset[0]
-        unique_vals = set(sample["attention_loss_mask"].unique().tolist())
+        unique_vals = set(sample["align_attention_loss_mask"].unique().tolist())
         assert unique_vals.issubset({0.0, 1.0})
 
     def test_getitem_with_invalid_reaction_retries(self, tokenizer):
@@ -563,7 +616,8 @@ class TestSupervisedAtomMappingDataset:
             return_value=1,
         ):
             sample = dataset[0]
-        assert "input_ids" in sample
+        assert "mlm_input_ids" in sample
+        assert "align_input_ids" in sample
 
 
 # ---------------------------------------------------------------------------

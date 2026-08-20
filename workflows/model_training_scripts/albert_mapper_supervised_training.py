@@ -129,6 +129,54 @@ def build_attention_target_from_mapped_rxn_smiles(
         return None
 
 
+def _randomize_and_unmap_rxn_smiles(
+    mapped_rxn_smiles: str,
+    randomize_mapped_rxn_smiles: bool = True,
+    randomize_tautomer_pct: float = 0.10,
+    canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    seed: Optional[int] = None,
+) -> Optional[str]:
+    """
+    Randomize a mapped reaction SMILES and return the unmapped version.
+
+    Lightweight alternative to ``build_attention_target_from_mapped_rxn_smiles``
+    that performs only SMILES augmentation and atom-map removal, skipping the
+    expensive attention target construction (token classification, symmetry
+    smoothing, matrix building). Intended for the MLM view where only the
+    unmapped text is needed.
+
+    Args:
+        mapped_rxn_smiles (str): Atom-mapped reaction SMILES.
+        randomize_mapped_rxn_smiles (bool): If True, apply random SMILES
+            augmentation to the mapped reaction.
+        randomize_tautomer_pct (float): Probability of tautomer randomization
+            during SMILES augmentation.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalization during augmentation.
+        seed (Optional[int]): If provided, seeds ``random`` before the
+            augmentation block for deterministic output.
+
+    Returns:
+        Optional[str]: The unmapped reaction SMILES with atom mapping removed,
+        or ``None`` if processing fails.
+    """
+    try:
+        new_mapped_rxn_smiles = augment_mapped_smiles(
+            mapped_rxn_smiles,
+            randomize_mapped_rxn_smiles=randomize_mapped_rxn_smiles,
+            randomize_tautomer_pct=randomize_tautomer_pct,
+            canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+            seed=seed,
+        )
+        return remove_reaction_smiles_atom_mapping(new_mapped_rxn_smiles)
+    except Exception as e:
+        logger.warning(
+            f"Failed to randomize/unmap: "
+            f"{mapped_rxn_smiles[:100]}... | {type(e).__name__}: {e}"
+        )
+        return None
+
+
 def _build_attention_target_from_mapped_rxn_smiles_impl(
     tokenizer: PreTrainedTokenizer,
     mapped_rxn_smiles: str,
@@ -265,13 +313,18 @@ _MAX_GETITEM_RETRIES = 10
 
 class SupervisedAtomMappingDataset(Dataset):
     """
-    PyTorch Dataset for supervised attention alignment training.
+    PyTorch Dataset for supervised attention alignment training with dual views.
 
     Each sample is a mapped reaction SMILES. On ``__getitem__``, the dataset
-    builds an attention target matrix from the atom mapping, removes the
-    mapping to produce the input SMILES, optionally applies MLM masking,
-    and returns a dict of tensors suitable for the supervised model's
-    forward pass.
+    builds attention target matrices from the atom mapping **twice** with
+    independent SMILES randomizations, producing two views:
+
+    - **MLM view** (``mlm_*`` keys): The unmapped SMILES is tokenized and
+      MLM masking is applied. This view is used only for the MLM loss.
+    - **Alignment view** (``align_*`` keys): The unmapped SMILES is
+      tokenized without masking. This view is used only for the attention
+      alignment loss, ensuring the model learns alignment on the same input
+      distribution it will see at inference time (no masks).
 
     If a sample fails to process (e.g. invalid SMILES), a random replacement
     index is tried, up to ``_MAX_GETITEM_RETRIES`` times. Each retry is logged
@@ -284,9 +337,6 @@ class SupervisedAtomMappingDataset(Dataset):
         max_length (int): Maximum sequence length for padding/truncation.
         use_random_smiles (bool): If True, apply random SMILES augmentation
             when building attention targets.
-        use_mlm_masking (bool): If True, apply MLM masking to the input.
-            If False, the original input IDs are returned with all labels
-            set to -100.
         protected_tokens (Set[str] | None): Token strings that should never
             be masked.
         smooth_symmetric_targets (bool): If True, spread attention target
@@ -308,7 +358,6 @@ class SupervisedAtomMappingDataset(Dataset):
         mlm_config: MLMConfig,
         max_length: int = 256,
         use_random_smiles: bool = True,
-        use_mlm_masking: bool = True,
         protected_tokens: Set[str] | None = None,
         smooth_symmetric_targets: bool = True,
         masking_mode: str = "span",
@@ -319,7 +368,6 @@ class SupervisedAtomMappingDataset(Dataset):
         self.mlm_config = mlm_config
         self.max_length = max_length
         self.use_random_smiles = use_random_smiles
-        self.use_mlm_masking = use_mlm_masking
         self.smooth_symmetric_targets = smooth_symmetric_targets
 
         if masking_mode not in ("random", "span"):
@@ -342,19 +390,26 @@ class SupervisedAtomMappingDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         """
-        Return a single training sample with attention target and optional MLM masking.
+        Return a single training sample with dual MLM and alignment views.
 
-        Attempts to build an attention target from the mapped reaction SMILES
-        at ``idx``. If processing fails, retries with a random replacement
-        index up to ``_MAX_GETITEM_RETRIES`` times.
+        Calls ``build_attention_target_from_mapped_rxn_smiles`` twice with
+        independent randomizations to produce:
+        - An MLM view (masked input + labels) under ``mlm_*`` keys.
+        - An alignment view (unmasked input + attention target) under
+          ``align_*`` keys.
+
+        If processing fails, retries with a random replacement index up to
+        ``_MAX_GETITEM_RETRIES`` times.
 
         Args:
             idx (int): Index into the dataset.
 
         Returns:
-            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
-            ``"attention_mask"``, ``"token_type_ids"``, ``"labels"``,
-            ``"attention_target"``, and ``"attention_loss_mask"``.
+            Dict[str, torch.Tensor]: A dict with keys ``mlm_input_ids``,
+            ``mlm_attention_mask``, ``mlm_token_type_ids``, ``mlm_labels``,
+            ``align_input_ids``, ``align_attention_mask``,
+            ``align_token_type_ids``, ``align_attention_target``, and
+            ``align_attention_loss_mask``.
 
         Raises:
             RuntimeError: If no valid sample can be loaded after
@@ -363,21 +418,37 @@ class SupervisedAtomMappingDataset(Dataset):
         for _attempt in range(_MAX_GETITEM_RETRIES):
             try:
                 mapped_text = self.texts[idx]
-                result = build_attention_target_from_mapped_rxn_smiles(
+
+                # MLM view: lightweight randomization + unmapping (no attn target)
+                mlm_unmapped_text = _randomize_and_unmap_rxn_smiles(
+                    mapped_rxn_smiles=mapped_text,
+                    randomize_mapped_rxn_smiles=self.use_random_smiles,
+                )
+                if mlm_unmapped_text is None:
+                    logger.debug(
+                        f"MLM view at index {idx} returned None, "
+                        f"retrying with random index"
+                    )
+                    idx = random.randrange(len(self.texts))
+                    continue
+
+                # Alignment view: full attention target construction
+                align_result = build_attention_target_from_mapped_rxn_smiles(
                     tokenizer=self.tokenizer,
                     mapped_rxn_smiles=mapped_text,
                     token_atom_identity_dict=token_atom_identity_dict,
                     randomize_mapped_rxn_smiles=self.use_random_smiles,
                     smooth_symmetric_targets=self.smooth_symmetric_targets,
                 )
-                if result is None:
+                if align_result is None:
                     logger.debug(
-                        f"Sample at index {idx} returned None, "
+                        f"Alignment view at index {idx} returned None, "
                         f"retrying with random index"
                     )
                     idx = random.randrange(len(self.texts))
                     continue
-                attention_target, unmapped_text = result
+
+                align_attn_target, align_unmapped_text = align_result
             except Exception as e:
                 logger.debug(
                     f"Sample at index {idx} failed: {type(e).__name__}: {e}, retrying"
@@ -386,7 +457,11 @@ class SupervisedAtomMappingDataset(Dataset):
                 continue
 
             try:
-                return self._build_sample(attention_target, unmapped_text)
+                mlm_sample = self._build_mlm_sample(mlm_unmapped_text)
+                align_sample = self._build_alignment_sample(
+                    align_attn_target, align_unmapped_text
+                )
+                return {**mlm_sample, **align_sample}
             except Exception as e:
                 logger.debug(
                     f"_build_sample failed for index {idx}: "
@@ -402,58 +477,98 @@ class SupervisedAtomMappingDataset(Dataset):
             f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
         )
 
-    def _build_sample(
+    def _build_mlm_sample(self, unmapped_text: str) -> Dict[str, torch.Tensor]:
+        """
+        Tokenize and build the MLM view (masked input + labels).
+
+        Tokenizes the unmapped reaction SMILES, applies MLM masking (span or
+        random depending on ``masking_mode``), and pads to ``max_length``.
+
+        Args:
+            unmapped_text (str): Reaction SMILES with atom mapping removed.
+
+        Returns:
+            Dict[str, torch.Tensor]: A dict with keys ``mlm_input_ids``,
+            ``mlm_attention_mask``, ``mlm_token_type_ids``, and
+            ``mlm_labels``.
+        """
+        encoding = self.tokenizer(
+            unmapped_text,
+            max_length=self.max_length,
+            padding="max_length",
+            truncation=False,
+            return_tensors=None,
+        )
+
+        input_ids = encoding["input_ids"]
+        if len(input_ids) > self.max_length:
+            raise ValueError(
+                f"Tokenized sequence length {len(input_ids)} exceeds "
+                f"max_length {self.max_length}"
+            )
+        attention_mask = encoding["attention_mask"]
+        token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
+
+        if self.masking_mode == "span":
+            masked_input_ids, labels = apply_span_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                span_mlm_config=self.span_mlm_config,
+                reaction_smiles=unmapped_text,
+                special_token_ids=self.protected_token_ids,
+                vocab=self._vocab_cache,
+            )
+        else:
+            masked_input_ids, labels = apply_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                mlm_config=self.mlm_config,
+                special_token_ids=self.protected_token_ids,
+            )
+
+        return {
+            "mlm_input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
+            "mlm_attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+            "mlm_token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
+            "mlm_labels": torch.tensor(labels, dtype=torch.long),
+        }
+
+    def _build_alignment_sample(
         self, attention_target: np.ndarray, unmapped_text: str
     ) -> Dict[str, torch.Tensor]:
         """
-        Tokenize and build the final tensor dict for a single sample.
+        Tokenize and build the alignment view (unmasked input + attention target).
 
-        Tokenizes the unmapped reaction SMILES, optionally applies MLM
-        masking, pads the attention target to ``max_length × max_length``,
-        and computes the attention loss mask (1 for rows with non-zero
-        attention target, 0 otherwise).
+        Tokenizes the unmapped reaction SMILES without any MLM masking, pads
+        the attention target to ``max_length × max_length``, and computes the
+        attention loss mask (1 for rows with non-zero attention target, 0
+        otherwise).
 
         Args:
             attention_target (np.ndarray): ``(N, N)`` attention target array.
             unmapped_text (str): Reaction SMILES with atom mapping removed.
 
         Returns:
-            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
-            ``"attention_mask"``, ``"token_type_ids"``, ``"labels"``,
-            ``"attention_target"``, and ``"attention_loss_mask"``.
+            Dict[str, torch.Tensor]: A dict with keys ``align_input_ids``,
+            ``align_attention_mask``, ``align_token_type_ids``,
+            ``align_attention_target``, and ``align_attention_loss_mask``.
         """
         encoding = self.tokenizer(
             unmapped_text,
             max_length=self.max_length,
             padding="max_length",
-            truncation=True,
+            truncation=False,
             return_tensors=None,
         )
 
         input_ids = encoding["input_ids"]
+        if len(input_ids) > self.max_length:
+            raise ValueError(
+                f"Tokenized sequence length {len(input_ids)} exceeds "
+                f"max_length {self.max_length}"
+            )
         attention_mask = encoding["attention_mask"]
         token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
-
-        if self.use_mlm_masking:
-            if self.masking_mode == "span":
-                masked_input_ids, labels = apply_span_mlm_masking(
-                    input_ids=input_ids,
-                    tokenizer=self.tokenizer,
-                    span_mlm_config=self.span_mlm_config,
-                    reaction_smiles=unmapped_text,
-                    special_token_ids=self.protected_token_ids,
-                    vocab=self._vocab_cache,
-                )
-            else:
-                masked_input_ids, labels = apply_mlm_masking(
-                    input_ids=input_ids,
-                    tokenizer=self.tokenizer,
-                    mlm_config=self.mlm_config,
-                    special_token_ids=self.protected_token_ids,
-                )
-        else:
-            masked_input_ids = input_ids
-            labels = [-100] * len(input_ids)
 
         padded_attention_target = np.zeros(
             (self.max_length, self.max_length), dtype=np.float32
@@ -470,14 +585,13 @@ class SupervisedAtomMappingDataset(Dataset):
         )
 
         return {
-            "input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-            "token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
-            "labels": torch.tensor(labels, dtype=torch.long),
-            "attention_target": torch.tensor(
+            "align_input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "align_attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+            "align_token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
+            "align_attention_target": torch.tensor(
                 padded_attention_target, dtype=torch.float32
             ),
-            "attention_loss_mask": torch.tensor(
+            "align_attention_loss_mask": torch.tensor(
                 attention_loss_mask, dtype=torch.float32
             ),
         }
@@ -490,17 +604,30 @@ class SupervisedAtomMappingDataset(Dataset):
 
 class SupervisedAlbertTrainer:
     """
-    Trainer for supervised attention alignment training with optional multitask MLM.
+    Trainer for supervised attention alignment with dual forward passes.
 
     Manages the training loop, evaluation, checkpointing, and logging for
-    supervised attention alignment. Supports multitask training where both
-    MLM loss and attention alignment loss are combined. Uses AdamW with
-    linear warmup scheduling and gradient clipping.
+    supervised attention alignment. Each batch produces two independent
+    forward passes through the shared encoder:
+
+    - **MLM pass**: Masked input → MLM loss only.
+    - **Alignment pass**: Unmasked input → attention alignment loss only.
+
+    Both losses' gradients are accumulated before the optimizer step,
+    ensuring the alignment task learns on the same unmasked input
+    distribution it will see at inference time. When
+    ``supervised_config.multitask`` is False, only the alignment pass runs.
+
+    Supports gradient checkpointing (via ``training_config.use_gradient_checkpointing``),
+    mixed precision (AMP), gradient accumulation, and ``torch.compile``.
+    Uses AdamW with linear warmup scheduling and gradient clipping.
 
     Args:
         model (AlbertWithAttentionAlignment): The supervised ALBERT model
             with attention alignment head.
         train_dataloader (DataLoader): DataLoader for training batches.
+            Each batch must contain ``mlm_*`` and ``align_*`` namespaced
+            keys produced by ``SupervisedAtomMappingDataset``.
         training_config (TrainingConfig): Training hyperparameters.
         supervised_config (SupervisedConfig): Supervised attention
             alignment configuration (target layer, loss weight, etc.).
@@ -542,6 +669,12 @@ class SupervisedAlbertTrainer:
             self.scaler: Optional[torch.amp.GradScaler] = torch.amp.GradScaler("cuda")
         else:
             self.scaler = None
+
+        # Gradient checkpointing
+        if training_config.use_gradient_checkpointing:
+            unwrapped = _unwrap_model(self.model)
+            unwrapped.base_model.gradient_checkpointing_enable()
+            logger.info("Gradient checkpointing enabled on base model")
 
         # torch.compile
         if training_config.compile_model:
@@ -655,14 +788,20 @@ class SupervisedAlbertTrainer:
 
     def train_epoch(self, epoch: int) -> Dict[str, float]:
         """
-        Run one training epoch and return average losses.
+        Run one training epoch with dual forward passes and return average losses.
 
-        Iterates over the training dataloader, computes combined loss
-        (attention alignment + optional MLM), performs backward pass,
-        gradient clipping, optimizer step, and scheduler step. Supports
-        mixed precision (AMP), gradient accumulation, and
-        ``torch.compile``. Logs total, MLM, and attention losses at
-        ``logging_steps`` intervals.
+        For each batch, performs two sequential forward passes through the
+        shared encoder:
+        1. **MLM pass** on masked input (``mlm_*`` keys) → MLM loss.
+        2. **Alignment pass** on unmasked input (``align_*`` keys) →
+           attention alignment loss.
+
+        Both losses are scaled by ``1 / grad_accum`` and backpropagated
+        independently, accumulating gradients in the shared encoder
+        parameters. Gradient clipping, optimizer step, and scheduler step
+        occur at the gradient accumulation cadence. When
+        ``supervised_config.multitask`` is False, only the alignment pass
+        runs and MLM loss is reported as 0.
 
         Args:
             epoch (int): The 1-indexed epoch number (for logging only).
@@ -682,35 +821,57 @@ class SupervisedAlbertTrainer:
         for step, batch in enumerate(self.train_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
+            # --- MLM forward pass (masked input) ---
+            step_mlm_loss = torch.tensor(0.0, device=self.device)
+            if self.supervised_config.multitask:
+                with torch.amp.autocast(
+                    "cuda",
+                    dtype=self.amp_dtype,
+                    enabled=self.use_amp,
+                ):
+                    mlm_outputs = self.model(
+                        input_ids=batch["mlm_input_ids"],
+                        attention_mask=batch["mlm_attention_mask"],
+                        token_type_ids=batch["mlm_token_type_ids"],
+                        labels=batch["mlm_labels"],
+                        attention_target=None,
+                    )
+
+                mlm_loss = mlm_outputs["mlm_loss"] / grad_accum
+
+                if self.scaler is not None:
+                    self.scaler.scale(mlm_loss).backward()
+                else:
+                    mlm_loss.backward()
+
+                step_mlm_loss = mlm_outputs["mlm_loss"].detach()
+                total_mlm_loss += step_mlm_loss
+
+            # --- Alignment forward pass (unmasked input) ---
             with torch.amp.autocast(
                 "cuda",
                 dtype=self.amp_dtype,
                 enabled=self.use_amp,
             ):
-                outputs = self.model(
-                    input_ids=batch["input_ids"],
-                    attention_mask=batch["attention_mask"],
-                    token_type_ids=batch["token_type_ids"],
-                    labels=batch["labels"]
-                    if self.supervised_config.multitask
-                    else None,
-                    attention_target=batch["attention_target"],
-                    attention_loss_mask=batch["attention_loss_mask"],
+                align_outputs = self.model(
+                    input_ids=batch["align_input_ids"],
+                    attention_mask=batch["align_attention_mask"],
+                    token_type_ids=batch["align_token_type_ids"],
+                    labels=None,
+                    attention_target=batch["align_attention_target"],
+                    attention_loss_mask=batch["align_attention_loss_mask"],
                 )
 
-            loss = outputs["loss"]
-            loss = loss / grad_accum
+            attn_loss = align_outputs["attention_loss"] / grad_accum
 
             if self.scaler is not None:
-                self.scaler.scale(loss).backward()
+                self.scaler.scale(attn_loss).backward()
             else:
-                loss.backward()
+                attn_loss.backward()
 
-            total_loss += loss.detach() * grad_accum
-            if "mlm_loss" in outputs:
-                total_mlm_loss += outputs["mlm_loss"].detach()
-            if "attention_loss" in outputs:
-                total_attention_loss += outputs["attention_loss"].detach()
+            step_attn_loss = align_outputs["attention_loss"].detach()
+            total_attention_loss += step_attn_loss
+            total_loss += step_mlm_loss + step_attn_loss
 
             if (step + 1) % grad_accum == 0 or step == num_batches - 1:
                 if self.scaler is not None:
@@ -730,13 +891,13 @@ class SupervisedAlbertTrainer:
 
             if (step + 1) % self.training_config.logging_steps == 0:
                 step_loss = total_loss.item() / (step + 1)
-                step_mlm_loss = total_mlm_loss.item() / (step + 1)
-                step_attention_loss = total_attention_loss.item() / (step + 1)
+                step_mlm_loss_val = total_mlm_loss.item() / (step + 1)
+                step_attention_loss_val = total_attention_loss.item() / (step + 1)
                 lr = self.scheduler.get_last_lr()[0]
                 logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
-                    f"| Loss: {step_loss:.4f} | MLM: {step_mlm_loss:.4f} "
-                    f"| Attn: {step_attention_loss:.4f} | LR: {lr:.2e}"
+                    f"| Loss: {step_loss:.4f} | MLM: {step_mlm_loss_val:.4f} "
+                    f"| Attn: {step_attention_loss_val:.4f} | LR: {lr:.2e}"
                 )
 
         return {
@@ -748,7 +909,11 @@ class SupervisedAlbertTrainer:
     @torch.no_grad()
     def evaluate(self) -> Dict[str, float]:
         """
-        Run evaluation on the validation set and return average losses.
+        Run evaluation on the validation set with dual forward passes.
+
+        Mirrors the training loop: for each batch, runs an MLM pass on
+        masked input (when ``multitask`` is True) and an alignment pass on
+        unmasked input, accumulating both losses for reporting.
 
         Returns:
             Dict[str, float]: A dict with keys ``"loss"``, ``"mlm_loss"``,
@@ -766,27 +931,43 @@ class SupervisedAlbertTrainer:
         for batch in self.val_dataloader:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
+            step_mlm_loss = torch.tensor(0.0, device=self.device)
+
+            # --- MLM forward pass (masked input) ---
+            if self.supervised_config.multitask:
+                with torch.amp.autocast(
+                    "cuda",
+                    dtype=self.amp_dtype,
+                    enabled=self.use_amp,
+                ):
+                    mlm_outputs = self.model(
+                        input_ids=batch["mlm_input_ids"],
+                        attention_mask=batch["mlm_attention_mask"],
+                        token_type_ids=batch["mlm_token_type_ids"],
+                        labels=batch["mlm_labels"],
+                        attention_target=None,
+                    )
+                step_mlm_loss = mlm_outputs["mlm_loss"].detach()
+                total_mlm_loss += step_mlm_loss
+
+            # --- Alignment forward pass (unmasked input) ---
             with torch.amp.autocast(
                 "cuda",
                 dtype=self.amp_dtype,
                 enabled=self.use_amp,
             ):
-                outputs = self.model(
-                    input_ids=batch["input_ids"],
-                    attention_mask=batch["attention_mask"],
-                    token_type_ids=batch["token_type_ids"],
-                    labels=batch["labels"]
-                    if self.supervised_config.multitask
-                    else None,
-                    attention_target=batch["attention_target"],
-                    attention_loss_mask=batch["attention_loss_mask"],
+                align_outputs = self.model(
+                    input_ids=batch["align_input_ids"],
+                    attention_mask=batch["align_attention_mask"],
+                    token_type_ids=batch["align_token_type_ids"],
+                    labels=None,
+                    attention_target=batch["align_attention_target"],
+                    attention_loss_mask=batch["align_attention_loss_mask"],
                 )
 
-            total_loss += outputs["loss"].detach()
-            if "mlm_loss" in outputs:
-                total_mlm_loss += outputs["mlm_loss"].detach()
-            if "attention_loss" in outputs:
-                total_attention_loss += outputs["attention_loss"].detach()
+            step_attn_loss = align_outputs["attention_loss"].detach()
+            total_attention_loss += step_attn_loss
+            total_loss += step_mlm_loss + step_attn_loss
 
         num_batches = len(self.val_dataloader)
         return {
@@ -1014,12 +1195,12 @@ def evaluate_supervised_attention_loss(
             batch = {k: v.to(eval_device) for k, v in batch.items()}
 
             outputs = model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
+                input_ids=batch["align_input_ids"],
+                attention_mask=batch["align_attention_mask"],
+                token_type_ids=batch["align_token_type_ids"],
                 labels=None,
-                attention_target=batch["attention_target"],
-                attention_loss_mask=batch["attention_loss_mask"],
+                attention_target=batch["align_attention_target"],
+                attention_loss_mask=batch["align_attention_loss_mask"],
             )
 
             if "attention_loss" not in outputs:
@@ -1057,13 +1238,16 @@ def main_supervised(
     masking_mode: str = "span",
     span_mlm_config: Optional[SpanMLMConfig] = None,
     resume_from_checkpoint: str | None = None,
+    log_level: str = "INFO",
 ):
     """
     Run supervised attention alignment training end-to-end.
 
     Creates the tokenizer, datasets, dataloaders, model (from scratch or
     loaded from a pretrained MLM checkpoint), and trainer, then launches
-    training. Uses graph-aware span masking by default with
+    training. The dataset produces dual views per sample: a masked MLM view
+    and an unmasked alignment view, each with independent SMILES
+    randomization. Uses graph-aware span masking by default with
     ``mlm_probability=0.20`` and ``max_length=384``.
 
     Args:
@@ -1094,10 +1278,17 @@ def main_supervised(
             ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
         resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
             file to resume training from.
+        log_level (str): Loguru level for progress messages. Defaults to
+            ``"INFO"`` so training progress is visible in all contexts
+            (CLI, notebooks, scripts).
 
     Returns:
         SupervisedAlbertTrainer: The trainer instance after training completes.
     """
+    # --- Logging (ensure progress is visible regardless of entry point) ---
+    logger.remove()
+    logger.add(sys.stderr, level=log_level)
+
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 

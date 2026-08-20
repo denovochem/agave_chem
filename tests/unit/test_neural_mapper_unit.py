@@ -55,7 +55,7 @@ class TestConstructorDefaults:
         assert mapper._used_atom_divisor == 10
 
     def test_default_sequence_max_length(self, mapper):
-        assert mapper._sequence_max_length == 512
+        assert mapper._sequence_max_length == 1024
 
     def test_mapper_type(self, mapper):
         assert mapper._mapper_type == "neural"

@@ -34,7 +34,7 @@ class TestModelConfig:
         assert config.intermediate_size == 512
         assert config.hidden_act == "gelu_new"
         assert config.hidden_dropout_prob == 0.1
-        assert config.max_position_embeddings == 512
+        assert config.max_position_embeddings == 1024
         assert config.num_hidden_groups == 1
         assert config.inner_group_num == 1
 

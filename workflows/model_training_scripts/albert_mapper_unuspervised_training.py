@@ -87,7 +87,7 @@ class ModelConfig(BaseModel):
     hidden_act: Literal["gelu", "gelu_new", "relu", "silu", "tanh"] = "gelu_new"
     hidden_dropout_prob: float = 0.1
     attention_probs_dropout_prob: float = 0.1
-    max_position_embeddings: int = 512
+    max_position_embeddings: int = 1024
     type_vocab_size: int = 2
     initializer_range: float = 0.02
     layer_norm_eps: float = 1e-12
@@ -171,6 +171,10 @@ class TrainingConfig(BaseModel):
             (``cudnn.deterministic = True``, ``cudnn.benchmark = False``).
             If False, allow non-deterministic algorithms with
             ``cudnn.benchmark = True`` for potential speedup.
+        use_gradient_checkpointing (bool): If True, enable gradient
+            checkpointing on the base model to reduce memory usage at the
+            cost of ~1.3x slower forward passes. Recommended when the
+            training loop performs multiple forward passes per batch.
     """
 
     learning_rate: float = 2e-4
@@ -191,6 +195,7 @@ class TrainingConfig(BaseModel):
     gradient_accumulation_steps: int = 1
     compile_model: bool = False
     deterministic: bool = True
+    use_gradient_checkpointing: bool = False
 
     @field_validator(
         "learning_rate",
@@ -1000,6 +1005,8 @@ def apply_span_mlm_masking(
 # Dataset
 # ============================================================
 
+_MAX_GETITEM_RETRIES = 10
+
 
 class MLMDataset(Dataset):
     """
@@ -1101,6 +1108,9 @@ class MLMDataset(Dataset):
         tokenizes the result, applies the configured masking strategy,
         and returns a dict of tensors suitable for model forward pass.
 
+        If the tokenized sequence exceeds ``max_length``, a random
+        replacement index is tried, up to ``_MAX_GETITEM_RETRIES`` times.
+
         Args:
             idx (int): Index into the dataset.
 
@@ -1108,64 +1118,84 @@ class MLMDataset(Dataset):
             Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
             ``"attention_mask"``, ``"token_type_ids"``, and ``"labels"``,
             each a ``torch.long`` tensor of shape ``(max_length,)``.
-        """
-        text = self.texts[idx]
 
-        if self._use_random_smiles:
-            if random.random() > self.canonicalize_mapped_rxn_smiles_pct:
-                if random.random() > self.randomize_tautomer_pct:
-                    text = randomize_reaction_smiles(
-                        text,
-                        remove_mapping=False,
-                        randomize_tautomer=False,
-                    )
+        Raises:
+            RuntimeError: If no valid sample can be loaded after
+                ``_MAX_GETITEM_RETRIES`` attempts.
+        """
+        for _attempt in range(_MAX_GETITEM_RETRIES):
+            text = self.texts[idx]
+
+            if self._use_random_smiles:
+                if random.random() > self.canonicalize_mapped_rxn_smiles_pct:
+                    if random.random() > self.randomize_tautomer_pct:
+                        text = randomize_reaction_smiles(
+                            text,
+                            remove_mapping=False,
+                            randomize_tautomer=False,
+                        )
+                    else:
+                        text = randomize_reaction_smiles(
+                            text, remove_mapping=False, randomize_tautomer=True
+                        )
                 else:
-                    text = randomize_reaction_smiles(
-                        text, remove_mapping=False, randomize_tautomer=True
+                    text = canonicalize_reaction_smiles(
+                        text, remove_mapping=False, canonicalize_tautomer=True
                     )
+
+            if self._use_canonical_smiles:
+                text = canonicalize_reaction_smiles(text)
+
+            encoding = self.tokenizer(
+                text,
+                max_length=self.max_length,
+                padding="max_length",
+                truncation=False,
+                return_tensors=None,
+            )
+
+            input_ids = encoding["input_ids"]
+            if len(input_ids) > self.max_length:
+                logger.debug(
+                    f"Sample at index {idx} exceeds max_length "
+                    f"({len(input_ids)} > {self.max_length}), retrying"
+                )
+                idx = random.randrange(len(self.texts))
+                continue
+
+            attention_mask = encoding["attention_mask"]
+            token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
+
+            if self.masking_mode == "span":
+                masked_input_ids, labels = apply_span_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    span_mlm_config=self.span_mlm_config,
+                    reaction_smiles=text,
+                    special_token_ids=self.protected_token_ids,
+                    vocab=self._vocab_cache,
+                )
             else:
-                text = canonicalize_reaction_smiles(
-                    text, remove_mapping=False, canonicalize_tautomer=True
+                masked_input_ids, labels = apply_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    mlm_config=self.mlm_config,
+                    special_token_ids=self.protected_token_ids,
                 )
 
-        if self._use_canonical_smiles:
-            text = canonicalize_reaction_smiles(text)
+            return {
+                "input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
+                "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+                "token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
+                "labels": torch.tensor(labels, dtype=torch.long),
+            }
 
-        encoding = self.tokenizer(
-            text,
-            max_length=self.max_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors=None,
+        logger.warning(
+            f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
         )
-
-        input_ids = encoding["input_ids"]
-        attention_mask = encoding["attention_mask"]
-        token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
-
-        if self.masking_mode == "span":
-            masked_input_ids, labels = apply_span_mlm_masking(
-                input_ids=input_ids,
-                tokenizer=self.tokenizer,
-                span_mlm_config=self.span_mlm_config,
-                reaction_smiles=text,
-                special_token_ids=self.protected_token_ids,
-                vocab=self._vocab_cache,
-            )
-        else:
-            masked_input_ids, labels = apply_mlm_masking(
-                input_ids=input_ids,
-                tokenizer=self.tokenizer,
-                mlm_config=self.mlm_config,
-                special_token_ids=self.protected_token_ids,
-            )
-
-        return {
-            "input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-            "token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
-            "labels": torch.tensor(labels, dtype=torch.long),
-        }
+        raise RuntimeError(
+            f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
+        )
 
     def decode_sample(
         self, idx: int, print_output: bool = True
@@ -1703,6 +1733,7 @@ def main(
     masking_mode: str = "span",
     span_mlm_config: Optional[SpanMLMConfig] = None,
     resume_from_checkpoint: str | None = None,
+    log_level: str = "INFO",
 ):
     """
     Run unsupervised ALBERT MLM pre-training end-to-end.
@@ -1731,7 +1762,14 @@ def main(
             ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
         resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
             file to resume training from.
+        log_level (str): Loguru level for progress messages. Defaults to
+            ``"INFO"`` so training progress is visible in all contexts
+            (CLI, notebooks, scripts).
     """
+    # --- Logging (ensure progress is visible regardless of entry point) ---
+    logger.remove()
+    logger.add(sys.stderr, level=log_level)
+
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 

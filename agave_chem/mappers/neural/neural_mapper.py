@@ -80,7 +80,7 @@ class NeuralReactionMapper(ReactionMapper):
         checkpoint_path: Optional[str] = None,
         use_supervised: bool = True,
         supervised_config: SupervisedConfig | None = None,
-        sequence_max_length: int = 512,
+        sequence_max_length: int = 1024,
         layer: int = 11,
         head: int = 7,
         adjacent_atom_multiplier: float = 10,
@@ -98,6 +98,7 @@ class NeuralReactionMapper(ReactionMapper):
             supervised_config (SupervisedConfig | None): Configuration for the
                 supervised model. If None, a default SupervisedConfig is used.
             sequence_max_length (int): Maximum tokenization length for the model.
+                Defaults to 1024.
             layer (int): 0-based attention layer index to use for mapping. Only
                 used when the base AlbertForMaskedLM is loaded (not supervised).
             head (int): 0-based attention head index to use for mapping. Only

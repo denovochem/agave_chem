@@ -179,11 +179,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Disable deterministic cuDNN behavior for potential speedup.",
     )
     parser.add_argument(
+        "--use-gradient-checkpointing",
+        action="store_true",
+        help="Enable gradient checkpointing on the base model to reduce memory usage "
+        "at the cost of slower forward passes. Recommended for dual-pass training.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
-        default="ERROR",
+        default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: ERROR).",
+        help="Logging level (default: INFO).",
     )
 
     return parser
@@ -206,9 +212,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     parser = build_arg_parser()
     args = parser.parse_args(argv)
-
-    logger.remove()
-    logger.add(sys.stderr, level=args.log_level)
 
     os.makedirs(args.save_dir, exist_ok=True)
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
@@ -248,6 +251,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         compile_model=args.compile_model,
         deterministic=not args.no_deterministic,
+        use_gradient_checkpointing=args.use_gradient_checkpointing,
     )
 
     if args.config:
@@ -271,6 +275,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         num_workers=args.num_workers,
         masking_mode=args.masking_mode,
         resume_from_checkpoint=args.resume_from_checkpoint,
+        log_level=args.log_level,
     )
 
     return 0

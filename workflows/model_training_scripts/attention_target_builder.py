@@ -334,12 +334,7 @@ def classify_tokens(
         matching_tokens_dict.setdefault(key, []).append(i)
         mapnum = int(m.group()[1:-1])
         token_index_to_mapnum[i] = mapnum
-        if (
-            mapnum >= 600
-            and mapnum <= 800
-            and mapnum not in sym_not_sink_set
-            and all_product_atoms_mapped
-        ) or (mapnum in sink_mapnum_set and mapnum not in sym_not_sink_set):
+        if mapnum in sink_mapnum_set and mapnum not in sym_not_sink_set:
             atom_token_indices_to_sink.append(i)
 
     # keep only map nums that appear exactly twice (once reactant, once product)
