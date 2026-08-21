@@ -1,9 +1,14 @@
+import json
+import logging
+import os
 import re
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List, Tuple
 
 from transformers import (
     PreTrainedTokenizer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CustomTokenizer(PreTrainedTokenizer):
@@ -28,6 +33,8 @@ class CustomTokenizer(PreTrainedTokenizer):
         cls_token:   The CLS token string. Must exist in token_to_id.
         sep_token:   The SEP token string. Must exist in token_to_id.
     """
+
+    vocab_files_names: ClassVar[Dict[str, str]] = {"vocab_file": "vocab.json"}
 
     def __init__(
         self,
@@ -229,3 +236,53 @@ class CustomTokenizer(PreTrainedTokenizer):
         """Convenience method to decode a list of IDs back to a string."""
         tokens = [self._convert_id_to_token(i) for i in ids]
         return self.convert_tokens_to_string(tokens)
+
+    def save_vocabulary(
+        self, save_directory: str, filename_prefix: str | None = None
+    ) -> Tuple[str]:
+        """
+        Save the token-to-ID mapping as a JSON file.
+
+        Called by ``PreTrainedTokenizer.save_pretrained`` to persist the
+        vocabulary. The file is named ``vocab.json`` (optionally prefixed
+        with ``filename_prefix``).
+
+        Args:
+            save_directory (str): Directory to save the vocabulary file in.
+            filename_prefix (str | None): Optional prefix for the filename.
+
+        Returns:
+            Tuple[str]: A single-element tuple containing the path to the
+            saved vocabulary file. Returns an empty tuple if
+            ``save_directory`` is not a valid directory.
+        """
+        if not os.path.isdir(save_directory):
+            logger.error(f"Vocabulary path ({save_directory}) should be a directory")
+            return ()
+        vocab_file = os.path.join(
+            save_directory, (filename_prefix or "") + "vocab.json"
+        )
+        with open(vocab_file, "w", encoding="utf-8") as f:
+            json.dump(self._token_to_id, f, ensure_ascii=False)
+        return (vocab_file,)
+
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path: str, *args, **kwargs):
+        """
+        Load a ``CustomTokenizer`` from a directory containing ``vocab.json``.
+
+        Reads the token-to-ID mapping from ``vocab.json`` in the given
+        directory and constructs a new ``CustomTokenizer`` instance.
+        Remaining keyword arguments are forwarded to ``__init__``.
+
+        Args:
+            pretrained_model_name_or_path (str): Path to the directory
+                containing ``vocab.json``.
+
+        Returns:
+            CustomTokenizer: A tokenizer reconstructed from the saved vocab.
+        """
+        vocab_file = os.path.join(pretrained_model_name_or_path, "vocab.json")
+        with open(vocab_file, "r", encoding="utf-8") as f:
+            token_to_id = json.load(f)
+        return cls(token_to_id, *args, **kwargs)

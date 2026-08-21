@@ -1374,6 +1374,8 @@ class AlbertTrainer:
         model (AlbertForMaskedLM): The ALBERT model to train.
         train_dataloader (DataLoader): DataLoader for training batches.
         training_config (TrainingConfig): Training hyperparameters.
+        tokenizer (PreTrainedTokenizer): Tokenizer used during training.
+            Saved alongside model checkpoints via ``save_pretrained``.
         val_dataloader (DataLoader | None): DataLoader for validation
             batches. If None, validation is skipped.
         device (torch.device | None): Device to train on. Defaults to CUDA
@@ -1388,6 +1390,7 @@ class AlbertTrainer:
         model: AlbertForMaskedLM,
         train_dataloader: DataLoader,
         training_config: TrainingConfig,
+        tokenizer: PreTrainedTokenizer,
         val_dataloader: DataLoader | None = None,
         device: torch.device | None = None,
         resume_from_checkpoint: str | None = None,
@@ -1396,6 +1399,7 @@ class AlbertTrainer:
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.training_config = training_config
+        self.tokenizer = tokenizer
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
@@ -1664,6 +1668,7 @@ class AlbertTrainer:
             save_path = f"{self.training_config.output_dir}/checkpoint-epoch-{epoch}"
 
             _unwrap_model(self.model).save_pretrained(save_path)  # type: ignore[operator]
+            self.tokenizer.save_pretrained(save_path)
             torch.save(
                 {
                     "epoch": epoch,
@@ -1842,6 +1847,7 @@ def main(
         model=model,
         train_dataloader=train_dataloader,
         training_config=training_config,
+        tokenizer=tokenizer,
         val_dataloader=val_dataloader,
         resume_from_checkpoint=resume_from_checkpoint,
     )

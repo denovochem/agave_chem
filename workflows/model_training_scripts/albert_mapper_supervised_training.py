@@ -631,6 +631,8 @@ class SupervisedAlbertTrainer:
         training_config (TrainingConfig): Training hyperparameters.
         supervised_config (SupervisedConfig): Supervised attention
             alignment configuration (target layer, loss weight, etc.).
+        tokenizer (PreTrainedTokenizer): Tokenizer used during training.
+            Saved alongside model checkpoints via ``save_pretrained``.
         val_dataloader (DataLoader | None): DataLoader for validation
             batches. If None, validation is skipped.
         device (torch.device | None): Device to train on. Defaults to CUDA
@@ -646,6 +648,7 @@ class SupervisedAlbertTrainer:
         train_dataloader: DataLoader,
         training_config: TrainingConfig,
         supervised_config: SupervisedConfig,
+        tokenizer: PreTrainedTokenizer,
         val_dataloader: DataLoader | None = None,
         device: torch.device | None = None,
         resume_from_checkpoint: str | None = None,
@@ -655,6 +658,7 @@ class SupervisedAlbertTrainer:
         self.val_dataloader = val_dataloader
         self.training_config = training_config
         self.supervised_config = supervised_config
+        self.tokenizer = tokenizer
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
@@ -1028,6 +1032,7 @@ class SupervisedAlbertTrainer:
 
             # Also save the base model for inference
             _unwrap_model(self.model).base_model.save_pretrained(save_path)
+            self.tokenizer.save_pretrained(save_path)
             logger.info(f"Checkpoint saved to {save_path}")
 
             # Best-model saving and early stopping tracking
@@ -1374,6 +1379,7 @@ def main_supervised(
         train_dataloader=train_dataloader,
         training_config=training_config,
         supervised_config=supervised_config,
+        tokenizer=tokenizer,
         val_dataloader=val_dataloader,
         resume_from_checkpoint=resume_from_checkpoint,
     )

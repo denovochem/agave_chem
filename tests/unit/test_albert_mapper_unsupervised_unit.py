@@ -929,8 +929,17 @@ class TestAlbertTrainerCheckpoint:
         )
         return AlbertForMaskedLM(config)
 
+    @pytest.fixture
+    def mock_tokenizer(self):
+        """Create a mock tokenizer for AlbertTrainer."""
+        from unittest.mock import MagicMock
+
+        tok = MagicMock()
+        tok.save_pretrained = MagicMock(return_value=None)
+        return tok
+
     def test_load_checkpoint_restores_epoch(
-        self, tiny_model, mock_dataloader, tmp_path
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path
     ):
         """_load_checkpoint sets start_epoch to saved epoch + 1."""
         import torch as _torch
@@ -940,6 +949,7 @@ class TestAlbertTrainerCheckpoint:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
 
         ckpt_path = tmp_path / "ckpt.pt"
@@ -959,7 +969,7 @@ class TestAlbertTrainerCheckpoint:
         assert trainer.best_val_loss == 0.5
 
     def test_load_checkpoint_file_not_found(
-        self, tiny_model, mock_dataloader, tmp_path
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path
     ):
         """_load_checkpoint raises FileNotFoundError for missing file."""
         training_config = TrainingConfig(output_dir=str(tmp_path))
@@ -967,6 +977,7 @@ class TestAlbertTrainerCheckpoint:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
         with pytest.raises(FileNotFoundError, match="Checkpoint not found"):
             trainer._load_checkpoint("/nonexistent/checkpoint.pt")
@@ -1005,8 +1016,17 @@ class TestAlbertTrainerEarlyStopping:
         )
         return AlbertForMaskedLM(config)
 
+    @pytest.fixture
+    def mock_tokenizer(self):
+        """Create a mock tokenizer for AlbertTrainer."""
+        from unittest.mock import MagicMock
+
+        tok = MagicMock()
+        tok.save_pretrained = MagicMock(return_value=None)
+        return tok
+
     def test_early_stopping_triggers(
-        self, tiny_model, mock_dataloader, tmp_path, monkeypatch
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path, monkeypatch
     ):
         """Training stops when patience is exceeded."""
 
@@ -1020,17 +1040,19 @@ class TestAlbertTrainerEarlyStopping:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
 
         monkeypatch.setattr(trainer, "train_epoch", lambda epoch: 1.0)
         monkeypatch.setattr(trainer, "evaluate", lambda: 2.0)
         monkeypatch.setattr(tiny_model, "save_pretrained", lambda path: None)
+        monkeypatch.setattr(mock_tokenizer, "save_pretrained", lambda path: None)
 
         trainer.train()
         assert trainer.epochs_without_improvement >= 2
 
     def test_best_model_saved_on_improvement(
-        self, tiny_model, mock_dataloader, tmp_path, monkeypatch
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path, monkeypatch
     ):
         """Best model is saved when validation loss improves."""
 
@@ -1043,17 +1065,19 @@ class TestAlbertTrainerEarlyStopping:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
 
         monkeypatch.setattr(trainer, "train_epoch", lambda epoch: 1.0)
         monkeypatch.setattr(trainer, "evaluate", lambda: 0.5)
         monkeypatch.setattr(tiny_model, "save_pretrained", lambda path: None)
+        monkeypatch.setattr(mock_tokenizer, "save_pretrained", lambda path: None)
 
         trainer.train()
         assert (tmp_path / "best_model.pt").exists()
 
     def test_best_model_not_saved_when_disabled(
-        self, tiny_model, mock_dataloader, tmp_path, monkeypatch
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path, monkeypatch
     ):
         """Best model file is not created when save_best_model=False."""
         training_config = TrainingConfig(
@@ -1065,17 +1089,19 @@ class TestAlbertTrainerEarlyStopping:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
 
         monkeypatch.setattr(trainer, "train_epoch", lambda epoch: 1.0)
         monkeypatch.setattr(trainer, "evaluate", lambda: 0.5)
         monkeypatch.setattr(tiny_model, "save_pretrained", lambda path: None)
+        monkeypatch.setattr(mock_tokenizer, "save_pretrained", lambda path: None)
 
         trainer.train()
         assert not (tmp_path / "best_model.pt").exists()
 
     def test_improvement_tracked_without_save_best_model(
-        self, tiny_model, mock_dataloader, tmp_path, monkeypatch
+        self, tiny_model, mock_dataloader, mock_tokenizer, tmp_path, monkeypatch
     ):
         """Early stopping counter resets on improvement even when save_best_model=False."""
         training_config = TrainingConfig(
@@ -1088,6 +1114,7 @@ class TestAlbertTrainerEarlyStopping:
             model=tiny_model,
             train_dataloader=mock_dataloader,
             training_config=training_config,
+            tokenizer=mock_tokenizer,
         )
 
         call_count = [0]
@@ -1101,6 +1128,7 @@ class TestAlbertTrainerEarlyStopping:
         monkeypatch.setattr(trainer, "train_epoch", lambda epoch: 1.0)
         monkeypatch.setattr(trainer, "evaluate", mock_evaluate)
         monkeypatch.setattr(tiny_model, "save_pretrained", lambda path: None)
+        monkeypatch.setattr(mock_tokenizer, "save_pretrained", lambda path: None)
 
         trainer.train()
         assert trainer.epochs_without_improvement == 0
