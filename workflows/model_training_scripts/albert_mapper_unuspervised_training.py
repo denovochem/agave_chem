@@ -1591,7 +1591,7 @@ class AlbertTrainer:
                 self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                step_loss = total_loss.item() / (step + 1)
+                step_loss = (loss.detach() * grad_accum).item()
                 lr = self.scheduler.get_last_lr()[0]
                 logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
@@ -1614,8 +1614,9 @@ class AlbertTrainer:
 
         self.model.eval()
         total_loss = torch.zeros(1, device=self.device)
+        num_batches = len(self.val_dataloader)
 
-        for batch in self.val_dataloader:
+        for step, batch in enumerate(self.val_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
             with torch.amp.autocast(
@@ -1629,9 +1630,16 @@ class AlbertTrainer:
                     token_type_ids=batch["token_type_ids"],
                     labels=batch["labels"],
                 )
-            total_loss += outputs.loss.detach()
+            batch_loss = outputs.loss.detach()
+            total_loss += batch_loss
 
-        return total_loss.item() / len(self.val_dataloader)
+            if (step + 1) % self.training_config.logging_steps == 0:
+                logger.info(
+                    f"Val | Step {step + 1}/{num_batches} "
+                    f"| Loss: {batch_loss.item():.4f}"
+                )
+
+        return total_loss.item() / num_batches
 
     def train(self) -> None:
         """

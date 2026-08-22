@@ -26,8 +26,6 @@ def custom_mapper():
         mock_load.return_value = None
         mapper = NeuralReactionMapper(
             mapper_name="test",
-            layer=5,
-            head=3,
             adjacent_atom_multiplier=20,
             identical_adjacent_atom_multiplier=5,
             used_atom_divisor=2,
@@ -38,12 +36,6 @@ def custom_mapper():
 
 class TestConstructorDefaults:
     """Verify that constructor stores default config values as properties."""
-
-    def test_default_layer(self, mapper):
-        assert mapper._layer == 11
-
-    def test_default_head(self, mapper):
-        assert mapper._head == 7
 
     def test_default_adjacent_atom_multiplier(self, mapper):
         assert mapper._adjacent_atom_multiplier == 10
@@ -63,12 +55,6 @@ class TestConstructorDefaults:
 
 class TestConstructorCustomValues:
     """Verify that constructor stores custom config values as properties."""
-
-    def test_custom_layer(self, custom_mapper):
-        assert custom_mapper._layer == 5
-
-    def test_custom_head(self, custom_mapper):
-        assert custom_mapper._head == 3
 
     def test_custom_adjacent_atom_multiplier(self, custom_mapper):
         assert custom_mapper._adjacent_atom_multiplier == 20

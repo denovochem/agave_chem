@@ -894,9 +894,9 @@ class SupervisedAlbertTrainer:
                 self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                step_loss = total_loss.item() / (step + 1)
-                step_mlm_loss_val = total_mlm_loss.item() / (step + 1)
-                step_attention_loss_val = total_attention_loss.item() / (step + 1)
+                step_mlm_loss_val = step_mlm_loss.item()
+                step_attention_loss_val = step_attn_loss.item()
+                step_loss = step_mlm_loss_val + step_attention_loss_val
                 lr = self.scheduler.get_last_lr()[0]
                 logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
@@ -932,7 +932,8 @@ class SupervisedAlbertTrainer:
         total_mlm_loss = torch.zeros(1, device=self.device)
         total_attention_loss = torch.zeros(1, device=self.device)
 
-        for batch in self.val_dataloader:
+        num_batches = len(self.val_dataloader)
+        for step, batch in enumerate(self.val_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
             step_mlm_loss = torch.tensor(0.0, device=self.device)
@@ -973,7 +974,16 @@ class SupervisedAlbertTrainer:
             total_attention_loss += step_attn_loss
             total_loss += step_mlm_loss + step_attn_loss
 
-        num_batches = len(self.val_dataloader)
+            if (step + 1) % self.training_config.logging_steps == 0:
+                step_mlm_loss_val = step_mlm_loss.item()
+                step_attention_loss_val = step_attn_loss.item()
+                step_loss = step_mlm_loss_val + step_attention_loss_val
+                logger.info(
+                    f"Val | Step {step + 1}/{num_batches} "
+                    f"| Loss: {step_loss:.4f} | MLM: {step_mlm_loss_val:.4f} "
+                    f"| Attn: {step_attention_loss_val:.4f}"
+                )
+
         return {
             "loss": total_loss.item() / num_batches,
             "mlm_loss": total_mlm_loss.item() / num_batches,

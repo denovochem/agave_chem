@@ -1803,23 +1803,6 @@
     },
     {
         "class_id": 2,
-        "name": "Suzuki coupling with boronic esters OTf",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1.[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:3]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:3]",
-        "subclass_id": 1,
-        "subsubclass_id": null,
-        "superclass_id": 4,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000588"
-            }
-        ]
-    },
-    {
-        "class_id": 2,
         "name": "Suzuki coupling with boronic esters",
         "priority": {
             "priority_class": null,
@@ -2879,7 +2862,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[#6:2]-[Cl,Br].[I;H0;D1;-1:3]>>[#6:2]-[I;H0;D1;+0:3]",
+        "smirks": "[#6:2]-[Cl,Br].[I;H0;D0;-1:3]>>[#6:2]-[I;H0;D1;+0:3]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
@@ -4608,7 +4591,7 @@
     },
     {
         "class_id": null,
-        "name": "Hydration of alkyne to ketone",
+        "name": "Hydration of terminal alkyne to ketone",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -4625,12 +4608,46 @@
     },
     {
         "class_id": null,
-        "name": "Hydration of alkyne to aldehyde",
+        "name": "Terminal alkyne to aldehyde with H2O2",
         "priority": {
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[O;D0;H2;+0:4]>>[*:1]-[C;H2;D2;+0:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0:4])",
+        "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[OH;D1;+0]-[OH;D1;+0:4]>>[*:1]-[C;H2;D2;+0:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0:4])",
+        "subclass_id": null,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": ""
+            }
+        ]
+    },
+    {
+        "class_id": null,
+        "name": "Internal alkyne to aldehyde with H2O2",
+        "priority": {
+            "priority_class": null,
+            "priority": null
+        },
+        "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D1;+0:3]-[*:4].[OH;D1;+0]-[OH;D1;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
+        "subclass_id": null,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": ""
+            }
+        ]
+    },
+    {
+        "class_id": null,
+        "name": "Internal alkyne to aldehyde with H2O",
+        "priority": {
+            "priority_class": null,
+            "priority": null
+        },
+        "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D1;+0:3]-[*:4].[O;D0;H2;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
@@ -5069,8 +5086,8 @@
         "class_id": null,
         "name": "Hydrolysis of primary amides\\/imides\\/carbamates with water",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 3
         },
         "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[O;D0;+0:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
         "subclass_id": null,
@@ -5086,8 +5103,8 @@
         "class_id": null,
         "name": "Hydrolysis of secondary amides\\/imides\\/carbamates with water",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 3
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[O;D0;+0:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
         "subclass_id": null,
@@ -5103,8 +5120,8 @@
         "class_id": 3,
         "name": "Hydrolysis of primary amides\\/imides\\/carbamates with base",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 5
         },
         "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
         "subclass_id": 1,
@@ -5120,8 +5137,8 @@
         "class_id": null,
         "name": "Hydrolysis of secondary amides\\/imides\\/carbamates with base",
         "priority": {
-            "priority_class": null,
-            "priority": null
+            "priority_class": 2,
+            "priority": 5
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
         "subclass_id": null,
@@ -10419,23 +10436,6 @@
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000140"
-            }
-        ]
-    },
-    {
-        "class_id": 2,
-        "name": "Suzuki coupling with boronic esters OTf",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1.[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:1]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:2]",
-        "subclass_id": 1,
-        "subsubclass_id": null,
-        "superclass_id": 4,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000588"
             }
         ]
     },

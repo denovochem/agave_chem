@@ -9,15 +9,33 @@ from agave_chem.utils.logging_config import logger
 
 
 def has_top_level_comma(s: str) -> bool:
-    """Check if string has a comma at top level (not inside [] or ())."""
+    """
+    Check if a string has a comma at top level (not inside [] or ()).
+
+    Commas that separate recursive SMARTS ``$()`` OR-alternatives
+    (e.g. ``$([#6]:[#6]),$([#6]=[#6])``) are excluded, since those are
+    valid SMARTS OR expressions that RDKit handles natively and should
+    not be expanded into separate child templates.
+
+    Args:
+        s (str): The bracket content to check.
+
+    Returns:
+        bool: True if an expandable top-level comma is found, False otherwise.
+    """
     depth = 0
+    prev_char = ""
     for char in s:
         if char in "([":
             depth += 1
         elif char in ")]":
             depth -= 1
         elif char == "," and depth == 0:
+            if prev_char == ")" and depth == 0:
+                # Look ahead for '$' — this is a $() OR separator, skip it
+                continue
             return True
+        prev_char = char
     return False
 
 

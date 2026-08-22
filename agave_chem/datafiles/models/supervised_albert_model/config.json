@@ -15,7 +15,7 @@
   "inner_group_num": 1,
   "intermediate_size": 512,
   "layer_norm_eps": 1e-12,
-  "max_position_embeddings": 512,
+  "max_position_embeddings": 1024,
   "model_type": "albert",
   "num_attention_heads": 8,
   "num_hidden_groups": 1,

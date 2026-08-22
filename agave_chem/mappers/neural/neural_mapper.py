@@ -1,7 +1,7 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, cast
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 import numpy as np
 import torch
@@ -37,21 +37,28 @@ class StringInfoDict(TypedDict):
 def load_neural_albert_model(
     checkpoint_dir: str,
     device: torch.device,
-    use_supervised: bool,
     supervised_config: SupervisedConfig | None = None,
-) -> AlbertForMaskedLM | AlbertWithAttentionAlignment:
+) -> AlbertWithAttentionAlignment:
+    """
+    Load the supervised ALBERT model from a checkpoint directory.
+
+    Args:
+        checkpoint_dir (str): Path to the directory containing the base
+            AlbertForMaskedLM weights and the supervised checkpoint file
+            ``supervised_albert_model.pt``.
+        device (torch.device): The device to load the model onto.
+        supervised_config (SupervisedConfig | None): Configuration for the
+            supervised model. If None, a default SupervisedConfig is used.
+
+    Returns:
+        AlbertWithAttentionAlignment: The loaded supervised model in eval mode.
+    """
     checkpoint_dir = str(checkpoint_dir)
-    base_model = cast(
-        AlbertForMaskedLM,
-        AlbertForMaskedLM.from_pretrained(
-            checkpoint_dir,
-            attn_implementation="eager",
-        ),
+    base_model = AlbertForMaskedLM.from_pretrained(
+        checkpoint_dir,
+        attn_implementation="eager",
     )
     torch.nn.Module.to(base_model, device)
-
-    if not use_supervised:
-        return base_model
 
     if supervised_config is None:
         supervised_config = SupervisedConfig()
@@ -78,11 +85,8 @@ class NeuralReactionMapper(ReactionMapper):
         mapper_name: str,
         mapper_weight: float = 3,
         checkpoint_path: Optional[str] = None,
-        use_supervised: bool = True,
         supervised_config: SupervisedConfig | None = None,
         sequence_max_length: int = 1024,
-        layer: int = 11,
-        head: int = 7,
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,
         used_atom_divisor: float = 10,
@@ -94,15 +98,10 @@ class NeuralReactionMapper(ReactionMapper):
             mapper_name (str): The name of the mapper.
             mapper_weight (float): The weight of the mapper.
             checkpoint_path (Optional[str]): The path to the checkpoint file.
-            use_supervised (bool): Whether to use the supervised model variant.
             supervised_config (SupervisedConfig | None): Configuration for the
                 supervised model. If None, a default SupervisedConfig is used.
             sequence_max_length (int): Maximum tokenization length for the model.
                 Defaults to 1024.
-            layer (int): 0-based attention layer index to use for mapping. Only
-                used when the base AlbertForMaskedLM is loaded (not supervised).
-            head (int): 0-based attention head index to use for mapping. Only
-                used when the base AlbertForMaskedLM is loaded (not supervised).
             adjacent_atom_multiplier (float): Multiplier applied to attention
                 scores of atoms neighboring an already-mapped pair.
             identical_adjacent_atom_multiplier (float): Additional multiplier
@@ -123,10 +122,7 @@ class NeuralReactionMapper(ReactionMapper):
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self._sequence_max_length = sequence_max_length
-        self._use_supervised = use_supervised
         self._supervised_config = supervised_config or SupervisedConfig()
-        self._layer = layer
-        self._head = head
         self._adjacent_atom_multiplier = adjacent_atom_multiplier
         self._identical_adjacent_atom_multiplier = identical_adjacent_atom_multiplier
         self._used_atom_divisor = used_atom_divisor
@@ -134,7 +130,6 @@ class NeuralReactionMapper(ReactionMapper):
         self._model = load_neural_albert_model(
             checkpoint_dir=checkpoint_path,
             device=self._device,
-            use_supervised=use_supervised,
             supervised_config=self._supervised_config,
         )
 
@@ -165,83 +160,6 @@ class NeuralReactionMapper(ReactionMapper):
         h = atom.GetTotalNumHs()
         d = atom.GetDegree()
         return [z, chg, arom, ring, h, d]
-
-    def get_attention_matrix_for_head(
-        self,
-        text: str,
-        layer: int,
-        head: int,
-        max_length: int = 512,
-        trim_padding: bool = True,
-    ) -> Tuple[np.ndarray, List[str]]:
-        """
-        Returns the attention matrix for a given layer/head for a single input string.
-
-        Args:
-            text: input reaction SMILES string (raw is fine; CustomTokenizer preprocesses)
-            layer: 0-based layer index
-            head: 0-based head index
-            max_length: tokenization length (should match training, e.g. 256)
-            trim_padding: if True, slices matrix down to non-pad tokens only
-
-        Returns:
-            attn: Tensor of shape (seq_len, seq_len) (trimmed if requested)
-            tokens: list[str] tokens aligned to attn axes (trimmed if requested)
-        """
-        self._model.eval()
-
-        enc = self._tokenizer(
-            text,
-            max_length=max_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
-        )
-        input_ids = enc["input_ids"].to(self._device)
-        attention_mask = enc["attention_mask"].to(self._device)
-        token_type_ids = torch.zeros_like(input_ids)
-
-        with torch.no_grad():
-            if isinstance(self._model, AlbertWithAttentionAlignment):
-                attn_probs = self._model.predict_attention_probs(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    token_type_ids=token_type_ids,
-                )  # (B,S,S)
-                attn = attn_probs[0].detach().cpu()  # (S,S)
-            else:
-                outputs = self._model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    output_attentions=True,
-                    return_dict=True,
-                )
-                attentions = outputs.attentions  # tuple[num_layers] of (B,H,S,S)
-
-                if layer < 0 or layer >= len(attentions):
-                    raise ValueError(
-                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
-                    )
-
-                num_heads = attentions[layer].shape[1]
-                if head < 0 or head >= num_heads:
-                    raise ValueError(
-                        f"head must be in [0, {num_heads - 1}], got {head}"
-                    )
-
-                attn = attentions[layer][0, head].detach().cpu()  # (S,S)
-
-        # Tokens for inspection/plotting
-        token_ids = enc["input_ids"][0].tolist()
-        tokens = self._tokenizer.convert_ids_to_tokens(token_ids)
-
-        if trim_padding:
-            real_len = int(enc["attention_mask"][0].sum().item())
-            attn = attn[:real_len, :real_len]
-            tokens = tokens[:real_len]
-
-        # IMPORTANT: keep downstream behavior identical by returning log-attn
-        return torch.log(attn).numpy(), tokens
 
     def get_reactants_products_dict(
         self,
@@ -944,8 +862,6 @@ class NeuralReactionMapper(ReactionMapper):
     def _get_attention_matrices_batch(
         self,
         texts: List[str],
-        layer: int = 11,
-        head: int = 7,
         max_length: int = 512,
     ) -> List[Tuple[np.ndarray, List[str]]]:
         """
@@ -959,10 +875,6 @@ class NeuralReactionMapper(ReactionMapper):
 
         Args:
             texts (List[str]): Reaction SMILES strings to encode. Must be non-empty.
-            layer (int): 0-based layer index. Only used when the underlying model is
-                the base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
-            head (int): 0-based head index. Only used when the underlying model is the
-                base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
             max_length (int): Maximum tokenization length. Must match the value used
                 during training.
 
@@ -987,31 +899,12 @@ class NeuralReactionMapper(ReactionMapper):
         token_type_ids = torch.zeros_like(input_ids)
 
         with torch.no_grad():
-            if isinstance(self._model, AlbertWithAttentionAlignment):
-                attn_probs = self._model.predict_attention_probs(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    token_type_ids=token_type_ids,
-                )  # (B, S, S)
-                attn_batch = attn_probs.detach().cpu()  # (B, S, S)
-            else:
-                outputs = self._model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    output_attentions=True,
-                    return_dict=True,
-                )
-                attentions = outputs.attentions  # tuple[num_layers] of (B, H, S, S)
-                if layer < 0 or layer >= len(attentions):
-                    raise ValueError(
-                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
-                    )
-                num_heads = attentions[layer].shape[1]
-                if head < 0 or head >= num_heads:
-                    raise ValueError(
-                        f"head must be in [0, {num_heads - 1}], got {head}"
-                    )
-                attn_batch = attentions[layer][:, head].detach().cpu()  # (B, S, S)
+            attn_probs = self._model.predict_attention_probs(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+            )  # (B, S, S)
+            attn_batch = attn_probs.detach().cpu()  # (B, S, S)
 
         results: List[Tuple[np.ndarray, List[str]]] = []
         for i in range(len(texts)):
@@ -1245,7 +1138,7 @@ class NeuralReactionMapper(ReactionMapper):
         and discarded before the next batch, avoiding the need to hold all matrices
         in memory simultaneously.
 
-        Uses the layer, head, scoring heuristics, and sequence_max_length configured
+        Uses the scoring heuristics and sequence_max_length configured
         on the NeuralReactionMapper instance at construction time.
 
         Args:
@@ -1327,8 +1220,6 @@ class NeuralReactionMapper(ReactionMapper):
             batch_pairs = sorted_pairs[batch_start : batch_start + batch_size]
             attn_tokens_list = self._get_attention_matrices_batch(
                 texts=batch,
-                layer=self._layer,
-                head=self._head,
                 max_length=self._sequence_max_length,
             )
             for local_idx, (
@@ -1363,8 +1254,6 @@ class NeuralReactionMapper(ReactionMapper):
             batch_cases = oversubscribed_cases[batch_start : batch_start + batch_size]
             attn_tokens_list = self._get_attention_matrices_batch(
                 texts=batch,
-                layer=self._layer,
-                head=self._head,
                 max_length=self._sequence_max_length,
             )
             for local_idx, (orig_idx, orig_rxn_smiles, expanded_rxn) in enumerate(

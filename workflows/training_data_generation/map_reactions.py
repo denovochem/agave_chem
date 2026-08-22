@@ -18,10 +18,10 @@ contains a ``List[dict]`` of up to ``--batch-size`` results.
 
 Example usage::
 
-    python scripts/map_reactions.py \\
-        --input  model_training/data/agave_chem_cleaned_data.txt \\
-        --output-dir model_training/data/mapped_batches \\
-        --workers 8 \\
+    python workflows/training_data_generation/map_reactions.py \
+        --input  workflows/data/agave_chem_cleaned_data.txt \
+        --output-dir workflows/data/mapped_batches_08_21_26 \
+        --workers 8 \
         --batch-size 10000
 """
 
@@ -36,6 +36,7 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
 )
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
+from agave_chem.mappers.types import ReactionMapperResult
 from agave_chem.utils.logging_config import disable_library_logging, logger
 
 try:
@@ -93,23 +94,23 @@ def _map_one(rxn: str) -> dict:
         out_template, out_mcs = _template_mapper.map_reaction_with_mcs_optimization(  # type: ignore
             rxn_list[0]
         )
-        return_val = out_template if out_template.get("selected_mapping") else out_mcs
+        return_val: ReactionMapperResult = (
+            out_template if out_template.selected_mapping else out_mcs
+        )
 
         new_out = _identical_fragment_mapper.resolve_identical_fragments_mapping_list(  # type: ignore
-            [return_val["selected_mapping"]],
+            [return_val.selected_mapping],
             [identical_fragments_mapping_list[0]],
         )
-        return_val["selected_mapping"] = new_out[0]
+        return_val.selected_mapping = new_out[0]
 
-        possible_templates: List[str] = []
-        for k, v in return_val["possible_mappings"].items():
-            if k == return_val["selected_mapping"]:
-                for ele in v:
-                    possible_templates.append(ele["template_name"])
+        possible_templates: List[str] = return_val.possible_mappings.get(
+            return_val.selected_mapping, []
+        )
 
         return {
             "rxn": rxn,
-            "selected_mapping": return_val["selected_mapping"],
+            "selected_mapping": return_val.selected_mapping,
             "possible_templates": possible_templates,
         }
     except Exception:

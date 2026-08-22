@@ -20,7 +20,7 @@ class SupervisedConfig(BaseModel):
             residual.
     """
 
-    target_layer: int = 11
+    target_layer: int = 10
     mlm_loss_weight: float = 1.0
     attention_loss_weight: float = 1.0
     multitask: bool = True
@@ -270,6 +270,37 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
             col_pad_mask = (attention_mask == 0).unsqueeze(1)  # (B, 1, S)
             logits = logits.masked_fill(col_pad_mask, float("-inf"))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)  # (B, S, S)
+
+        # Diagnostic: detect inf/nan before loss computation
+        if torch.isinf(logits).any() or torch.isnan(logits).any():
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"_compute_attention_loss: logits contain inf/nan. "
+                f"inf_count={torch.isinf(logits).sum().item()}, "
+                f"nan_count={torch.isnan(logits).sum().item()}, "
+                f"logits_min={logits[~torch.isinf(logits) & ~torch.isnan(logits)].min().item() if (~torch.isinf(logits) & ~torch.isnan(logits)).any() else 'all_inf_nan'}, "
+                f"logits_max={logits[~torch.isinf(logits) & ~torch.isnan(logits)].max().item() if (~torch.isinf(logits) & ~torch.isnan(logits)).any() else 'all_inf_nan'}"
+            )
+        if torch.isnan(log_probs).any() or torch.isinf(log_probs).any():
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"_compute_attention_loss: log_probs contain inf/nan. "
+                f"inf_count={torch.isinf(log_probs).sum().item()}, "
+                f"nan_count={torch.isnan(log_probs).sum().item()}"
+            )
+        if torch.isnan(targets).any() or torch.isinf(targets).any():
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"_compute_attention_loss: targets contain inf/nan. "
+                f"inf_count={torch.isinf(targets).sum().item()}, "
+                f"nan_count={torch.isnan(targets).sum().item()}, "
+                f"targets_min={targets[~torch.isinf(targets) & ~torch.isnan(targets)].min().item() if (~torch.isinf(targets) & ~torch.isnan(targets)).any() else 'all_inf_nan'}, "
+                f"targets_max={targets[~torch.isinf(targets) & ~torch.isnan(targets)].max().item() if (~torch.isinf(targets) & ~torch.isnan(targets)).any() else 'all_inf_nan'}"
+            )
+
         # Guard against 0 * (-inf) = NaN at masked padding columns
         cross_entropy = -(
             torch.where(targets > 0, targets * log_probs, torch.zeros_like(targets))
