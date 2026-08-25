@@ -44,8 +44,12 @@ class TestRandomizeSmilesDeterminism:
         We use 'in' rather than strict != because small molecules can
         occasionally collide by chance.
         """
-        result_a = randomize_smiles(SMILES_MULTI_FRAG, remove_mapping=False, seed=seed_a)
-        result_b = randomize_smiles(SMILES_MULTI_FRAG, remove_mapping=False, seed=seed_b)
+        result_a = randomize_smiles(
+            SMILES_MULTI_FRAG, remove_mapping=False, seed=seed_a
+        )
+        result_b = randomize_smiles(
+            SMILES_MULTI_FRAG, remove_mapping=False, seed=seed_b
+        )
         # At least one of the two should differ; both being equal is extremely
         # unlikely for a multi-fragment molecule with shuffling enabled.
         assert not (result_a == result_b and seed_a != seed_b) or result_a == result_b
@@ -193,8 +197,6 @@ class TestCrossFunctionConsistency:
         )
         rxn_reactant = rxn_result.split(">>")[0]
 
-        direct_result = randomize_smiles(
-            reactant, remove_mapping=False, seed=42
-        )
+        direct_result = randomize_smiles(reactant, remove_mapping=False, seed=42)
 
         assert rxn_reactant == direct_result

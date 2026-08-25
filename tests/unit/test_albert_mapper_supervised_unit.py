@@ -251,11 +251,7 @@ class TestResonanceEquivalence:
 
     def test_nitro_oxygens_smoothed_with_resonance(self, tokenizer):
         """With resonance_equivalence=True, nitro oxygens get fractional weights."""
-        rxn = (
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-            ">>"
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-        )
+        rxn = "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1>>[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
         result = build_attention_target_from_mapped_rxn_smiles(
             tokenizer=tokenizer,
             mapped_rxn_smiles=rxn,
@@ -271,11 +267,7 @@ class TestResonanceEquivalence:
 
     def test_nitro_oxygens_not_smoothed_without_resonance(self, tokenizer):
         """With resonance_equivalence=False, nitro oxygens are not smoothed."""
-        rxn = (
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-            ">>"
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-        )
+        rxn = "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1>>[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
         result = build_attention_target_from_mapped_rxn_smiles(
             tokenizer=tokenizer,
             mapped_rxn_smiles=rxn,
@@ -314,11 +306,7 @@ class TestResonanceEquivalence:
 
     def test_resonance_equivalence_deterministic(self, tokenizer):
         """Same seed with resonance_equivalence=True produces identical results."""
-        rxn = (
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-            ">>"
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-        )
+        rxn = "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1>>[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
         result1 = build_attention_target_from_mapped_rxn_smiles(
             tokenizer=tokenizer,
             mapped_rxn_smiles=rxn,
@@ -344,9 +332,7 @@ class TestResonanceEquivalence:
         np.testing.assert_array_equal(attn1, attn2)
         assert unmapped1 == unmapped2
 
-    def test_resonance_equivalence_false_preserves_existing_behavior(
-        self, tokenizer
-    ):
+    def test_resonance_equivalence_false_preserves_existing_behavior(self, tokenizer):
         """resonance_equivalence=False matches behavior before the feature was added."""
         rxn = "[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"
         result = build_attention_target_from_mapped_rxn_smiles(
@@ -363,11 +349,7 @@ class TestResonanceEquivalence:
 
     def test_resonance_equivalence_default_is_true(self, tokenizer):
         """The default value of resonance_equivalence should be True."""
-        rxn = (
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-            ">>"
-            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
-        )
+        rxn = "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1>>[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
         result_default = build_attention_target_from_mapped_rxn_smiles(
             tokenizer=tokenizer,
             mapped_rxn_smiles=rxn,

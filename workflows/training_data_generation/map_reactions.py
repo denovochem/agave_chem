@@ -245,7 +245,9 @@ def main() -> None:
 
     existing_rxns, batch_idx = _load_existing_rxns(args.output_dir)
     if existing_rxns:
-        logger.info(f"Found {len(existing_rxns):,} already-processed reactions in {args.output_dir}/")
+        logger.info(
+            f"Found {len(existing_rxns):,} already-processed reactions in {args.output_dir}/"
+        )
         rxns = [r for r in all_rxns if r not in existing_rxns]
         logger.info(f"{len(rxns):,} reactions remaining after skipping existing.")
     else:
