@@ -1745,6 +1745,7 @@ def main(
     protected_tokens: Optional[Set[str]] = None,
     masking_mode: str = "span",
     span_mlm_config: Optional[SpanMLMConfig] = None,
+    canonicalize_mapped_rxn_smiles_pct: float = 0.05,
     resume_from_checkpoint: str | None = None,
     log_level: str = "INFO",
 ):
@@ -1773,6 +1774,10 @@ def main(
         span_mlm_config (Optional[SpanMLMConfig]): Span masking
             configuration. Defaults to
             ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing SMILES during training
+            augmentation. Validation always canonicalizes to match inference
+            behavior. Defaults to 0.05.
         resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
             file to resume training from.
         log_level (str): Loguru level for progress messages. Defaults to
@@ -1806,21 +1811,27 @@ def main(
         )
 
     # --- Datasets and Dataloaders ---
+    # Training: random SMILES augmentation with configurable canonicalization pct
     train_dataset = MLMDataset(
         train_texts,
         tokenizer,
         mlm_config,
         protected_tokens=protected_tokens,
         max_length=max_length,
+        use_random_smiles=True,
+        canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
         masking_mode=masking_mode,
         span_mlm_config=span_mlm_config,
     )
+    # Validation: always canonicalize to match inference behavior
     val_dataset = MLMDataset(
         val_texts,
         tokenizer,
         mlm_config,
         protected_tokens=protected_tokens,
         max_length=max_length,
+        use_random_smiles=False,
+        use_canonical_smiles=True,
         masking_mode=masking_mode,
         span_mlm_config=span_mlm_config,
     )

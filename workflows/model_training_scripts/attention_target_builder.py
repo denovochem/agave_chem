@@ -32,10 +32,68 @@ from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
     randomize_reaction_smiles,
 )
+from agave_chem.utils.graph_utils import find_resonance_equivalent_groups
 
 # ============================================================
 # Symmetry grouping
 # ============================================================
+
+
+def _merge_symmetry_groups(
+    topological_groups: List[List[int]],
+    resonance_groups: List[List[int]],
+) -> List[List[int]]:
+    """
+    Merge topological and resonance symmetry groups using union-find.
+
+    If a resonance group shares any atom map number with an existing
+    topological group, they are merged into a single group. Standalone
+    resonance groups (no overlap with topological groups) are added as
+    new groups.
+
+    Args:
+        topological_groups (List[List[int]]): Symmetry groups from
+            ``group_mappings_by_symmetry`` (RDKit canonical ranking).
+        resonance_groups (List[List[int]]): Symmetry groups from
+            ``find_resonance_equivalent_groups`` (SMARTS-based resonance
+            equivalence).
+
+    Returns:
+        List[List[int]]: Merged symmetry groups, each a list of atom map
+            numbers. Only groups with more than one member are included.
+    """
+    parent: Dict[int, int] = {}
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for group in topological_groups:
+        for mn in group:
+            parent[mn] = mn
+        for i in range(1, len(group)):
+            union(group[0], group[i])
+
+    for group in resonance_groups:
+        for mn in group:
+            if mn not in parent:
+                parent[mn] = mn
+        for i in range(1, len(group)):
+            union(group[0], group[i])
+
+    merged: Dict[int, List[int]] = {}
+    for mn in parent:
+        root = find(mn)
+        merged.setdefault(root, []).append(mn)
+
+    return [sorted(g) for g in merged.values() if len(g) > 1]
 
 
 def group_mappings_by_symmetry(mol: Chem.Mol) -> List[List[int]]:
@@ -90,8 +148,10 @@ class TempAtomMapResult:
     Attributes:
         reactant_mol (Chem.Mol): Reactant molecule with temp atom maps assigned.
         product_mol (Chem.Mol): Product molecule with temp atom maps assigned.
-        reactant_symmetry_groups (List[List[int]]): Symmetry groups for reactants.
-        product_symmetry_groups (List[List[int]]): Symmetry groups for products.
+        reactant_symmetry_groups (List[List[int]]): Symmetry groups for
+            reactants, optionally merged with resonance-equivalent groups.
+        product_symmetry_groups (List[List[int]]): Symmetry groups for
+            products, optionally merged with resonance-equivalent groups.
         symmetric_atom_token_indices_to_not_sink (List[int]): Atom map numbers
             in symmetric reactant groups that contain at least one mapped atom
             (mapnum < 600). These should not be sent to the sink.
@@ -142,7 +202,10 @@ class TokenClassificationResult:
 # ============================================================
 
 
-def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
+def assign_temp_atom_maps(
+    mapped_rxn_smiles: str,
+    resonance_equivalence: bool = True,
+) -> TempAtomMapResult:
     """
     Assign temporary atom map numbers to unmapped atoms and compute symmetry groups.
 
@@ -151,14 +214,23 @@ def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
     identifies which symmetric reactant groups contain at least one originally
     mapped atom (those should not be sent to the sink).
 
+    When ``resonance_equivalence`` is True, resonance-equivalent atom pairs
+    (e.g. the two oxygens in a nitro group) are merged into the symmetry
+    groups using ``find_resonance_equivalent_groups`` so that attention
+    targets are smoothed across resonance-equivalent atoms as well as
+    topologically symmetric ones.
+
     Args:
         mapped_rxn_smiles (str): Atom-mapped reaction SMILES with ``>>``
             separator.
+        resonance_equivalence (bool): If True, merge resonance-equivalent
+            atom pairs into the symmetry groups. Defaults to True.
 
     Returns:
         TempAtomMapResult: Structured result containing mutated mol objects,
-            symmetry groups, sink classification data, and the re-serialized
-            mapped reaction SMILES.
+            symmetry groups (topological and optionally resonance-merged),
+            sink classification data, and the re-serialized mapped reaction
+            SMILES.
     """
     reactant_str, product_str = mapped_rxn_smiles.split(">>")
     product_mol = Chem.MolFromSmiles(product_str)
@@ -187,6 +259,16 @@ def assign_temp_atom_maps(mapped_rxn_smiles: str) -> TempAtomMapResult:
 
     reactant_symmetry_groups = group_mappings_by_symmetry(reactant_mol)
     product_symmetry_groups = group_mappings_by_symmetry(product_mol)
+
+    if resonance_equivalence:
+        reactant_resonance_groups = find_resonance_equivalent_groups(reactant_mol)
+        product_resonance_groups = find_resonance_equivalent_groups(product_mol)
+        reactant_symmetry_groups = _merge_symmetry_groups(
+            reactant_symmetry_groups, reactant_resonance_groups
+        )
+        product_symmetry_groups = _merge_symmetry_groups(
+            product_symmetry_groups, product_resonance_groups
+        )
 
     symmetric_atom_token_indices_to_not_sink: List[int] = []
     for reactant_symmetry_group in reactant_symmetry_groups:
@@ -219,28 +301,41 @@ def augment_mapped_smiles(
     randomize_mapped_rxn_smiles: bool = True,
     randomize_tautomer_pct: float = 0.10,
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    canonicalize_only: bool = False,
     seed: Optional[int] = None,
 ) -> str:
     """
     Apply random or canonical SMILES augmentation to a mapped reaction SMILES.
 
-    When ``randomize_mapped_rxn_smiles`` is True, uses a seeded RNG to decide
+    When ``canonicalize_only`` is True, always canonicalizes the SMILES
+    (matching inference behavior) regardless of other parameters. When
+    ``randomize_mapped_rxn_smiles`` is True, uses a seeded RNG to decide
     between canonicalization, randomization without tautomer shuffling, and
-    randomization with tautomer shuffling. When False, returns the input
-    unchanged.
+    randomization with tautomer shuffling. When both
+    ``canonicalize_only`` and ``randomize_mapped_rxn_smiles`` are False,
+    returns the input unchanged.
 
     Args:
         mapped_rxn_smiles (str): Atom-mapped reaction SMILES.
         randomize_mapped_rxn_smiles (bool): If True, apply augmentation.
         randomize_tautomer_pct (float): Probability of tautomer randomization.
         canonicalize_mapped_rxn_smiles_pct (float): Probability of
-            canonicalization.
+            canonicalization (only used when ``randomize_mapped_rxn_smiles``
+            is True and ``canonicalize_only`` is False).
+        canonicalize_only (bool): If True, always canonicalize the SMILES,
+            ignoring randomization settings. Intended for validation to
+            match inference behavior.
         seed (Optional[int]): Seed for deterministic augmentation. When
             ``None``, uses global random state.
 
     Returns:
         str: The augmented (or unchanged) reaction SMILES.
     """
+    if canonicalize_only:
+        return canonicalize_reaction_smiles(
+            mapped_rxn_smiles, remove_mapping=False, canonicalize_tautomer=True
+        )
+
     if not randomize_mapped_rxn_smiles:
         return mapped_rxn_smiles
 

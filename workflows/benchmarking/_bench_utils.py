@@ -99,12 +99,18 @@ def strip_mapping(rxn_smiles: str) -> str:
 # that the two copies produce identical results.
 # ---------------------------------------------------------------------------
 
+_MAX_TAUTOMERS_PER_MOL = 1000
+_MAX_TAUTOMER_TRANSFORMS = 1000
+_MAX_TAUTOMERIC_RXN_VARIANTS = 1000
+
 _taut_opts = rdMolStandardize.CleanupParameters()
 _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
 _taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
 _TAUTOMER_ENUMERATOR: rdMolStandardize.TautomerEnumerator = (
     rdMolStandardize.TautomerEnumerator(_taut_opts)
 )
+_TAUTOMER_ENUMERATOR.SetMaxTautomers(_MAX_TAUTOMERS_PER_MOL)
+_TAUTOMER_ENUMERATOR.SetMaxTransforms(_MAX_TAUTOMER_TRANSFORMS)
 
 _RESONANCE_SWAP_PATTERNS: list[tuple[Chem.Mol, int, int]] = [
     (Chem.MolFromSmarts("[O;H0;D1:1]=[N+;H0][O-;H0;D1:2]"), 1, 2),
@@ -347,25 +353,38 @@ def _enumerate_tautomers_for_mol(mol: Chem.RWMol) -> list[Chem.Mol]:
     return tauts if tauts else [mol]
 
 
-def _enumerate_tautomeric_rxn_smiles(rxn_smiles: str) -> list[str]:
+def _enumerate_tautomeric_rxn_smiles(
+    rxn_smiles: str,
+    max_variants: int = _MAX_TAUTOMERIC_RXN_VARIANTS,
+) -> list[str]:
     """
     Generate all tautomeric variants of a reaction by independently enumerating tautomers for each fragment.
 
+    Per-molecule tautomer counts are capped by ``_MAX_TAUTOMERS_PER_MOL`` and
+    ``_MAX_TAUTOMER_TRANSFORMS`` on the global enumerator.  The total number of
+    Cartesian-product variants is capped by *max_variants*; only the first
+    *max_variants* combos are returned to avoid combinatorial explosion.
+
     Args:
         rxn_smiles (str): Reaction SMILES parsable by RDKit.
+        max_variants (int): Upper bound on the total number of tautomeric reaction
+            variants to generate.
 
     Returns:
-        List[str]: All reaction SMILES variants arising from the Cartesian product of
-            tautomeric forms across all reactant and product fragments. Always includes
-            at least one entry.
+        List[str]: Up to *max_variants* reaction SMILES arising from the Cartesian
+            product of tautomeric forms across all reactant and product fragments.
+            Always includes at least one entry.
     """
     r_mols, p_mols = _mol_frags_from_rxn(rxn_smiles)
     r_taut_lists = [_enumerate_tautomers_for_mol(m) for m in r_mols]
     p_taut_lists = [_enumerate_tautomers_for_mol(m) for m in p_mols]
+
     variants: list[str] = []
     for r_combo in itertools.product(*r_taut_lists):
         for p_combo in itertools.product(*p_taut_lists):
             variants.append(_mols_to_rxn_smiles(list(r_combo), list(p_combo)))
+            if len(variants) >= max_variants:
+                return variants
     return variants
 
 
@@ -545,7 +564,7 @@ def mappings_equivalent(gold_rxn: str, pred_rxn: str) -> bool:
         return mapping_equivalent(
             gold_rxn,
             pred_rxn,
-            consider_tautomers=False,
+            consider_tautomers=True,
             consider_resonance_swaps=True,
         )
     except Exception:

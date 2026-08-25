@@ -68,8 +68,10 @@ def build_attention_target_from_mapped_rxn_smiles(
     randomize_mapped_rxn_smiles: bool = True,
     randomize_tautomer_pct: float = 0.10,
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    canonicalize_only: bool = False,
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
+    resonance_equivalence: bool = True,
     seed: Optional[int] = None,
 ) -> Optional[Tuple[np.ndarray, str]]:
     """
@@ -94,20 +96,27 @@ def build_attention_target_from_mapped_rxn_smiles(
             during SMILES augmentation.
         canonicalize_mapped_rxn_smiles_pct (float): Probability of
             canonicalization during SMILES augmentation.
+        canonicalize_only (bool): If True, always canonicalize the SMILES
+            instead of randomizing. Intended for validation to match
+            inference behavior.
         attn_sink_non_mapped_atoms (bool): If True, non-atom tokens and
             unmapped reactant atoms attend to the sink position (last token).
         smooth_symmetric_targets (bool): If True, spread attention target
             weight uniformly across symmetry-equivalent atoms.
+        resonance_equivalence (bool): If True, merge resonance-equivalent
+            atom pairs (e.g. nitro group oxygens) into symmetry groups so
+            that attention targets are smoothed across them. Defaults to
+            True.
         seed (Optional[int]): If provided, seeds ``random`` before the
             augmentation block for deterministic output. When ``None``,
             behavior is unchanged (uses global random state).
 
     Returns:
         Optional[Tuple[np.ndarray, str]]: A tuple of
-        ``(attention_target, unmapped_rxn_smiles)`` where
-        ``attention_target`` is an ``(N, N)`` float32 array and
-        ``unmapped_rxn_smiles`` is the reaction SMILES with atom mapping
-        removed. Returns ``None`` if processing fails.
+            ``(attention_target, unmapped_rxn_smiles)`` where
+            ``attention_target`` is an ``(N, N)`` float32 array and
+            ``unmapped_rxn_smiles`` is the reaction SMILES with atom mapping
+            removed. Returns ``None`` if processing fails.
     """
     try:
         return _build_attention_target_from_mapped_rxn_smiles_impl(
@@ -117,8 +126,10 @@ def build_attention_target_from_mapped_rxn_smiles(
             randomize_mapped_rxn_smiles=randomize_mapped_rxn_smiles,
             randomize_tautomer_pct=randomize_tautomer_pct,
             canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+            canonicalize_only=canonicalize_only,
             attn_sink_non_mapped_atoms=attn_sink_non_mapped_atoms,
             smooth_symmetric_targets=smooth_symmetric_targets,
+            resonance_equivalence=resonance_equivalence,
             seed=seed,
         )
     except Exception as e:
@@ -134,6 +145,7 @@ def _randomize_and_unmap_rxn_smiles(
     randomize_mapped_rxn_smiles: bool = True,
     randomize_tautomer_pct: float = 0.10,
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    canonicalize_only: bool = False,
     seed: Optional[int] = None,
 ) -> Optional[str]:
     """
@@ -153,6 +165,9 @@ def _randomize_and_unmap_rxn_smiles(
             during SMILES augmentation.
         canonicalize_mapped_rxn_smiles_pct (float): Probability of
             canonicalization during augmentation.
+        canonicalize_only (bool): If True, always canonicalize the SMILES
+            instead of randomizing. Intended for validation to match
+            inference behavior.
         seed (Optional[int]): If provided, seeds ``random`` before the
             augmentation block for deterministic output.
 
@@ -166,6 +181,7 @@ def _randomize_and_unmap_rxn_smiles(
             randomize_mapped_rxn_smiles=randomize_mapped_rxn_smiles,
             randomize_tautomer_pct=randomize_tautomer_pct,
             canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+            canonicalize_only=canonicalize_only,
             seed=seed,
         )
         return remove_reaction_smiles_atom_mapping(new_mapped_rxn_smiles)
@@ -184,8 +200,10 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     randomize_mapped_rxn_smiles: bool = True,
     randomize_tautomer_pct: float = 0.10,
     canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    canonicalize_only: bool = False,
     attn_sink_non_mapped_atoms: bool = True,
     smooth_symmetric_targets: bool = True,
+    resonance_equivalence: bool = True,
     seed: Optional[int] = None,
 ) -> Tuple[np.ndarray, str]:
     """
@@ -194,7 +212,8 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
     Processes a mapped reaction SMILES through several phases:
         1. Assigns temporary atom map numbers (600+ for reactants, 800+ for
            products) to unmapped atoms.
-        2. Identifies symmetry groups in reactants and products.
+        2. Identifies symmetry groups in reactants and products, optionally
+           merging resonance-equivalent atom pairs.
         3. Tokenizes both the mapped and unmapped reaction SMILES.
         4. Matches atom-mapped tokens between reactants and products by
            atom map number (only pairs appearing exactly twice are kept).
@@ -216,10 +235,16 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
         randomize_tautomer_pct (float): Probability of tautomer randomization.
         canonicalize_mapped_rxn_smiles_pct (float): Probability of
             canonicalization during augmentation.
+        canonicalize_only (bool): If True, always canonicalize the SMILES
+            instead of randomizing. Intended for validation to match
+            inference behavior.
         attn_sink_non_mapped_atoms (bool): If True, route non-atom and
             unmapped atom attention to the sink position.
         smooth_symmetric_targets (bool): If True, spread attention across
             symmetry-equivalent atoms.
+        resonance_equivalence (bool): If True, merge resonance-equivalent
+            atom pairs into symmetry groups so that attention targets are
+            smoothed across them. Defaults to True.
         seed (Optional[int]): If provided, seeds ``random`` before the
             augmentation block so that all stochastic operations (the
             ``random.random()`` branching decisions and the internal
@@ -238,7 +263,9 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
         token_atom_identity_dict = {}
 
     # Phase 1: Assign temporary atom maps and compute symmetry
-    temp = assign_temp_atom_maps(mapped_rxn_smiles)
+    temp = assign_temp_atom_maps(
+        mapped_rxn_smiles, resonance_equivalence=resonance_equivalence
+    )
 
     # Phase 2: Augment (randomize / canonicalize) the mapped SMILES
     new_mapped_rxn_smiles = augment_mapped_smiles(
@@ -246,6 +273,7 @@ def _build_attention_target_from_mapped_rxn_smiles_impl(
         randomize_mapped_rxn_smiles=randomize_mapped_rxn_smiles,
         randomize_tautomer_pct=randomize_tautomer_pct,
         canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+        canonicalize_only=canonicalize_only,
         seed=seed,
     )
 
@@ -336,17 +364,32 @@ class SupervisedAtomMappingDataset(Dataset):
         mlm_config (MLMConfig): MLM masking configuration.
         max_length (int): Maximum sequence length for padding/truncation.
         use_random_smiles (bool): If True, apply random SMILES augmentation
-            when building attention targets.
+            when building attention targets. Mutually exclusive with
+            ``use_canonical_smiles``. When both are False, SMILES are
+            passed through unchanged (no augmentation).
+        use_canonical_smiles (bool): If True, always canonicalize SMILES
+            instead of randomizing. Intended for validation to match
+            inference behavior. Mutually exclusive with
+            ``use_random_smiles``.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing (only used when
+            ``use_random_smiles`` is True).
         protected_tokens (Set[str] | None): Token strings that should never
             be masked.
         smooth_symmetric_targets (bool): If True, spread attention target
             weight across symmetry-equivalent atoms.
+        resonance_equivalence (bool): If True, merge resonance-equivalent
+            atom pairs (e.g. nitro group oxygens) into symmetry groups so
+            that attention targets are smoothed across them. Defaults to
+            True.
         masking_mode (str): Either ``"random"`` or ``"span"``.
         span_mlm_config (SpanMLMConfig | None): Span masking configuration.
             Required if ``masking_mode`` is ``"span"``.
 
     Raises:
-        ValueError: If ``masking_mode`` is not ``"random"`` or ``"span"``.
+        ValueError: If ``masking_mode`` is not ``"random"`` or ``"span"``,
+            or if ``use_random_smiles`` and ``use_canonical_smiles`` are
+            both True.
         RuntimeError: If a valid sample cannot be loaded after
             ``_MAX_GETITEM_RETRIES`` attempts.
     """
@@ -358,17 +401,28 @@ class SupervisedAtomMappingDataset(Dataset):
         mlm_config: MLMConfig,
         max_length: int = 256,
         use_random_smiles: bool = True,
+        use_canonical_smiles: bool = False,
+        canonicalize_mapped_rxn_smiles_pct: float = 0.05,
         protected_tokens: Set[str] | None = None,
         smooth_symmetric_targets: bool = True,
+        resonance_equivalence: bool = True,
         masking_mode: str = "span",
         span_mlm_config: SpanMLMConfig | None = None,
     ):
+        if use_random_smiles and use_canonical_smiles:
+            raise ValueError(
+                "use_random_smiles and use_canonical_smiles cannot both be True"
+            )
+
         self.texts = list(texts)
         self.tokenizer = tokenizer
         self.mlm_config = mlm_config
         self.max_length = max_length
         self.use_random_smiles = use_random_smiles
+        self.use_canonical_smiles = use_canonical_smiles
+        self.canonicalize_mapped_rxn_smiles_pct = canonicalize_mapped_rxn_smiles_pct
         self.smooth_symmetric_targets = smooth_symmetric_targets
+        self.resonance_equivalence = resonance_equivalence
 
         if masking_mode not in ("random", "span"):
             raise ValueError(
@@ -423,6 +477,8 @@ class SupervisedAtomMappingDataset(Dataset):
                 mlm_unmapped_text = _randomize_and_unmap_rxn_smiles(
                     mapped_rxn_smiles=mapped_text,
                     randomize_mapped_rxn_smiles=self.use_random_smiles,
+                    canonicalize_mapped_rxn_smiles_pct=self.canonicalize_mapped_rxn_smiles_pct,
+                    canonicalize_only=self.use_canonical_smiles,
                 )
                 if mlm_unmapped_text is None:
                     logger.debug(
@@ -438,7 +494,10 @@ class SupervisedAtomMappingDataset(Dataset):
                     mapped_rxn_smiles=mapped_text,
                     token_atom_identity_dict=token_atom_identity_dict,
                     randomize_mapped_rxn_smiles=self.use_random_smiles,
+                    canonicalize_mapped_rxn_smiles_pct=self.canonicalize_mapped_rxn_smiles_pct,
+                    canonicalize_only=self.use_canonical_smiles,
                     smooth_symmetric_targets=self.smooth_symmetric_targets,
+                    resonance_equivalence=self.resonance_equivalence,
                 )
                 if align_result is None:
                     logger.debug(
@@ -1252,6 +1311,7 @@ def main_supervised(
     protected_tokens: Optional[Set[str]] = None,
     masking_mode: str = "span",
     span_mlm_config: Optional[SpanMLMConfig] = None,
+    canonicalize_mapped_rxn_smiles_pct: float = 0.05,
     resume_from_checkpoint: str | None = None,
     log_level: str = "INFO",
 ):
@@ -1291,6 +1351,10 @@ def main_supervised(
         span_mlm_config (Optional[SpanMLMConfig]): Span masking
             configuration. Defaults to
             ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing SMILES during training
+            augmentation. Validation always canonicalizes to match inference
+            behavior. Defaults to 0.05.
         resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
             file to resume training from.
         log_level (str): Loguru level for progress messages. Defaults to
@@ -1341,21 +1405,27 @@ def main_supervised(
     )
 
     # --- Datasets ---
+    # Training: random SMILES augmentation with configurable canonicalization pct
     train_dataset = SupervisedAtomMappingDataset(
         texts=train_texts,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens=protected_tokens,
         max_length=max_length,
+        use_random_smiles=True,
+        canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
         masking_mode=masking_mode,
         span_mlm_config=span_mlm_config,
     )
+    # Validation: always canonicalize to match inference behavior
     val_dataset = SupervisedAtomMappingDataset(
         texts=val_texts,
         tokenizer=tokenizer,
         mlm_config=mlm_config,
         protected_tokens=protected_tokens,
         max_length=max_length,
+        use_random_smiles=False,
+        use_canonical_smiles=True,
         masking_mode=masking_mode,
         span_mlm_config=span_mlm_config,
     )

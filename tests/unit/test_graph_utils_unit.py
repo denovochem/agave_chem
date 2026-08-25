@@ -4,6 +4,7 @@ import pytest
 from agave_chem.utils.graph_utils import (
     _enumerate_resonance_swap_variants,
     _enumerate_tautomeric_rxn_smiles,
+    find_resonance_equivalent_groups,
     mapping_equivalent,
     normalize_rxn_atom_maps,
     rxn_to_mapping_graph,
@@ -291,3 +292,89 @@ def test_mapping_equivalent_false_for_enantiomeric_reactions():
     rxn1 = "[CH3:1][C@@H:2](F)Cl>>[CH3:1][C@@H:2](F)Cl"
     rxn2 = "[CH3:1][C@H:2](F)Cl>>[CH3:1][C@H:2](F)Cl"
     assert mapping_equivalent(rxn1, rxn2) is False
+
+
+# ---------------------------------------------------------------------------
+# find_resonance_equivalent_groups
+# ---------------------------------------------------------------------------
+
+
+def test_find_resonance_equivalent_groups_nitro_oxygens():
+    """The two oxygens in a nitro group should be identified as resonance-equivalent."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1")
+    groups = find_resonance_equivalent_groups(mol)
+    assert len(groups) == 1
+    assert sorted(groups[0]) == [2, 3]
+
+
+def test_find_resonance_equivalent_groups_no_resonance():
+    """A molecule without resonance-equivalent atoms returns an empty list."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("[CH3:1][CH2:2][OH:3]")
+    groups = find_resonance_equivalent_groups(mol)
+    assert groups == []
+
+
+def test_find_resonance_equivalent_groups_carboxylate():
+    """Carboxylate oxygens should be identified as resonance-equivalent."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("[C:1](=[O:2])[O-:3]")
+    groups = find_resonance_equivalent_groups(mol)
+    assert len(groups) == 1
+    assert sorted(groups[0]) == [2, 3]
+
+
+def test_find_resonance_equivalent_groups_dinitro_two_pairs():
+    """1,4-dinitrobenzene yields two resonance pairs (one per nitro group).
+
+    The four oxygens only merge into a single group of 4 after
+    ``_merge_symmetry_groups`` combines these resonance pairs with
+    topological symmetry groups.
+    """
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("O=[N+]([O-])c1ccc([N+]([O-])=O)cc1")
+    # Assign map numbers to all four oxygens
+    map_num = 10
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetAtomMapNum() == 0:
+            atom.SetAtomMapNum(map_num)
+            map_num += 1
+    groups = find_resonance_equivalent_groups(mol)
+    assert len(groups) == 2
+    for g in groups:
+        assert len(g) == 2
+
+
+def test_find_resonance_equivalent_groups_excludes_unmapped_pairs():
+    """Pairs where both atoms have mapnum 0 are excluded from groups."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("O=[N+]([O-])c1ccc([N+]([O-])=O)cc1")
+    groups = find_resonance_equivalent_groups(mol)
+    assert groups == []
+
+
+def test_find_resonance_equivalent_groups_partial_mapping():
+    """When only one atom in a resonance pair is mapped, the pair is still recorded."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("[CH2:1]c1ccc([N+](=O)[O-])cc1")
+    groups = find_resonance_equivalent_groups(mol)
+    # Only map 1 exists on a non-resonance atom; the nitro oxygens are unmapped
+    assert groups == []
+
+
+def test_find_resonance_equivalent_groups_does_not_modify_mol():
+    """The input molecule should not be modified."""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles("[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1")
+    original_maps = [atom.GetAtomMapNum() for atom in mol.GetAtoms()]
+    find_resonance_equivalent_groups(mol)
+    after_maps = [atom.GetAtomMapNum() for atom in mol.GetAtoms()]
+    assert original_maps == after_maps

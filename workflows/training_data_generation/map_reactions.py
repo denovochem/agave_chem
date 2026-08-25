@@ -16,6 +16,10 @@ Each output dict has the structure::
 Batch files are named ``batch_000000.pkl``, ``batch_000001.pkl``, ... and each
 contains a ``List[dict]`` of up to ``--batch-size`` results.
 
+If the output directory already contains batch files from a prior run, the
+script reads them, collects the already-processed reaction SMILES, skips those
+reactions, and appends new results as additional batch files.
+
 Example usage::
 
     python workflows/training_data_generation/map_reactions.py \
@@ -23,6 +27,12 @@ Example usage::
         --output-dir workflows/data/mapped_batches_08_21_26 \
         --workers 8 \
         --batch-size 10000
+
+
+    python workflows/training_data_generation/extract_mapped_smiles.py \
+        --input-dir workflows/data/mapped_batches_08_21_26 \
+        --output workflows/data/mapped_smiles_08_21_26.txt
+
 """
 
 import argparse
@@ -149,6 +159,43 @@ def _save_batch(batch: List[dict], output_dir: Path, batch_idx: int) -> None:
     logger.info(f"Saved batch {batch_idx:06d} ({len(batch)} results) → {batch_path}")
 
 
+def _load_existing_rxns(output_dir: Path) -> tuple[set[str], int]:
+    """
+    Scan ``output_dir`` for existing batch pickle files and collect already-processed rxn strings.
+
+    Args:
+        output_dir (Path): Directory containing ``batch_*.pkl`` files from a prior run.
+
+    Returns:
+        tuple[set[str], int]:
+            - Set of reaction SMILES already present in existing batch files.
+            - The next batch index to use (max existing index + 1, or 0 if none found).
+    """
+    existing_rxns: set[str] = set()
+    max_batch_idx = -1
+
+    for pkl_path in sorted(output_dir.glob("batch_*.pkl")):
+        try:
+            with open(pkl_path, "rb") as f:
+                batch: List[dict] = pickle.load(f)
+            for item in batch:
+                if "rxn" in item:
+                    existing_rxns.add(item["rxn"])
+        except Exception as e:
+            logger.warning(f"Could not read {pkl_path} (corrupt?): {e}")
+            continue
+
+        # Extract batch index from filename
+        stem = pkl_path.stem  # e.g. "batch_000003"
+        try:
+            idx = int(stem.split("_")[1])
+            max_batch_idx = max(max_batch_idx, idx)
+        except (IndexError, ValueError):
+            continue
+
+    return existing_rxns, max_batch_idx + 1
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 
@@ -185,7 +232,7 @@ def main() -> None:
         "--chunksize",
         type=int,
         default=50,
-        help="Number of reactions sent to each worker per imap_unordered chunk.",
+        help="Number of reactions sent to each worker per imap chunk.",
     )
     args = parser.parse_args()
 
@@ -193,15 +240,27 @@ def main() -> None:
     disable_library_logging()
 
     logger.info(f"Loading reactions from {args.input} ...")
-    rxns = _load_reactions(args.input)
-    logger.info(f"Loaded {len(rxns):,} reactions.")
+    all_rxns = _load_reactions(args.input)
+    logger.info(f"Loaded {len(all_rxns):,} reactions.")
+
+    existing_rxns, batch_idx = _load_existing_rxns(args.output_dir)
+    if existing_rxns:
+        logger.info(f"Found {len(existing_rxns):,} already-processed reactions in {args.output_dir}/")
+        rxns = [r for r in all_rxns if r not in existing_rxns]
+        logger.info(f"{len(rxns):,} reactions remaining after skipping existing.")
+    else:
+        rxns = all_rxns
+
+    if not rxns:
+        logger.info("Nothing to do — all reactions already processed.")
+        return
+
     logger.info(
         f"Starting pool: workers={args.workers}, "
         f"batch_size={args.batch_size:,}, chunksize={args.chunksize}"
     )
 
     start = time.time()
-    batch_idx = 0
     current_batch: List[dict] = []
     processed = 0
     failed = 0

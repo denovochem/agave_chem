@@ -242,6 +242,151 @@ class TestBuildAttentionTarget:
 
 
 # ---------------------------------------------------------------------------
+# build_attention_target_from_mapped_rxn_smiles — resonance equivalence
+# ---------------------------------------------------------------------------
+
+
+class TestResonanceEquivalence:
+    """Tests for the resonance_equivalence parameter."""
+
+    def test_nitro_oxygens_smoothed_with_resonance(self, tokenizer):
+        """With resonance_equivalence=True, nitro oxygens get fractional weights."""
+        rxn = (
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+            ">>"
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+        )
+        result = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=True,
+        )
+        assert result is not None
+        attn_target, _ = result
+        # With resonance smoothing, some values should be fractional (0.5)
+        unique_vals = set(np.unique(attn_target))
+        assert 0.5 in unique_vals
+
+    def test_nitro_oxygens_not_smoothed_without_resonance(self, tokenizer):
+        """With resonance_equivalence=False, nitro oxygens are not smoothed."""
+        rxn = (
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+            ">>"
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+        )
+        result = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=False,
+        )
+        assert result is not None
+        attn_target, _ = result
+        # Without resonance, the nitro oxygens are not symmetric
+        # so there should be no 0.5 weights from them
+        # (topological symmetry may still produce 0.5 for other atoms,
+        # but the nitro oxygens themselves won't be smoothed)
+        unique_vals = set(np.unique(attn_target))
+        assert unique_vals.issubset({0.0, 1.0})
+
+    def test_dinitrobenzene_four_oxygens_smoothed(self, tokenizer):
+        """All 4 oxygens in dinitrobenzene get 0.25 weight with resonance."""
+        rxn = (
+            "[O:2]=[N+]([O-:3])c1ccc([N+]([O-:5])=[O:4])cc1"
+            ">>"
+            "[O:2]=[N+]([O-:3])c1ccc([N+]([O-:5])=[O:4])cc1"
+        )
+        result = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=True,
+        )
+        assert result is not None
+        attn_target, _ = result
+        # With 4 equivalent oxygens, weight should be 0.25
+        unique_vals = set(np.unique(attn_target))
+        assert 0.25 in unique_vals
+
+    def test_resonance_equivalence_deterministic(self, tokenizer):
+        """Same seed with resonance_equivalence=True produces identical results."""
+        rxn = (
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+            ">>"
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+        )
+        result1 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=True,
+            seed=42,
+        )
+        result2 = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            token_atom_identity_dict=token_atom_identity_dict,
+            randomize_mapped_rxn_smiles=True,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=True,
+            seed=42,
+        )
+        assert result1 is not None
+        assert result2 is not None
+        attn1, unmapped1 = result1
+        attn2, unmapped2 = result2
+        np.testing.assert_array_equal(attn1, attn2)
+        assert unmapped1 == unmapped2
+
+    def test_resonance_equivalence_false_preserves_existing_behavior(
+        self, tokenizer
+    ):
+        """resonance_equivalence=False matches behavior before the feature was added."""
+        rxn = "[C:1]([O:2])([O:3])=O>>[C:1]([O:2])([O:3])=O"
+        result = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=False,
+        )
+        assert result is not None
+        attn_target, _ = result
+        assert attn_target.min() >= 0.0
+        assert attn_target.max() <= 1.0
+
+    def test_resonance_equivalence_default_is_true(self, tokenizer):
+        """The default value of resonance_equivalence should be True."""
+        rxn = (
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+            ">>"
+            "[CH2:1]c1ccc([N+](=[O:2])[O-:3])cc1"
+        )
+        result_default = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+        )
+        result_explicit = build_attention_target_from_mapped_rxn_smiles(
+            tokenizer=tokenizer,
+            mapped_rxn_smiles=rxn,
+            randomize_mapped_rxn_smiles=False,
+            smooth_symmetric_targets=True,
+            resonance_equivalence=True,
+        )
+        assert result_default is not None
+        assert result_explicit is not None
+        np.testing.assert_array_equal(result_default[0], result_explicit[0])
+
+
+# ---------------------------------------------------------------------------
 # build_attention_target_from_mapped_rxn_smiles — determinism
 # ---------------------------------------------------------------------------
 
