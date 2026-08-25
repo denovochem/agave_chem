@@ -34,7 +34,7 @@ class CustomTokenizer(PreTrainedTokenizer):
         sep_token:   The SEP token string. Must exist in token_to_id.
     """
 
-    vocab_files_names: ClassVar[Dict[str, str]] = {"vocab_file": "vocab.json"}
+    vocab_files_names: ClassVar[Dict[str, str]] = {"vocab_file": "vocab.json"}  # type: ignore[misc]
 
     def __init__(
         self,
@@ -239,7 +239,7 @@ class CustomTokenizer(PreTrainedTokenizer):
 
     def save_vocabulary(
         self, save_directory: str, filename_prefix: str | None = None
-    ) -> Tuple[str]:
+    ) -> Tuple[str, ...]:
         """
         Save the token-to-ID mapping as a JSON file.
 
@@ -267,7 +267,9 @@ class CustomTokenizer(PreTrainedTokenizer):
         return (vocab_file,)
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: str, *args, **kwargs):
+    def from_pretrained(  # type: ignore[override]
+        cls, pretrained_model_name_or_path: str, *args, **kwargs
+    ):
         """
         Load a ``CustomTokenizer`` from a directory containing ``vocab.json``.
 

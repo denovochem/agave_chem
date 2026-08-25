@@ -72,12 +72,11 @@ def find_innermost_bracket_with_comma(s: str) -> Optional[Tuple[int, int]]:
     for i, char in enumerate(s):
         if char == "[":
             bracket_stack.append(i)
-        elif char == "]":
-            if bracket_stack:
-                start = bracket_stack.pop()
-                content = s[start + 1 : i]
-                if has_top_level_comma(content):
-                    return (start, i + 1)
+        elif char == "]" and bracket_stack:
+            start = bracket_stack.pop()
+            content = s[start + 1 : i]
+            if has_top_level_comma(content):
+                return (start, i + 1)
 
     return None
 

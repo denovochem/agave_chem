@@ -14,8 +14,8 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 | [RXNMapperv2](https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15005247/v1) | 89.59% |
 | [GraphormerMapper](https://pubs.acs.org/jcisd8/article-abstract/62/14/3307/850123/Bidirectional-Graphormer-for-Reactivity?redirectedFrom=fulltext) | 89.76% |
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
-| AgaveChem (neural only) | 90.22% |
-| AgaveChem (using `map_reactions()`) | 91.75% |
+| AgaveChem (neural only) | 91.87% |
+| AgaveChem (using `map_reactions()`) | 92.72% |
 
 ## Mappers
 

@@ -510,7 +510,7 @@ def mapping_equivalent(
         G2 = rxn_to_mapping_graph(rxn2)
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     if not consider_tautomers and not consider_resonance_swaps:
@@ -528,7 +528,7 @@ def mapping_equivalent(
     for smi in candidate_smiles:
         try:
             G2 = rxn_to_mapping_graph(smi)
-        except Exception:
+        except Exception:  # noqa: S112
             continue
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True
@@ -558,7 +558,7 @@ def mappings_equivalent(gold_rxn: str, pred_rxn: str) -> bool:
     try:
         if canonicalize_atom_mapping(gold_rxn) == canonicalize_atom_mapping(pred_rxn):
             return True
-    except Exception:
+    except Exception:  # noqa: S110
         pass
     try:
         return mapping_equivalent(

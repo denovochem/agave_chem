@@ -233,7 +233,7 @@ class TestSupervisedConfig:
 
     def test_default_values(self):
         config = SupervisedConfig()
-        assert config.target_layer == 11
+        assert config.target_layer == 10
         assert config.bottleneck_size == 64
 
     def test_valid_construction(self):
