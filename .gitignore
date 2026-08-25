@@ -150,3 +150,7 @@
 !golden_seeded_tautomer.pkl
 !golden_canonical.pkl
 !verify_golden_datasets.py
+
+
+# !manuscript/
+# !manuscript/**
