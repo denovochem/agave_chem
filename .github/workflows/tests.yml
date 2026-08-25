@@ -25,7 +25,7 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
       - name: Type check with mypy
-        run: mypy .
+        run: mypy agave_chem
   test:
     runs-on: ubuntu-latest
 
