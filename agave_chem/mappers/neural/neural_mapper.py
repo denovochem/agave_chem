@@ -1,7 +1,7 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, cast
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 import numpy as np
 import torch
@@ -37,22 +37,28 @@ class StringInfoDict(TypedDict):
 def load_neural_albert_model(
     checkpoint_dir: str,
     device: torch.device,
-    use_supervised: bool,
-    max_length: int = 512,
     supervised_config: SupervisedConfig | None = None,
-) -> AlbertForMaskedLM | AlbertWithAttentionAlignment:
+) -> AlbertWithAttentionAlignment:
+    """
+    Load the supervised ALBERT model from a checkpoint directory.
+
+    Args:
+        checkpoint_dir (str): Path to the directory containing the base
+            AlbertForMaskedLM weights and the supervised checkpoint file
+            ``supervised_albert_model.pt``.
+        device (torch.device): The device to load the model onto.
+        supervised_config (SupervisedConfig | None): Configuration for the
+            supervised model. If None, a default SupervisedConfig is used.
+
+    Returns:
+        AlbertWithAttentionAlignment: The loaded supervised model in eval mode.
+    """
     checkpoint_dir = str(checkpoint_dir)
-    base_model = cast(
-        AlbertForMaskedLM,
-        AlbertForMaskedLM.from_pretrained(
-            checkpoint_dir,
-            attn_implementation="eager",
-        ),
+    base_model = AlbertForMaskedLM.from_pretrained(
+        checkpoint_dir,
+        attn_implementation="eager",
     )
     torch.nn.Module.to(base_model, device)
-
-    if not use_supervised:
-        return base_model
 
     if supervised_config is None:
         supervised_config = SupervisedConfig()
@@ -60,7 +66,6 @@ def load_neural_albert_model(
     wrapper = AlbertWithAttentionAlignment(
         base_model=base_model,
         supervised_config=supervised_config,
-        max_length=max_length,
     ).to(device)
 
     pt_path = str(Path(checkpoint_dir) / "supervised_albert_model.pt")
@@ -80,9 +85,11 @@ class NeuralReactionMapper(ReactionMapper):
         mapper_name: str,
         mapper_weight: float = 3,
         checkpoint_path: Optional[str] = None,
-        use_supervised: bool = True,
         supervised_config: SupervisedConfig | None = None,
-        sequence_max_length: int = 512,
+        sequence_max_length: int = 1024,
+        adjacent_atom_multiplier: float = 10,
+        identical_adjacent_atom_multiplier: float = 10,
+        used_atom_divisor: float = 10,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -91,6 +98,18 @@ class NeuralReactionMapper(ReactionMapper):
             mapper_name (str): The name of the mapper.
             mapper_weight (float): The weight of the mapper.
             checkpoint_path (Optional[str]): The path to the checkpoint file.
+            supervised_config (SupervisedConfig | None): Configuration for the
+                supervised model. If None, a default SupervisedConfig is used.
+            sequence_max_length (int): Maximum tokenization length for the model.
+                Defaults to 1024.
+            adjacent_atom_multiplier (float): Multiplier applied to attention
+                scores of atoms neighboring an already-mapped pair.
+            identical_adjacent_atom_multiplier (float): Additional multiplier
+                applied when a neighboring pair shares the same atom encoding.
+            used_atom_divisor (float): Divisor applied to attention scores of
+                reactant atoms that are already mapped when
+                one_to_one_correspondence is False. Lower values increase the
+                likelihood of detecting oversubscription.
         """
 
         super().__init__("neural", mapper_name, mapper_weight)
@@ -103,14 +122,14 @@ class NeuralReactionMapper(ReactionMapper):
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self._sequence_max_length = sequence_max_length
-        self._use_supervised = use_supervised
         self._supervised_config = supervised_config or SupervisedConfig()
+        self._adjacent_atom_multiplier = adjacent_atom_multiplier
+        self._identical_adjacent_atom_multiplier = identical_adjacent_atom_multiplier
+        self._used_atom_divisor = used_atom_divisor
 
         self._model = load_neural_albert_model(
             checkpoint_dir=checkpoint_path,
             device=self._device,
-            use_supervised=use_supervised,
-            max_length=sequence_max_length,
             supervised_config=self._supervised_config,
         )
 
@@ -141,83 +160,6 @@ class NeuralReactionMapper(ReactionMapper):
         h = atom.GetTotalNumHs()
         d = atom.GetDegree()
         return [z, chg, arom, ring, h, d]
-
-    def get_attention_matrix_for_head(
-        self,
-        text: str,
-        layer: int,
-        head: int,
-        max_length: int = 512,
-        trim_padding: bool = True,
-    ) -> Tuple[np.ndarray, List[str]]:
-        """
-        Returns the attention matrix for a given layer/head for a single input string.
-
-        Args:
-            text: input reaction SMILES string (raw is fine; CustomTokenizer preprocesses)
-            layer: 0-based layer index
-            head: 0-based head index
-            max_length: tokenization length (should match training, e.g. 256)
-            trim_padding: if True, slices matrix down to non-pad tokens only
-
-        Returns:
-            attn: Tensor of shape (seq_len, seq_len) (trimmed if requested)
-            tokens: list[str] tokens aligned to attn axes (trimmed if requested)
-        """
-        self._model.eval()
-
-        enc = self._tokenizer(
-            text,
-            max_length=max_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
-        )
-        input_ids = enc["input_ids"].to(self._device)
-        attention_mask = enc["attention_mask"].to(self._device)
-        token_type_ids = torch.zeros_like(input_ids)
-
-        with torch.no_grad():
-            if isinstance(self._model, AlbertWithAttentionAlignment):
-                attn_probs = self._model.predict_attention_probs(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    token_type_ids=token_type_ids,
-                )  # (B,S,S)
-                attn = attn_probs[0].detach().cpu()  # (S,S)
-            else:
-                outputs = self._model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    output_attentions=True,
-                    return_dict=True,
-                )
-                attentions = outputs.attentions  # tuple[num_layers] of (B,H,S,S)
-
-                if layer < 0 or layer >= len(attentions):
-                    raise ValueError(
-                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
-                    )
-
-                num_heads = attentions[layer].shape[1]
-                if head < 0 or head >= num_heads:
-                    raise ValueError(
-                        f"head must be in [0, {num_heads - 1}], got {head}"
-                    )
-
-                attn = attentions[layer][0, head].detach().cpu()  # (S,S)
-
-        # Tokens for inspection/plotting
-        token_ids = enc["input_ids"][0].tolist()
-        tokens = self._tokenizer.convert_ids_to_tokens(token_ids)
-
-        if trim_padding:
-            real_len = int(enc["attention_mask"][0].sum().item())
-            attn = attn[:real_len, :real_len]
-            tokens = tokens[:real_len]
-
-        # IMPORTANT: keep downstream behavior identical by returning log-attn
-        return torch.log(attn).numpy(), tokens
 
     def get_reactants_products_dict(
         self,
@@ -643,9 +585,6 @@ class NeuralReactionMapper(ReactionMapper):
         rxn_smiles: str,
         aligned_attn_scores: Tuple[np.ndarray, np.ndarray],
         one_to_one_correspondence: bool = True,
-        adjacent_atom_multiplier: float = 30,
-        identical_adjacent_atom_multiplier: float = 10,
-        used_atom_divisor: float = 10,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
     ) -> Tuple[str, float, Dict[str, int]]:
@@ -657,6 +596,10 @@ class NeuralReactionMapper(ReactionMapper):
         attention contributions, preventing artificially low confidence scores
         caused by equivalent atoms splitting probability mass.
 
+        Uses the scoring heuristic parameters (adjacent_atom_multiplier,
+        identical_adjacent_atom_multiplier, used_atom_divisor) configured on the
+        NeuralReactionMapper instance at construction time.
+
         Args:
             rxn_smiles (str): Unmapped reaction SMILES string of the form
                 "reactants>>products".
@@ -666,13 +609,6 @@ class NeuralReactionMapper(ReactionMapper):
                 assignment using greedy selection of the global attention maximum.
                 If False, assigns each product atom independently to its
                 highest-attention reactant atom.
-            adjacent_atom_multiplier (float): Multiplier applied to attention
-                scores of atoms neighboring an already-mapped pair.
-            identical_adjacent_atom_multiplier (float): Additional multiplier
-                applied when a neighboring pair shares the same atom encoding.
-            used_atom_divisor (float): Divisor applied to attention scores
-                of reactant atoms that are already mapped if one_to_one_correspondence
-                is False
             reactants_atom_idx_to_orig_mapping (Optional[Dict[int, int]]): Maps
                 global reactant atom indices to existing atom map numbers, used
                 to anchor partially pre-mapped reactions.
@@ -806,7 +742,7 @@ class NeuralReactionMapper(ReactionMapper):
                     attn[:, col_highest_attn] = 0
                 else:
                     attn[row_highest_attn] = 0
-                    attn[:, col_highest_attn] /= used_atom_divisor
+                    attn[:, col_highest_attn] /= self._used_atom_divisor
 
                 assignment_probs.append(orig_attn[row_highest_attn, col_highest_attn])
 
@@ -820,12 +756,12 @@ class NeuralReactionMapper(ReactionMapper):
                 ) in reactants_atom_dict_neighbors[col_highest_attn]:
                     if product_atom_env == reactant_atom_env:
                         attn[product_atom_idx, reactant_atom_idx] *= (
-                            adjacent_atom_multiplier
-                            * identical_adjacent_atom_multiplier
+                            self._adjacent_atom_multiplier
+                            * self._identical_adjacent_atom_multiplier
                         )
                     else:
                         attn[product_atom_idx, reactant_atom_idx] *= (
-                            adjacent_atom_multiplier
+                            self._adjacent_atom_multiplier
                         )
 
         mapped_reactants_str = ".".join(
@@ -841,19 +777,24 @@ class NeuralReactionMapper(ReactionMapper):
         if one_to_one_correspondence:
             return mapped_rxn_smiles, confidence, {}
 
-        oversubscribed_dict = {}
+        oversubscribed_dict: Dict[str, int] = {}
         for reactant in reactants_mols:
             max_oversubscribed_count = 0
             for reactant_atom in reactant.GetAtoms():
                 if not reactant_atom.HasProp("oversubscribed_count"):
                     continue
                 oversubscribed_count = reactant_atom.GetIntProp("oversubscribed_count")
-                if oversubscribed_count > max_oversubscribed_count:
-                    max_oversubscribed_count = oversubscribed_count
+                max_oversubscribed_count = max(
+                    max_oversubscribed_count, oversubscribed_count
+                )
             if max_oversubscribed_count == 0:
                 continue
-            [atom.SetAtomMapNum(0) for atom in reactant.GetAtoms()]
-            oversubscribed_dict[Chem.MolToSmiles(reactant)] = max_oversubscribed_count
+            for atom in reactant.GetAtoms():
+                atom.SetAtomMapNum(0)
+            reactant_smiles = Chem.MolToSmiles(reactant)
+            oversubscribed_dict[reactant_smiles] = (
+                oversubscribed_dict.get(reactant_smiles, 0) + max_oversubscribed_count
+            )
 
         return mapped_rxn_smiles, confidence, oversubscribed_dict
 
@@ -921,24 +862,19 @@ class NeuralReactionMapper(ReactionMapper):
     def _get_attention_matrices_batch(
         self,
         texts: List[str],
-        layer: int = 11,
-        head: int = 7,
         max_length: int = 512,
     ) -> List[Tuple[np.ndarray, List[str]]]:
         """
         Run batched neural network inference and return log-attention matrices for a
         list of reaction SMILES strings.
 
-        Tokenizes all inputs together in a single padded batch, executes one forward
-        pass, then trims each result to its non-padding length before applying the
-        logarithm.
+        Tokenizes all inputs together in a single batch with dynamic padding (padded
+        to the longest sequence in the batch rather than max_length), executes one
+        forward pass, then trims each result to its non-padding length before applying
+        the logarithm.
 
         Args:
             texts (List[str]): Reaction SMILES strings to encode. Must be non-empty.
-            layer (int): 0-based layer index. Only used when the underlying model is
-                the base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
-            head (int): 0-based head index. Only used when the underlying model is the
-                base AlbertForMaskedLM; ignored for AlbertWithAttentionAlignment.
             max_length (int): Maximum tokenization length. Must match the value used
                 during training.
 
@@ -954,7 +890,7 @@ class NeuralReactionMapper(ReactionMapper):
         enc = self._tokenizer(
             texts,
             max_length=max_length,
-            padding="max_length",
+            padding="longest",
             truncation=True,
             return_tensors="pt",
         )
@@ -963,31 +899,12 @@ class NeuralReactionMapper(ReactionMapper):
         token_type_ids = torch.zeros_like(input_ids)
 
         with torch.no_grad():
-            if isinstance(self._model, AlbertWithAttentionAlignment):
-                attn_probs = self._model.predict_attention_probs(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    token_type_ids=token_type_ids,
-                )  # (B, S, S)
-                attn_batch = attn_probs.detach().cpu()  # (B, S, S)
-            else:
-                outputs = self._model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    output_attentions=True,
-                    return_dict=True,
-                )
-                attentions = outputs.attentions  # tuple[num_layers] of (B, H, S, S)
-                if layer < 0 or layer >= len(attentions):
-                    raise ValueError(
-                        f"layer must be in [0, {len(attentions) - 1}], got {layer}"
-                    )
-                num_heads = attentions[layer].shape[1]
-                if head < 0 or head >= num_heads:
-                    raise ValueError(
-                        f"head must be in [0, {num_heads - 1}], got {head}"
-                    )
-                attn_batch = attentions[layer][:, head].detach().cpu()  # (B, S, S)
+            attn_probs = self._model.predict_attention_probs(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+            )  # (B, S, S)
+            attn_batch = attn_probs.detach().cpu()  # (B, S, S)
 
         results: List[Tuple[np.ndarray, List[str]]] = []
         for i in range(len(texts)):
@@ -1005,9 +922,6 @@ class NeuralReactionMapper(ReactionMapper):
         rxn_smiles: str,
         attn: np.ndarray,
         tokens: List[str],
-        sequence_max_length: int = 512,
-        adjacent_atom_multiplier: float = 10,
-        identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = True,
         # canonicalize_reaction_smiles: bool = True,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
@@ -1022,17 +936,14 @@ class NeuralReactionMapper(ReactionMapper):
         atoms are detected, the expanded reaction SMILES (with extra reactant copies)
         is returned as the second element for a downstream retry pass.
 
+        Uses the scoring heuristic parameters and sequence_max_length configured on
+        the NeuralReactionMapper instance at construction time.
+
         Args:
             rxn_smiles (str): An unmapped reaction SMILES string.
             attn (np.ndarray): Log-attention matrix of shape (seq_len, seq_len) as
                 returned by _get_attention_matrices_batch or get_attention_matrix_for_head.
             tokens (List[str]): Token strings aligned to the attention matrix axes.
-            sequence_max_length (int): Maximum allowed sequence length; sequences at or
-                above this length are treated as failures.
-            adjacent_atom_multiplier (float): Multiplier applied to attention scores of
-                atoms neighboring an already-mapped pair.
-            identical_adjacent_atom_multiplier (float): Additional multiplier applied
-                when a neighboring pair shares the same atom encoding.
             one_to_one_correspondence (bool): If True, enforces greedy one-to-one
                 assignment; if False, each product atom independently picks its best
                 reactant atom.
@@ -1067,7 +978,7 @@ class NeuralReactionMapper(ReactionMapper):
             logger.warning("Sequence too long")
             return default_mapping_dict, None
 
-        if len(tokens) >= sequence_max_length:
+        if len(tokens) >= self._sequence_max_length:
             logger.warning("Sequence too long")
             return default_mapping_dict, None
 
@@ -1094,8 +1005,6 @@ class NeuralReactionMapper(ReactionMapper):
             rxn_smiles,
             (reactants_to_products_attn, products_to_reactants_attn),
             one_to_one_correspondence=one_to_one_correspondence,
-            adjacent_atom_multiplier=adjacent_atom_multiplier,
-            identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
             reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
         )
@@ -1189,11 +1098,6 @@ class NeuralReactionMapper(ReactionMapper):
     def map_reaction(
         self,
         rxn_smiles: str,
-        layer: int = 11,
-        head: int = 7,
-        sequence_max_length: int = 512,
-        adjacent_atom_multiplier: float = 10,
-        identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = True,
         start_from_partial_map: bool = False,
     ) -> ReactionMapperResult:
@@ -1204,12 +1108,6 @@ class NeuralReactionMapper(ReactionMapper):
 
         Args:
             rxn_smiles (str): A reaction SMILES string.
-            layer (int): 0-based layer index to use for attention.
-            head (int): 0-based head index to use for attention.
-            sequence_max_length (int): Maximum allowed sequence length.
-            adjacent_atom_multiplier (float): Multiplier for adjacent atom attention scores.
-            identical_adjacent_atom_multiplier (float): Additional multiplier when
-                neighboring atom encodings match.
             one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers from the input SMILES before remapping.
@@ -1220,11 +1118,6 @@ class NeuralReactionMapper(ReactionMapper):
         """
         return self.map_reactions(
             [rxn_smiles],
-            layer=layer,
-            head=head,
-            sequence_max_length=sequence_max_length,
-            adjacent_atom_multiplier=adjacent_atom_multiplier,
-            identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
             one_to_one_correspondence=one_to_one_correspondence,
             start_from_partial_map=start_from_partial_map,
         )[0]
@@ -1232,11 +1125,6 @@ class NeuralReactionMapper(ReactionMapper):
     def map_reactions(
         self,
         reaction_list: List[str],
-        layer: int = 11,
-        head: int = 7,
-        sequence_max_length: int = 512,
-        adjacent_atom_multiplier: float = 10,
-        identical_adjacent_atom_multiplier: float = 10,
         one_to_one_correspondence: bool = True,
         start_from_partial_map: bool = False,
         batch_size: int = 32,
@@ -1244,20 +1132,17 @@ class NeuralReactionMapper(ReactionMapper):
         """
         Map a list of reaction SMILES strings using batched neural network inference.
 
-        Tokenizes and runs the model in batches of batch_size for efficiency, then
-        assigns atom mappings for each reaction individually from the resulting
-        attention matrices.
+        Reactions are pre-tokenized and sorted by sequence length before batching to
+        minimize padding waste. Each batch is processed in a streaming fashion:
+        attention matrices are consumed for atom mapping immediately after inference
+        and discarded before the next batch, avoiding the need to hold all matrices
+        in memory simultaneously.
+
+        Uses the scoring heuristics and sequence_max_length configured
+        on the NeuralReactionMapper instance at construction time.
 
         Args:
             reaction_list (List[str]): A list of unmapped reaction SMILES strings.
-            layer (int): 0-based layer index. Only used for the base AlbertForMaskedLM;
-                ignored for AlbertWithAttentionAlignment.
-            head (int): 0-based head index. Only used for the base AlbertForMaskedLM;
-                ignored for AlbertWithAttentionAlignment.
-            sequence_max_length (int): Maximum tokenization length.
-            adjacent_atom_multiplier (float): Multiplier for adjacent atom attention scores.
-            identical_adjacent_atom_multiplier (float): Additional multiplier when
-                neighboring atom encodings match.
             one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers before remapping.
@@ -1315,80 +1200,80 @@ class NeuralReactionMapper(ReactionMapper):
         if not valid_smiles:
             return results
 
-        # Batched neural network inference
-        attn_tokens_list: List[Tuple[np.ndarray, List[str]]] = []
-        for batch_start in range(0, len(valid_smiles), batch_size):
-            batch = valid_smiles[batch_start : batch_start + batch_size]
-            attn_tokens_list.extend(
-                self._get_attention_matrices_batch(
-                    texts=batch,
-                    layer=layer,
-                    head=head,
-                    max_length=sequence_max_length,
-                )
-            )
+        # Pre-tokenize (without padding) to get sequence lengths for sorting.
+        # This is cheap (regex tokenization) compared to the model forward pass.
+        pre_enc = self._tokenizer(
+            valid_smiles,
+            max_length=self._sequence_max_length,
+            truncation=True,
+            padding=False,
+        )
+        lengths = [len(ids) for ids in pre_enc["input_ids"]]
+        sorted_order = sorted(range(len(valid_pairs)), key=lambda i: lengths[i])
+        sorted_pairs = [valid_pairs[i] for i in sorted_order]
+        sorted_smiles = [p[0] for _, p in sorted_pairs]
 
-        # Assign atom maps per reaction from pre-computed attention matrices
+        # First pass: stream batches through inference and mapping
         oversubscribed_cases: List[Tuple[int, str, str]] = []
-        for local_idx, (
-            orig_idx,
-            (rxn_smiles, reactants_map, products_map),
-        ) in enumerate(valid_pairs):
-            attn, tokens = attn_tokens_list[local_idx]
-            result, expanded_rxn_smiles = self._map_from_attention(
-                rxn_smiles=rxn_smiles,
-                attn=attn,
-                tokens=tokens,
-                sequence_max_length=sequence_max_length,
-                adjacent_atom_multiplier=adjacent_atom_multiplier,
-                identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
-                one_to_one_correspondence=one_to_one_correspondence,
-                reactants_atom_idx_to_orig_mapping=reactants_map,
-                products_atom_idx_to_orig_mapping=products_map,
+        for batch_start in range(0, len(sorted_smiles), batch_size):
+            batch = sorted_smiles[batch_start : batch_start + batch_size]
+            batch_pairs = sorted_pairs[batch_start : batch_start + batch_size]
+            attn_tokens_list = self._get_attention_matrices_batch(
+                texts=batch,
+                max_length=self._sequence_max_length,
             )
-            results[orig_idx] = result
-            if expanded_rxn_smiles is not None:
-                expanded_rxn_smiles = canonicalize_reaction_smiles(expanded_rxn_smiles)
-                oversubscribed_cases.append((orig_idx, rxn_smiles, expanded_rxn_smiles))
+            for local_idx, (
+                orig_idx,
+                (rxn_smiles, reactants_map, products_map),
+            ) in enumerate(batch_pairs):
+                attn, tokens = attn_tokens_list[local_idx]
+                result, expanded_rxn_smiles = self._map_from_attention(
+                    rxn_smiles=rxn_smiles,
+                    attn=attn,
+                    tokens=tokens,
+                    one_to_one_correspondence=one_to_one_correspondence,
+                    reactants_atom_idx_to_orig_mapping=reactants_map,
+                    products_atom_idx_to_orig_mapping=products_map,
+                )
+                results[orig_idx] = result
+                if expanded_rxn_smiles is not None:
+                    expanded_rxn_smiles = canonicalize_reaction_smiles(
+                        expanded_rxn_smiles
+                    )
+                    oversubscribed_cases.append(
+                        (orig_idx, rxn_smiles, expanded_rxn_smiles)
+                    )
 
         if not oversubscribed_cases:
             return results
 
-        # Second pass: batch-map expanded reactions with one_to_one_correspondence=True
+        # Second pass: stream expanded reactions with one_to_one_correspondence=True
         expanded_smiles = [expanded for _, _, expanded in oversubscribed_cases]
-        expanded_attn_tokens: List[Tuple[np.ndarray, List[str]]] = []
         for batch_start in range(0, len(expanded_smiles), batch_size):
             batch = expanded_smiles[batch_start : batch_start + batch_size]
-            expanded_attn_tokens.extend(
-                self._get_attention_matrices_batch(
-                    texts=batch,
-                    layer=layer,
-                    head=head,
-                    max_length=sequence_max_length,
+            batch_cases = oversubscribed_cases[batch_start : batch_start + batch_size]
+            attn_tokens_list = self._get_attention_matrices_batch(
+                texts=batch,
+                max_length=self._sequence_max_length,
+            )
+            for local_idx, (orig_idx, orig_rxn_smiles, expanded_rxn) in enumerate(
+                batch_cases
+            ):
+                attn, tokens = attn_tokens_list[local_idx]
+                retry_result, _ = self._map_from_attention(
+                    rxn_smiles=expanded_rxn,
+                    attn=attn,
+                    tokens=tokens,
+                    one_to_one_correspondence=True,
                 )
-            )
-
-        for local_idx, (orig_idx, orig_rxn_smiles, expanded_rxn) in enumerate(
-            oversubscribed_cases
-        ):
-            attn, tokens = expanded_attn_tokens[local_idx]
-            retry_result, _ = self._map_from_attention(
-                rxn_smiles=expanded_rxn,
-                attn=attn,
-                tokens=tokens,
-                sequence_max_length=sequence_max_length,
-                adjacent_atom_multiplier=adjacent_atom_multiplier,
-                identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
-                one_to_one_correspondence=True,
-            )
-            if retry_result["selected_mapping"]:
-                retry_result["original_smiles"] = orig_rxn_smiles
-                retry_result["selected_mapping"] = (
-                    self._strip_unmapped_reactant_fragments(
-                        retry_result["selected_mapping"],
-                        orig_rxn_smiles,
+                if retry_result.selected_mapping:
+                    retry_result.original_smiles = orig_rxn_smiles
+                    retry_result.selected_mapping = (
+                        self._strip_unmapped_reactant_fragments(
+                            retry_result.selected_mapping,
+                            orig_rxn_smiles,
+                        )
                     )
-                )
-                results[orig_idx] = retry_result
+                    results[orig_idx] = retry_result
 
         return results

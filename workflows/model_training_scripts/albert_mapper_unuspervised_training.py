@@ -2,12 +2,13 @@ import random
 import sys
 import time
 from collections import deque
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Literal, Optional, Set, Tuple
 
 import numpy as np
 import torch
+from loguru import logger
+from pydantic import BaseModel, Field, field_validator, model_validator
 from rdkit import Chem
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
@@ -25,13 +26,15 @@ REPO_ROOT = BASE_DIR.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agave_chem.mappers.neural.constants import (  # noqa: E402
+from model_training_scripts.cli_utils import seed_worker
+
+from agave_chem.mappers.neural.constants import (
     smiles_id_to_token_dict,
     smiles_token_to_id_dict,
     token_atom_identity_dict,
 )
-from agave_chem.mappers.neural.tokenizer import CustomTokenizer  # noqa: E402
-from agave_chem.utils.chem_utils import (  # noqa: E402
+from agave_chem.mappers.neural.tokenizer import CustomTokenizer
+from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
     randomize_reaction_smiles,
 )
@@ -41,9 +44,39 @@ from agave_chem.utils.chem_utils import (  # noqa: E402
 # ============================================================
 
 
-@dataclass
-class ModelConfig:
-    """Configuration for the ALBERT model architecture."""
+class ModelConfig(BaseModel):
+    """
+    Pydantic configuration for the ALBERT model architecture.
+
+    All fields map directly to ``transformers.AlbertConfig`` parameters.
+    Validators ensure integer fields are positive and float fields are
+    non-negative.
+
+    Args:
+        vocab_size (int): Size of the SMILES vocabulary.
+        embedding_size (int): Dimension of token embeddings.
+        hidden_size (int): Hidden layer dimension.
+        num_hidden_layers (int): Number of transformer layers.
+        num_attention_heads (int): Number of attention heads per layer.
+        intermediate_size (int): Feed-forward intermediate dimension.
+        hidden_act (Literal["gelu", "gelu_new", "relu", "silu", "tanh"]):
+            Activation function for hidden layers.
+        hidden_dropout_prob (float): Dropout probability for hidden layers.
+        attention_probs_dropout_prob (float): Dropout probability for
+            attention probabilities.
+        max_position_embeddings (int): Maximum sequence length the model
+            can accept.
+        type_vocab_size (int): Size of the token-type vocabulary.
+        initializer_range (float): Standard deviation for weight
+            initialization.
+        layer_norm_eps (float): Epsilon for layer normalization.
+        classifier_dropout_prob (float): Dropout probability for the
+            classifier head.
+        num_hidden_groups (int): Number of hidden parameter-sharing groups
+            (ALBERT cross-layer parameter sharing).
+        inner_group_num (int): Number of inner groups within each hidden
+            group.
+    """
 
     vocab_size: int = 1024
     embedding_size: int = 128
@@ -51,10 +84,10 @@ class ModelConfig:
     num_hidden_layers: int = 12
     num_attention_heads: int = 8
     intermediate_size: int = 512
-    hidden_act: str = "gelu_new"
+    hidden_act: Literal["gelu", "gelu_new", "relu", "silu", "tanh"] = "gelu_new"
     hidden_dropout_prob: float = 0.1
     attention_probs_dropout_prob: float = 0.1
-    max_position_embeddings: int = 512
+    max_position_embeddings: int = 1024
     type_vocab_size: int = 2
     initializer_range: float = 0.02
     layer_norm_eps: float = 1e-12
@@ -62,10 +95,87 @@ class ModelConfig:
     num_hidden_groups: int = 1
     inner_group_num: int = 1
 
+    @field_validator(
+        "vocab_size",
+        "embedding_size",
+        "hidden_size",
+        "num_hidden_layers",
+        "num_attention_heads",
+        "intermediate_size",
+        "max_position_embeddings",
+        "type_vocab_size",
+        "num_hidden_groups",
+        "inner_group_num",
+    )
+    @classmethod
+    def _positive_int(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("must be a positive integer")
+        return v
 
-@dataclass
-class TrainingConfig:
-    """Configuration for the training process."""
+    @field_validator(
+        "hidden_dropout_prob",
+        "attention_probs_dropout_prob",
+        "classifier_dropout_prob",
+        "initializer_range",
+        "layer_norm_eps",
+    )
+    @classmethod
+    def _non_negative_float(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+
+class TrainingConfig(BaseModel):
+    """
+    Pydantic configuration for the MLM training loop.
+
+    Controls optimizer hyperparameters, scheduling, checkpointing, and
+    logging cadence.
+
+    Args:
+        learning_rate (float): Peak learning rate for AdamW.
+        weight_decay (float): Weight decay coefficient applied to
+            non-bias / non-LayerNorm parameters.
+        adam_epsilon (float): Epsilon for the AdamW optimizer.
+        max_grad_norm (float): Maximum gradient norm for gradient clipping.
+        num_epochs (int): Number of training epochs to run.
+        batch_size (int): Training batch size.
+        warmup_steps (int): Number of linear warmup steps before the
+            learning rate decays.
+        logging_steps (int): Number of steps between printed loss logs.
+        output_dir (str): Directory for saving model checkpoints.
+        seed (int): Random seed for reproducibility (Python ``random``,
+            ``numpy``, and ``torch``).
+        save_best_model (bool): If True, save the best model (by validation
+            loss) to ``{output_dir}/best_model.pt``.
+        early_stopping_patience (int): Number of epochs without improvement
+            before stopping. 0 disables early stopping.
+        early_stopping_min_delta (float): Minimum validation loss improvement
+            to count as an improvement.
+        use_amp (bool): If True, enable automatic mixed precision during
+            training and evaluation. Requires a CUDA device.
+        amp_dtype (Literal["float16", "bfloat16"]): Precision dtype for AMP.
+            ``"bfloat16"`` (default) is recommended for Ampere+ GPUs and does
+            not require gradient scaling; ``"float16"`` uses ``GradScaler``
+            for gradient unscaling. Only used when ``use_amp`` is True.
+        gradient_accumulation_steps (int): Number of micro-batches to
+            accumulate before performing an optimizer step. Effective batch
+            size is ``batch_size * gradient_accumulation_steps``. Must be >= 1.
+        compile_model (bool): If True, wrap the model with
+            ``torch.compile`` for potential graph-optimization speedups.
+            The compiled model is automatically unwrapped for checkpoint
+            save/load operations.
+        deterministic (bool): If True, enable deterministic cuDNN behavior
+            (``cudnn.deterministic = True``, ``cudnn.benchmark = False``).
+            If False, allow non-deterministic algorithms with
+            ``cudnn.benchmark = True`` for potential speedup.
+        use_gradient_checkpointing (bool): If True, enable gradient
+            checkpointing on the base model to reduce memory usage at the
+            cost of ~1.3x slower forward passes. Recommended when the
+            training loop performs multiple forward passes per batch.
+    """
 
     learning_rate: float = 2e-4
     weight_decay: float = 0.001
@@ -74,43 +184,163 @@ class TrainingConfig:
     num_epochs: int = 3
     batch_size: int = 32
     warmup_steps: int = 10000
-    save_steps: int = 1000  # This currently does nothing
     logging_steps: int = 100
     output_dir: str = "./albert_output"
     seed: int = 42
-    fp16: bool = False
+    save_best_model: bool = True
+    early_stopping_patience: int = 0
+    early_stopping_min_delta: float = 0.0
+    use_amp: bool = False
+    amp_dtype: Literal["float16", "bfloat16"] = "bfloat16"
+    gradient_accumulation_steps: int = 1
+    compile_model: bool = False
+    deterministic: bool = True
+    use_gradient_checkpointing: bool = False
+
+    @field_validator(
+        "learning_rate",
+        "weight_decay",
+        "adam_epsilon",
+        "max_grad_norm",
+        "early_stopping_min_delta",
+    )
+    @classmethod
+    def _non_negative_float(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+    @field_validator(
+        "num_epochs",
+        "batch_size",
+        "warmup_steps",
+        "logging_steps",
+        "seed",
+        "early_stopping_patience",
+    )
+    @classmethod
+    def _non_negative_int(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
+
+    @field_validator("gradient_accumulation_steps")
+    @classmethod
+    def _positive_int(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("must be a positive integer (>= 1)")
+        return v
 
 
-@dataclass
-class MLMConfig:
-    """Configuration for Masked Language Modeling preprocessing."""
+class MLMConfig(BaseModel):
+    """
+    Pydantic configuration for standard BERT-style MLM masking.
+
+    Controls the fraction of tokens selected for masking and the
+    replacement strategy applied to each selected token.
+
+    Args:
+        mlm_probability (float): Probability of selecting a token for masking.
+        mask_token_prob (float): Probability of replacing a selected token
+            with ``[MASK]``.
+        random_token_prob (float): Probability of replacing a selected
+            token with a random vocabulary token.
+        keep_token_prob (float): Probability of keeping the original token
+            unchanged (but still using it as a prediction target).
+
+    Note:
+        ``mask_token_prob + random_token_prob + keep_token_prob`` must sum
+        to approximately 1.0.  This is validated at construction time.
+    """
 
     mlm_probability: float = 0.15
-    mask_token_prob: float = 0.80  # 80% replace with [MASK]
-    random_token_prob: float = 0.10  # 10% replace with random token
-    keep_token_prob: float = 0.10  # 10% keep original token
+    mask_token_prob: float = 0.80
+    random_token_prob: float = 0.10
+    keep_token_prob: float = 0.10
+
+    @field_validator(
+        "mlm_probability",
+        "mask_token_prob",
+        "random_token_prob",
+        "keep_token_prob",
+    )
+    @classmethod
+    def _probability_range(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("must be between 0 and 1")
+        return v
+
+    @model_validator(mode="after")
+    def _check_prob_sum(self) -> "MLMConfig":
+        total = self.mask_token_prob + self.random_token_prob + self.keep_token_prob
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(
+                f"mask_token_prob + random_token_prob + keep_token_prob "
+                f"must sum to ~1.0, got {total}"
+            )
+        return self
 
 
-@dataclass
-class SpanMLMConfig:
+class SpanMLMConfig(BaseModel):
     """
-    Configuration for graph-aware span-based Masked Language Modeling.
+    Pydantic configuration for graph-aware span-based MLM masking.
 
     Instead of randomly selecting individual tokens, this strategy selects
     contiguous neighborhoods of atoms on the molecular graph for masking.
     Only atom tokens are eligible; structural tokens (bonds, parentheses,
     ring numbers, etc.) are never masked.
+
+    Args:
+        mlm_probability (float): Probability of selecting an atom token for
+            masking (applied as a binomial draw over all atom tokens).
+        span_size_weights (Dict[int, float]): Weights for sampling span
+            sizes. Keys are span sizes (number of atoms); values are
+            relative weights. Defaults to ``{1: 0.3, 2: 0.25, 3: 0.2,
+            4: 0.15, 5: 0.1}``.
+        mask_token_prob (float): Probability of replacing a selected token
+            with ``[MASK]``.
+        plausible_replace_prob (float): Probability of replacing a selected
+            token with a chemically plausible substitute (bioisosteric or
+            same-element variant).
+        keep_token_prob (float): Probability of keeping the original token
+            unchanged (but still using it as a prediction target).
+
+    Note:
+        ``mask_token_prob + plausible_replace_prob + keep_token_prob`` must
+        sum to approximately 1.0.  This is validated at construction time.
     """
 
     mlm_probability: float = 0.15
-    span_size_weights: Dict[int, float] | None = None
+    span_size_weights: Dict[int, float] = Field(
+        default_factory=lambda: {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}
+    )
     mask_token_prob: float = 0.70
     plausible_replace_prob: float = 0.20
     keep_token_prob: float = 0.10
 
-    def __post_init__(self) -> None:
-        if self.span_size_weights is None:
-            self.span_size_weights = {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1}
+    @field_validator(
+        "mlm_probability",
+        "mask_token_prob",
+        "plausible_replace_prob",
+        "keep_token_prob",
+    )
+    @classmethod
+    def _probability_range(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("must be between 0 and 1")
+        return v
+
+    @model_validator(mode="after")
+    def _check_prob_sum(self) -> "SpanMLMConfig":
+        total = (
+            self.mask_token_prob + self.plausible_replace_prob + self.keep_token_prob
+        )
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(
+                f"mask_token_prob + plausible_replace_prob + keep_token_prob "
+                f"must sum to ~1.0, got {total}"
+            )
+        return self
 
 
 # ============================================================
@@ -125,21 +355,25 @@ def preprocess_token(
     mlm_config: MLMConfig,
 ) -> Tuple[int, bool]:
     """
-    Preprocess a single token using the BERT/ALBERT masking strategy.
+    Apply the BERT/ALBERT masking strategy to a single token.
 
-    For each selected token, apply one of three transformations:
-        - Replace with [MASK] token (80%)
-        - Replace with a random token (10%)
-        - Keep the original token (10%)
+    Given a token that has been selected for masking, applies one of three
+    transformations based on the probabilities in ``mlm_config``:
+        - Replace with ``[MASK]`` (controlled by ``mask_token_prob``)
+        - Replace with a random vocabulary token (``random_token_prob``)
+        - Keep the original token unchanged (``keep_token_prob``)
 
     Args:
-        token_id:       The original token ID.
-        mask_token_id:  The ID of the [MASK] token.
-        vocab_size:     The size of the vocabulary.
-        mlm_config:     The MLM configuration.
+        token_id (int): The original token ID to be masked.
+        mask_token_id (int): The integer ID of the ``[MASK]`` token.
+        vocab_size (int): Size of the vocabulary (for random token sampling).
+        mlm_config (MLMConfig): MLM configuration containing the
+            replacement probabilities.
 
     Returns:
-        A tuple of (new_token_id, was_modified).
+        Tuple[int, bool]: A tuple of ``(new_token_id, was_modified)`` where
+        ``was_modified`` is ``True`` if the token was changed (masked or
+        replaced with a random token), and ``False`` if kept unchanged.
     """
     rand = random.random()
 
@@ -164,22 +398,26 @@ def apply_mlm_masking(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Apply MLM masking to a sequence of token IDs.
+    Apply standard BERT-style MLM masking to a sequence of token IDs.
 
-    Randomly selects 15% of tokens to be masked, then applies the
-    80/10/10 masking strategy from the BERT/ALBERT paper.
+    Randomly selects ``mlm_config.mlm_probability`` of non-special tokens
+    for masking, then applies the 80/10/10 masking strategy via
+    :func:`preprocess_token`.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer | CustomTokenizer | PreTrainedTokenizer):
+            The tokenizer (used for ``mask_token_id`` and ``vocab_size``).
+        mlm_config (MLMConfig): MLM configuration containing masking
+            probabilities.
+        special_token_ids (Set[int] | None): Set of token IDs to skip
+            (never masked). Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - masked_input_ids: The masked input token IDs.
-            - labels:           The labels for the MLM task (-100 for
-                                non-masked tokens, original ID for masked).
+        Tuple[List[int], List[int]]:
+            - ``masked_input_ids``: Token IDs after masking is applied.
+            - ``labels``: ``-100`` for non-masked positions, original token
+              ID for masked positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -219,21 +457,26 @@ def replace_with_mask(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Replace selected tokens ONLY with the [MASK] token (no random/keep).
+    Replace selected tokens only with the ``[MASK]`` token (no random/keep).
 
-    A simplified version of the masking strategy that always replaces
-    selected tokens with [MASK], useful for inference or analysis.
+    A simplified masking strategy that always replaces selected tokens with
+    ``[MASK]``, useful for inference or analysis where the 80/10/10 split
+    is not desired.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (used for
+            ``mask_token_id``).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - masked_input_ids: The masked input token IDs.
-            - labels:           The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``masked_input_ids``: Token IDs after masking.
+            - ``labels``: ``-100`` for non-masked positions, original token
+              ID for masked positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -264,20 +507,24 @@ def replace_with_random_token(
     special_token_ids: Set[int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
-    Replace selected tokens ONLY with random tokens (no mask/keep).
+    Replace selected tokens only with random vocabulary tokens (no mask/keep).
 
     Useful for studying the effect of random token replacement in isolation.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (used for
+            ``vocab_size``).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - noised_input_ids: The token IDs with random replacements.
-            - labels:           The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``noised_input_ids``: Token IDs with random replacements.
+            - ``labels``: ``-100`` for non-selected positions, original
+              token ID for selected positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -310,19 +557,25 @@ def keep_original_tokens(
     """
     Keep selected tokens unchanged but mark them as prediction targets.
 
-    The 10% 'keep original' strategy from the BERT/ALBERT paper, useful
-    for studying the effect of unchanged token prediction in isolation.
+    Implements the 'keep original' strategy from the BERT/ALBERT paper in
+    isolation: selected tokens are not modified in the input, but their
+    original IDs are set as labels so the model still predicts them.
 
     Args:
-        input_ids:          List of input token IDs.
-        tokenizer:          The ALBERT tokenizer.
-        mlm_config:         The MLM configuration.
-        special_token_ids:  Set of special token IDs to skip.
+        input_ids (List[int]): List of input token IDs.
+        tokenizer (AlbertTokenizer): The tokenizer (unused except for
+            type compatibility).
+        mlm_config (MLMConfig): MLM configuration (only ``mlm_probability``
+            is used to determine the fraction of tokens to select).
+        special_token_ids (Set[int] | None): Set of token IDs to skip.
+            Defaults to ``tokenizer.all_special_ids``.
 
     Returns:
-        A tuple of:
-            - input_ids: The unchanged input token IDs.
-            - labels:    The labels for the MLM task.
+        Tuple[List[int], List[int]]:
+            - ``unchanged_input_ids``: The original input token IDs
+              (unchanged).
+            - ``labels``: ``-100`` for non-selected positions, original
+              token ID for selected positions.
     """
     if special_token_ids is None:
         special_token_ids = set(tokenizer.all_special_ids)
@@ -575,6 +828,7 @@ def _select_graph_neighborhood(
 def _get_plausible_replacement(
     token: str,
     tokenizer: PreTrainedTokenizer,
+    vocab: Dict[str, int] | None = None,
 ) -> int:
     """
     Return a chemically plausible replacement token ID for an atom token.
@@ -587,17 +841,22 @@ def _get_plausible_replacement(
            and charge / protonation variants.
         2. Otherwise, sample from all tokens that share the same atomic
            number (same element, different charge / stereo / H-count).
-        3. If neither yields a candidate, fall back to ``[MASK]``.
+        3. If neither yields a candidate, fall back to ``<mask>``.
 
     Args:
         token (str): The original atom token string.
         tokenizer (PreTrainedTokenizer): The tokenizer (used to
-            resolve token strings → IDs).
+            resolve token strings → IDs and for the ``mask_token_id``
+            fallback).
+        vocab (Dict[str, int] | None): Pre-cached vocabulary mapping.
+            If None, ``tokenizer.get_vocab()`` is called instead.
+            Passing a cached dict avoids repeated dict copies per call.
 
     Returns:
         int: The token ID of the replacement.
     """
-    vocab = tokenizer.get_vocab()
+    if vocab is None:
+        vocab = tokenizer.get_vocab()
 
     # Stage 1: bioisosteric substitution group
     group = _SUBSTITUTION_LOOKUP.get(token)
@@ -627,6 +886,7 @@ def apply_span_mlm_masking(
     span_mlm_config: SpanMLMConfig,
     reaction_smiles: str,
     special_token_ids: Set[int] | None = None,
+    vocab: Dict[str, int] | None = None,
 ) -> Tuple[List[int], List[int]]:
     """
     Apply graph-aware span masking to a tokenized reaction SMILES.
@@ -652,6 +912,9 @@ def apply_span_mlm_masking(
             tokenizer preprocessing (e.g. ``"CCO.c1ccccc1>>c1ccccc1"``).
         special_token_ids (Set[int] | None): Token IDs that must never
             be masked. Defaults to the tokenizer's built-in special IDs.
+        vocab (Dict[str, int] | None): Pre-cached vocabulary mapping for
+            :func:`_get_plausible_replacement`. If None, the tokenizer's
+            ``get_vocab()`` is called instead.
 
     Returns:
         Tuple[List[int], List[int]]:
@@ -679,6 +942,10 @@ def apply_span_mlm_masking(
         np.random.binomial(len(atom_token_positions), span_mlm_config.mlm_probability),
     )
 
+    # --- Pre-compute span size weights (avoid re-zipping every iteration) ---
+    assert span_mlm_config.span_size_weights is not None
+    span_sizes, span_weights = zip(*span_mlm_config.span_size_weights.items())
+
     # --- Select spans until budget is filled ---
     selected_positions: Set[int] = set()
     max_attempts = num_to_mask * 3  # avoid infinite loops on tiny molecules
@@ -698,9 +965,7 @@ def apply_span_mlm_masking(
             selected_positions.add(seed_pos)
             continue
 
-        assert span_mlm_config.span_size_weights is not None
-        sizes, weights = zip(*span_mlm_config.span_size_weights.items())
-        span_size = random.choices(sizes, weights=weights, k=1)[0]
+        span_size = random.choices(span_sizes, weights=span_weights, k=1)[0]
         neighborhood = _select_graph_neighborhood(mol, atom_idx, span_size)
 
         for neighbor_atom_idx in neighborhood:
@@ -727,7 +992,9 @@ def apply_span_mlm_masking(
         ):
             # plausible_replace_prob %: replace with a chemically plausible token
             original_token = smiles_id_to_token_dict.get(original_token_id, "")
-            replacement_id = _get_plausible_replacement(original_token, tokenizer)
+            replacement_id = _get_plausible_replacement(
+                original_token, tokenizer, vocab=vocab
+            )
             masked_input_ids[pos] = replacement_id
         # else: keep_token_prob %: keep original token unchanged
 
@@ -738,11 +1005,43 @@ def apply_span_mlm_masking(
 # Dataset
 # ============================================================
 
+_MAX_GETITEM_RETRIES = 10
+
 
 class MLMDataset(Dataset):
     """
-    Dataset for Masked Language Modeling training.
-    Tokenizes raw text and applies MLM masking on the fly.
+    PyTorch Dataset for Masked Language Modeling training on reaction SMILES.
+
+    Tokenizes raw reaction SMILES strings and applies MLM masking on the fly
+    during ``__getitem__``. Supports two SMILES augmentation modes (random
+    or canonical) and two masking strategies (standard random or graph-aware
+    span masking).
+
+    Args:
+        texts (List[str]): List of reaction SMILES strings.
+        tokenizer (PreTrainedTokenizer): Tokenizer for encoding SMILES.
+        mlm_config (MLMConfig): MLM masking configuration.
+        max_length (int): Maximum sequence length for padding/truncation.
+        use_random_smiles (bool): If True, apply random SMILES augmentation
+            during ``__getitem__``.
+        use_canonical_smiles (bool): If True, canonicalize SMILES during
+            ``__getitem__``. Mutually exclusive with ``use_random_smiles``.
+        randomize_tautomer_pct (float): Probability of applying tautomer
+            randomization (only used when ``use_random_smiles`` is True).
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing (only used when
+            ``use_random_smiles`` is True).
+        protected_tokens (Set[str] | None): Token strings that should never
+            be masked, in addition to the tokenizer's special tokens.
+        masking_mode (str): Either ``"random"`` for standard MLM masking or
+            ``"span"`` for graph-aware span masking.
+        span_mlm_config (SpanMLMConfig | None): Configuration for span
+            masking. Required if ``masking_mode`` is ``"span"``.
+
+    Raises:
+        ValueError: If ``masking_mode`` is not ``"random"`` or ``"span"``,
+            or if ``use_random_smiles`` and ``use_canonical_smiles`` are
+            both True or both False.
     """
 
     def __init__(
@@ -794,66 +1093,109 @@ class MLMDataset(Dataset):
         protected_token_ids = resolve_protected_token_ids(tokenizer, protected_tokens)
         self.protected_token_ids = special_token_ids | protected_token_ids
 
+        # Cache the vocabulary once to avoid repeated dict copies in
+        # _get_plausible_replacement during span masking.
+        self._vocab_cache = tokenizer.get_vocab()
+
     def __len__(self) -> int:
         return len(self.texts)
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        text = self.texts[idx]
+        """
+        Return a single training sample with MLM masking applied.
 
-        if self._use_random_smiles:
-            if random.random() > self.canonicalize_mapped_rxn_smiles_pct:
-                if random.random() > self.randomize_tautomer_pct:
-                    text = randomize_reaction_smiles(
-                        text,
-                        remove_mapping=False,
-                        randomize_tautomer=False,
-                    )
+        Applies SMILES augmentation (random or canonical) if configured,
+        tokenizes the result, applies the configured masking strategy,
+        and returns a dict of tensors suitable for model forward pass.
+
+        If the tokenized sequence exceeds ``max_length``, a random
+        replacement index is tried, up to ``_MAX_GETITEM_RETRIES`` times.
+
+        Args:
+            idx (int): Index into the dataset.
+
+        Returns:
+            Dict[str, torch.Tensor]: A dict with keys ``"input_ids"``,
+            ``"attention_mask"``, ``"token_type_ids"``, and ``"labels"``,
+            each a ``torch.long`` tensor of shape ``(max_length,)``.
+
+        Raises:
+            RuntimeError: If no valid sample can be loaded after
+                ``_MAX_GETITEM_RETRIES`` attempts.
+        """
+        for _attempt in range(_MAX_GETITEM_RETRIES):
+            text = self.texts[idx]
+
+            if self._use_random_smiles:
+                if random.random() > self.canonicalize_mapped_rxn_smiles_pct:
+                    if random.random() > self.randomize_tautomer_pct:
+                        text = randomize_reaction_smiles(
+                            text,
+                            remove_mapping=False,
+                            randomize_tautomer=False,
+                        )
+                    else:
+                        text = randomize_reaction_smiles(
+                            text, remove_mapping=False, randomize_tautomer=True
+                        )
                 else:
-                    text = randomize_reaction_smiles(
-                        text, remove_mapping=False, randomize_tautomer=True
+                    text = canonicalize_reaction_smiles(
+                        text, remove_mapping=False, canonicalize_tautomer=True
                     )
+
+            if self._use_canonical_smiles:
+                text = canonicalize_reaction_smiles(text)
+
+            encoding = self.tokenizer(
+                text,
+                max_length=self.max_length,
+                padding="max_length",
+                truncation=False,
+                return_tensors=None,
+            )
+
+            input_ids = encoding["input_ids"]
+            if len(input_ids) > self.max_length:
+                logger.debug(
+                    f"Sample at index {idx} exceeds max_length "
+                    f"({len(input_ids)} > {self.max_length}), retrying"
+                )
+                idx = random.randrange(len(self.texts))
+                continue
+
+            attention_mask = encoding["attention_mask"]
+            token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
+
+            if self.masking_mode == "span":
+                masked_input_ids, labels = apply_span_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    span_mlm_config=self.span_mlm_config,
+                    reaction_smiles=text,
+                    special_token_ids=self.protected_token_ids,
+                    vocab=self._vocab_cache,
+                )
             else:
-                text = canonicalize_reaction_smiles(
-                    text, remove_mapping=False, canonicalize_tautomer=True
+                masked_input_ids, labels = apply_mlm_masking(
+                    input_ids=input_ids,
+                    tokenizer=self.tokenizer,
+                    mlm_config=self.mlm_config,
+                    special_token_ids=self.protected_token_ids,
                 )
 
-        if self._use_canonical_smiles:
-            text = canonicalize_reaction_smiles(text)
+            return {
+                "input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
+                "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+                "token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
+                "labels": torch.tensor(labels, dtype=torch.long),
+            }
 
-        encoding = self.tokenizer(
-            text,
-            max_length=self.max_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors=None,
+        logger.warning(
+            f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
         )
-
-        input_ids = encoding["input_ids"]
-        attention_mask = encoding["attention_mask"]
-        token_type_ids = encoding.get("token_type_ids", [0] * len(input_ids))
-
-        if self.masking_mode == "span":
-            masked_input_ids, labels = apply_span_mlm_masking(
-                input_ids=input_ids,
-                tokenizer=self.tokenizer,
-                span_mlm_config=self.span_mlm_config,
-                reaction_smiles=text,
-                special_token_ids=self.protected_token_ids,
-            )
-        else:
-            masked_input_ids, labels = apply_mlm_masking(
-                input_ids=input_ids,
-                tokenizer=self.tokenizer,
-                mlm_config=self.mlm_config,
-                special_token_ids=self.protected_token_ids,
-            )
-
-        return {
-            "input_ids": torch.tensor(masked_input_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-            "token_type_ids": torch.tensor(token_type_ids, dtype=torch.long),
-            "labels": torch.tensor(labels, dtype=torch.long),
-        }
+        raise RuntimeError(
+            f"Failed to load a valid sample after {_MAX_GETITEM_RETRIES} attempts"
+        )
 
     def decode_sample(
         self, idx: int, print_output: bool = True
@@ -866,13 +1208,17 @@ class MLMDataset(Dataset):
             - masked:    The text after masking (what the model sees).
             - labels:    Only the tokens selected for prediction, everything
                          else shown as '_'.
+            - diff:      Token-level diff showing original → masked for
+                         each masked position.
 
         Args:
-            idx:          The index of the sample to decode.
-            print_output: Whether to print the decoded output.
+            idx (int): The index of the sample to decode.
+            print_output (bool): Whether to print the decoded output to
+                stdout.
 
         Returns:
-            A dict with 'original', 'masked', and 'labels' strings.
+            Dict[str, str | List[str]]: A dict with keys ``"original"``,
+            ``"masked"``, ``"labels"``, and ``"diff"``.
         """
         text = self.texts[idx]
 
@@ -886,13 +1232,22 @@ class MLMDataset(Dataset):
 
         input_ids = encoding["input_ids"]
 
-        # Apply masking with the same logic as __getitem__
-        masked_input_ids, labels = apply_mlm_masking(
-            input_ids=input_ids,
-            tokenizer=self.tokenizer,
-            mlm_config=self.mlm_config,
-            special_token_ids=self.protected_token_ids,
-        )
+        if self.masking_mode == "span":
+            masked_input_ids, labels = apply_span_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                span_mlm_config=self.span_mlm_config,
+                reaction_smiles=text,
+                special_token_ids=self.protected_token_ids,
+                vocab=self._vocab_cache,
+            )
+        else:
+            masked_input_ids, labels = apply_mlm_masking(
+                input_ids=input_ids,
+                tokenizer=self.tokenizer,
+                mlm_config=self.mlm_config,
+                special_token_ids=self.protected_token_ids,
+            )
 
         original_text = self.tokenizer.decode(input_ids, skip_special_tokens=True)
         masked_text = self.tokenizer.decode(masked_input_ids, skip_special_tokens=False)
@@ -949,11 +1304,15 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
     """
     Build an ALBERT model from scratch using the given configuration.
 
+    Constructs a ``transformers.AlbertConfig`` from ``model_config`` and
+    instantiates an ``AlbertForMaskedLM`` model. Prints the total trainable
+    parameter count.
+
     Args:
-        model_config: The model architecture configuration.
+        model_config (ModelConfig): The model architecture configuration.
 
     Returns:
-        An ALBERT model for Masked Language Modeling.
+        AlbertForMaskedLM: An ALBERT model for Masked Language Modeling.
     """
     config = AlbertConfig(
         vocab_size=model_config.vocab_size,
@@ -985,38 +1344,152 @@ def build_albert_model(model_config: ModelConfig) -> AlbertForMaskedLM:
 # ============================================================
 
 
+def _unwrap_model(model: torch.nn.Module) -> torch.nn.Module:
+    """
+    Return the underlying module if wrapped by ``torch.compile``.
+
+    When ``torch.compile`` is used, the model is wrapped in an
+    ``OptimizedModule`` that stores the original under ``_orig_mod``.
+    This helper transparently unwraps it for state_dict / save_pretrained
+    operations. If the model is not compiled, it is returned as-is.
+
+    Args:
+        model (torch.nn.Module): Potentially compiled model.
+
+    Returns:
+        torch.nn.Module: The original (uncompiled) module.
+    """
+    return getattr(model, "_orig_mod", model)
+
+
 class AlbertTrainer:
-    """Trainer class for ALBERT MLM pre-training."""
+    """
+    Trainer for unsupervised ALBERT Masked Language Modeling pre-training.
+
+    Manages the training loop, evaluation, checkpointing, and logging for
+    MLM pre-training. Uses AdamW with linear warmup scheduling and gradient
+    clipping.
+
+    Args:
+        model (AlbertForMaskedLM): The ALBERT model to train.
+        train_dataloader (DataLoader): DataLoader for training batches.
+        training_config (TrainingConfig): Training hyperparameters.
+        tokenizer (PreTrainedTokenizer): Tokenizer used during training.
+            Saved alongside model checkpoints via ``save_pretrained``.
+        val_dataloader (DataLoader | None): DataLoader for validation
+            batches. If None, validation is skipped.
+        device (torch.device | None): Device to train on. Defaults to CUDA
+            if available, otherwise CPU.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from. Restores model, optimizer, and
+            scheduler state dicts, and resumes from the next epoch.
+    """
 
     def __init__(
         self,
         model: AlbertForMaskedLM,
         train_dataloader: DataLoader,
         training_config: TrainingConfig,
+        tokenizer: PreTrainedTokenizer,
         val_dataloader: DataLoader | None = None,
         device: torch.device | None = None,
+        resume_from_checkpoint: str | None = None,
     ):
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.training_config = training_config
+        self.tokenizer = tokenizer
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
         torch.nn.Module.to(self.model, self.device)
 
+        # Mixed precision setup
+        self.use_amp = training_config.use_amp and self.device.type == "cuda"
+        self.amp_dtype = (
+            torch.float16 if training_config.amp_dtype == "float16" else torch.bfloat16
+        )
+        if self.use_amp and self.amp_dtype == torch.float16:
+            self.scaler: Optional[torch.amp.GradScaler] = torch.amp.GradScaler("cuda")
+        else:
+            self.scaler = None
+
+        # torch.compile
+        if training_config.compile_model:
+            logger.info("Compiling model with torch.compile (first epoch may be slow)")
+            self.model = torch.compile(self.model)  # type: ignore[assignment]
+
         self._setup_optimizer_and_scheduler()
         self._set_seed(training_config.seed)
 
+        self.start_epoch = 1
+        self.best_val_loss = float("inf")
+        self.epochs_without_improvement = 0
+
+        if resume_from_checkpoint is not None:
+            self._load_checkpoint(resume_from_checkpoint)
+
     def _set_seed(self, seed: int) -> None:
+        """
+        Set random seeds across Python, NumPy, and PyTorch for reproducibility.
+
+        Also configures deterministic cuDNN behavior based on
+        ``training_config.deterministic``.
+
+        Args:
+            seed (int): The random seed to use.
+        """
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = self.training_config.deterministic
+        torch.backends.cudnn.benchmark = not self.training_config.deterministic
+        torch.set_float32_matmul_precision("high")
+
+    def _load_checkpoint(self, checkpoint_path: str) -> None:
+        """
+        Load model, optimizer, and scheduler state from a checkpoint file.
+
+        Args:
+            checkpoint_path (str): Path to the ``.pt`` checkpoint file.
+
+        Raises:
+            FileNotFoundError: If the checkpoint file does not exist.
+            KeyError: If the checkpoint is missing required state dicts.
+        """
+        if not Path(checkpoint_path).exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        _unwrap_model(self.model).load_state_dict(checkpoint["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+        if "scheduler_state_dict" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        if "epoch" in checkpoint:
+            self.start_epoch = checkpoint["epoch"] + 1
+
+        if "best_val_loss" in checkpoint:
+            self.best_val_loss = checkpoint["best_val_loss"]
+
+        logger.info(
+            f"Resumed from checkpoint: {checkpoint_path} "
+            f"(starting at epoch {self.start_epoch})"
+        )
 
     def _setup_optimizer_and_scheduler(self) -> None:
-        """Set up AdamW optimizer and linear warmup scheduler."""
+        """
+        Set up the AdamW optimizer with parameter-specific weight decay and
+        a linear warmup learning-rate scheduler.
+
+        Biases and LayerNorm weights receive zero weight decay. The total
+        number of training steps is computed from the dataloader length and
+        the number of epochs.
+        """
         # Separate weight decay for biases and layer norms
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
@@ -1042,9 +1515,12 @@ class AlbertTrainer:
             optimizer_grouped_parameters,
             lr=self.training_config.learning_rate,
             eps=self.training_config.adam_epsilon,
+            fused=self.device.type == "cuda",
         )
 
-        total_steps = len(self.train_dataloader) * self.training_config.num_epochs
+        total_steps = (
+            len(self.train_dataloader) * self.training_config.num_epochs
+        ) // self.training_config.gradient_accumulation_steps
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=self.training_config.warmup_steps,
@@ -1052,99 +1528,204 @@ class AlbertTrainer:
         )
 
     def train_epoch(self, epoch: int) -> float:
-        """Run one training epoch and return the average loss."""
+        """
+        Run one training epoch and return the average loss.
+
+        Iterates over the training dataloader, computes MLM loss, performs
+        backward pass, gradient clipping, optimizer step, and scheduler
+        step. Supports mixed precision (AMP), gradient accumulation, and
+        ``torch.compile``. Logs loss and learning rate at
+        ``logging_steps`` intervals.
+
+        Args:
+            epoch (int): The 1-indexed epoch number (for logging only).
+
+        Returns:
+            float: The average MLM loss across all batches in the epoch.
+        """
         self.model.train()
-        total_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
         num_batches = len(self.train_dataloader)
+        grad_accum = self.training_config.gradient_accumulation_steps
+        self.optimizer.zero_grad()
 
         for step, batch in enumerate(self.train_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"],
-            )
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"],
+                )
 
             loss = outputs.loss
-            loss.backward()
-            total_loss += loss.item()
+            loss = loss / grad_accum
 
-            torch.nn.utils.clip_grad_norm_(
-                self.model.parameters(), self.training_config.max_grad_norm
-            )
+            if self.scaler is not None:
+                self.scaler.scale(loss).backward()
+            else:
+                loss.backward()
 
-            self.optimizer.step()
-            self.scheduler.step()
-            self.optimizer.zero_grad()
+            total_loss += loss.detach() * grad_accum
+
+            if (step + 1) % grad_accum == 0 or step == num_batches - 1:
+                if self.scaler is not None:
+                    self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.training_config.max_grad_norm
+                )
+
+                if self.scaler is not None:
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    self.optimizer.step()
+
+                self.scheduler.step()
+                self.optimizer.zero_grad()
 
             if (step + 1) % self.training_config.logging_steps == 0:
-                step_loss = loss.item()
+                step_loss = (loss.detach() * grad_accum).item()
                 lr = self.scheduler.get_last_lr()[0]
-                print(
+                logger.info(
                     f"Epoch {epoch} | Step {step + 1}/{num_batches} "
                     f"| Loss: {step_loss:.4f} | LR: {lr:.2e}"
                 )
 
-        return total_loss / num_batches
+        return total_loss.item() / num_batches
 
     @torch.no_grad()
     def evaluate(self) -> float:
-        """Run evaluation and return the average validation loss."""
+        """
+        Run evaluation on the validation set and return the average loss.
+
+        Returns:
+            float: The average MLM loss across all validation batches.
+            Returns 0.0 if no validation dataloader is configured.
+        """
         if self.val_dataloader is None:
             return 0.0
 
         self.model.eval()
-        total_loss = 0.0
+        total_loss = torch.zeros(1, device=self.device)
+        num_batches = len(self.val_dataloader)
 
-        for batch in self.val_dataloader:
+        for step, batch in enumerate(self.val_dataloader):
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                token_type_ids=batch["token_type_ids"],
-                labels=batch["labels"],
-            )
-            total_loss += outputs.loss.item()
+            with torch.amp.autocast(
+                "cuda",
+                dtype=self.amp_dtype,
+                enabled=self.use_amp,
+            ):
+                outputs = self.model(
+                    input_ids=batch["input_ids"],
+                    attention_mask=batch["attention_mask"],
+                    token_type_ids=batch["token_type_ids"],
+                    labels=batch["labels"],
+                )
+            batch_loss = outputs.loss.detach()
+            total_loss += batch_loss
 
-        return total_loss / len(self.val_dataloader)
+            if (step + 1) % self.training_config.logging_steps == 0:
+                logger.info(
+                    f"Val | Step {step + 1}/{num_batches} "
+                    f"| Loss: {batch_loss.item():.4f}"
+                )
+
+        return total_loss.item() / num_batches
 
     def train(self) -> None:
-        """Run the full training loop."""
-        print(f"Starting training on device: {self.device}")
-        print(f"Epochs: {self.training_config.num_epochs}")
-        print(f"Batch size: {self.training_config.batch_size}")
+        """
+        Run the full training loop across all epochs.
+
+        For each epoch: trains, evaluates, logs metrics, and saves a
+        checkpoint (both HuggingFace ``save_pretrained`` format and a raw
+        ``.pt`` file with model/optimizer/scheduler state dicts). If
+        ``save_best_model`` is enabled in the training config, the best
+        model (by validation loss) is saved to ``{output_dir}/best_model.pt``.
+        If ``early_stopping_patience`` is set, training stops when validation
+        loss has not improved for the specified number of epochs.
+
+        Training resumes from ``self.start_epoch`` if a checkpoint was loaded.
+        """
+        logger.info(f"Starting training on device: {self.device}")
+        logger.info(f"Epochs: {self.training_config.num_epochs}")
+        logger.info(f"Batch size: {self.training_config.batch_size}")
 
         Path(self.training_config.output_dir).mkdir(parents=True, exist_ok=True)
 
-        for epoch in range(1, self.training_config.num_epochs + 1):
+        for epoch in range(self.start_epoch, self.training_config.num_epochs + 1):
             start_time = time.time()
             train_loss = self.train_epoch(epoch)
             val_loss = self.evaluate()
 
-            print(
+            logger.info(
                 f"Epoch {epoch} complete | "
                 f"Train Loss: {train_loss:.4f} | "
-                f"Val Loss: {val_loss:.4f}"
-                f"Time: {time.time() - start_time:.2f} seconds"
+                f"Val Loss: {val_loss:.4f} | "
+                f"Time: {time.time() - start_time:.2f}s"
             )
 
             save_path = f"{self.training_config.output_dir}/checkpoint-epoch-{epoch}"
 
-            self.model.save_pretrained(save_path)
+            _unwrap_model(self.model).save_pretrained(save_path)  # type: ignore[operator]
+            self.tokenizer.save_pretrained(save_path)
             torch.save(
                 {
                     "epoch": epoch,
-                    "model_state_dict": self.model.state_dict(),
+                    "model_state_dict": _unwrap_model(self.model).state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
+                    "scheduler_state_dict": self.scheduler.state_dict(),
                     "train_loss": train_loss,
                     "val_loss": val_loss,
+                    "best_val_loss": self.best_val_loss,
                 },
                 f"{save_path}.pt",
             )
-            print(f"Model saved to {save_path} (+ {save_path}.pt)")
+            logger.info(f"Checkpoint saved to {save_path} (+ {save_path}.pt)")
+
+            # Best-model saving and early stopping tracking
+            improved = (
+                val_loss
+                < self.best_val_loss - self.training_config.early_stopping_min_delta
+            )
+            if improved:
+                self.best_val_loss = val_loss
+                self.epochs_without_improvement = 0
+                if self.training_config.save_best_model:
+                    best_path = f"{self.training_config.output_dir}/best_model.pt"
+                    torch.save(
+                        {
+                            "epoch": epoch,
+                            "model_state_dict": _unwrap_model(self.model).state_dict(),
+                            "val_loss": val_loss,
+                        },
+                        best_path,
+                    )
+                    logger.info(
+                        f"New best model saved to {best_path} (val_loss: {val_loss:.4f})"
+                    )
+            else:
+                self.epochs_without_improvement += 1
+
+            # Early stopping
+            if (
+                self.training_config.early_stopping_patience > 0
+                and self.epochs_without_improvement
+                >= self.training_config.early_stopping_patience
+            ):
+                logger.warning(
+                    f"Early stopping triggered after {self.epochs_without_improvement} "
+                    f"epochs without improvement"
+                )
+                break
 
 
 # ============================================================
@@ -1158,7 +1739,55 @@ def main(
     model_config: Optional[ModelConfig] = None,
     training_config: Optional[TrainingConfig] = None,
     mlm_config: Optional[MLMConfig] = None,
+    max_length: int = 384,
+    num_workers: int = 8,
+    prefetch_factor: int = 4,
+    protected_tokens: Optional[Set[str]] = None,
+    masking_mode: str = "span",
+    span_mlm_config: Optional[SpanMLMConfig] = None,
+    canonicalize_mapped_rxn_smiles_pct: float = 0.05,
+    resume_from_checkpoint: str | None = None,
+    log_level: str = "INFO",
 ):
+    """
+    Run unsupervised ALBERT MLM pre-training end-to-end.
+
+    Creates the tokenizer, datasets, dataloaders, model, and trainer, then
+    launches training. Uses graph-aware span masking by default with
+    ``mlm_probability=0.20`` and ``max_length=384``.
+
+    Args:
+        train_texts (List[str]): List of reaction SMILES for training.
+        val_texts (List[str]): List of reaction SMILES for validation.
+        model_config (Optional[ModelConfig]): Model architecture config.
+            Defaults to ``ModelConfig()`` if None.
+        training_config (Optional[TrainingConfig]): Training hyperparameters.
+            Defaults to ``TrainingConfig()`` if None.
+        mlm_config (Optional[MLMConfig]): MLM masking config. Defaults to
+            ``MLMConfig()`` if None.
+        max_length (int): Maximum sequence length for padding/truncation.
+        num_workers (int): Number of DataLoader worker processes.
+        prefetch_factor (int): Number of batches prefetched per worker.
+        protected_tokens (Optional[Set[str]]): Token strings that should
+            never be masked. Defaults to ``{"^", "$", ".", ">>"}`` if None.
+        masking_mode (str): Either ``"random"`` or ``"span"``.
+        span_mlm_config (Optional[SpanMLMConfig]): Span masking
+            configuration. Defaults to
+            ``SpanMLMConfig(mlm_probability=0.20, ...)`` if None.
+        canonicalize_mapped_rxn_smiles_pct (float): Probability of
+            canonicalizing instead of randomizing SMILES during training
+            augmentation. Validation always canonicalizes to match inference
+            behavior. Defaults to 0.05.
+        resume_from_checkpoint (str | None): Path to a ``.pt`` checkpoint
+            file to resume training from.
+        log_level (str): Loguru level for progress messages. Defaults to
+            ``"INFO"`` so training progress is visible in all contexts
+            (CLI, notebooks, scripts).
+    """
+    # --- Logging (ensure progress is visible regardless of entry point) ---
+    logger.remove()
+    logger.add(sys.stderr, level=log_level)
+
     # --- Tokenizer ---
     tokenizer = CustomTokenizer(smiles_token_to_id_dict)
 
@@ -1172,49 +1801,61 @@ def main(
     if not mlm_config:
         mlm_config = MLMConfig()
 
+    if protected_tokens is None:
+        protected_tokens = {"^", "$", ".", ">>"}
+
+    if span_mlm_config is None:
+        span_mlm_config = SpanMLMConfig(
+            mlm_probability=0.20,
+            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
+        )
+
     # --- Datasets and Dataloaders ---
+    # Training: random SMILES augmentation with configurable canonicalization pct
     train_dataset = MLMDataset(
         train_texts,
         tokenizer,
         mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        use_random_smiles=True,
+        canonicalize_mapped_rxn_smiles_pct=canonicalize_mapped_rxn_smiles_pct,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
+    # Validation: always canonicalize to match inference behavior
     val_dataset = MLMDataset(
         val_texts,
         tokenizer,
         mlm_config,
-        protected_tokens={"^", "$", ".", ">>"},
-        max_length=384,
-        masking_mode="span",
-        span_mlm_config=SpanMLMConfig(
-            mlm_probability=0.20,
-            span_size_weights={1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15, 5: 0.1},
-        ),
+        protected_tokens=protected_tokens,
+        max_length=max_length,
+        use_random_smiles=False,
+        use_canonical_smiles=True,
+        masking_mode=masking_mode,
+        span_mlm_config=span_mlm_config,
     )
 
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=training_config.batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
+        drop_last=True,
     )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=training_config.batch_size,
         shuffle=False,
-        num_workers=8,
+        num_workers=num_workers,
         persistent_workers=True,
-        prefetch_factor=4,
+        prefetch_factor=prefetch_factor,
         pin_memory=torch.cuda.is_available(),
+        worker_init_fn=seed_worker,
     )
 
     # --- Build model ---
@@ -1225,6 +1866,8 @@ def main(
         model=model,
         train_dataloader=train_dataloader,
         training_config=training_config,
+        tokenizer=tokenizer,
         val_dataloader=val_dataloader,
+        resume_from_checkpoint=resume_from_checkpoint,
     )
     trainer.train()

@@ -15,7 +15,7 @@
   "inner_group_num": 1,
   "intermediate_size": 512,
   "layer_norm_eps": 1e-12,
-  "max_position_embeddings": 512,
+  "max_position_embeddings": 1024,
   "model_type": "albert",
   "num_attention_heads": 8,
   "num_hidden_groups": 1,
@@ -24,7 +24,7 @@
   "output_hidden_states": true,
   "pad_token_id": 0,
   "tie_word_embeddings": true,
-  "transformers_version": "5.8.0",
+  "transformers_version": "5.15.1",
   "type_vocab_size": 2,
   "vocab_size": 1024
 }

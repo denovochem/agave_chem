@@ -825,10 +825,9 @@ def validate_smirks(smirks: str) -> bool:
 
     # No element transmutation
     for k in r_maps:
-        if r_maps[k] != p_maps[k]:
-            # Allow wildcard '*' matching anything
-            if r_maps[k] != "*" and p_maps[k] != "*":
-                return False
+        # Allow wildcard '*' matching anything
+        if r_maps[k] != p_maps[k] and r_maps[k] != "*" and p_maps[k] != "*":
+            return False
 
     # rdchiral round-trip (retro direction)
     retro = f"{product_str}>>{reactant_str}"

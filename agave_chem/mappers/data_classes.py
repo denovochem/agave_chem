@@ -5,9 +5,10 @@ This module contains all the data structures used throughout the atom mapping
 process, including atom mappings, bond changes, and scoring metrics.
 """
 
-from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MappingAlgorithm(Enum):
@@ -26,17 +27,18 @@ class BondChangeType(Enum):
     ORDER_CHANGE = auto()
 
 
-@dataclass(frozen=True)
-class AtomMapping:
+class AtomMapping(BaseModel):
     """
     Represents a mapping between a reactant atom and a product atom.
 
-    Attributes:
-        reactant_mol_idx: Index of the molecule in reactants list
-        reactant_atom_idx: Atom index within the reactant molecule
-        product_mol_idx: Index of the molecule in products list
-        product_atom_idx: Atom index within the product molecule
+    Args:
+        reactant_mol_idx (int): Index of the molecule in reactants list.
+        reactant_atom_idx (int): Atom index within the reactant molecule.
+        product_mol_idx (int): Index of the molecule in products list.
+        product_atom_idx (int): Atom index within the product molecule.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     reactant_mol_idx: int
     reactant_atom_idx: int
@@ -50,19 +52,20 @@ class AtomMapping:
         )
 
 
-@dataclass(frozen=True)
-class BondChange:
+class BondChange(BaseModel):
     """
     Represents a bond change during a reaction.
 
-    Attributes:
-        atom1_map: Atom map number of first atom
-        atom2_map: Atom map number of second atom
-        change_type: Type of bond change
-        old_order: Bond order before reaction (None if formed)
-        new_order: Bond order after reaction (None if broken)
-        energy_cost: Estimated energy cost of this bond change
+    Args:
+        atom1_map (int): Atom map number of first atom.
+        atom2_map (int): Atom map number of second atom.
+        change_type (BondChangeType): Type of bond change.
+        old_order (Optional[float]): Bond order before reaction (None if formed).
+        new_order (Optional[float]): Bond order after reaction (None if broken).
+        energy_cost (float): Estimated energy cost of this bond change.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     atom1_map: int
     atom2_map: int
@@ -78,23 +81,22 @@ class BondChange:
         )
 
 
-@dataclass
-class MappingScore:
+class MappingScore(BaseModel):
     """
     Scoring metrics for evaluating a mapping solution.
 
     These metrics are based on the RDTool paper and are used to select
     the best mapping among multiple candidates.
 
-    Attributes:
-        bond_energy_cost: Total energy of bonds formed/broken
-        num_bond_changes: Number of bonds that change
-        num_bonds_formed: Number of new bonds formed
-        num_bonds_broken: Number of bonds broken
-        num_fragments: Number of molecular fragments affected
-        stereo_changes: Number of stereochemistry changes
-        similarity_score: Tanimoto similarity of mapped atoms
-        ring_changes: Number of ring opening/closing events
+    Args:
+        bond_energy_cost (float): Total energy of bonds formed/broken.
+        num_bond_changes (int): Number of bonds that change.
+        num_bonds_formed (int): Number of new bonds formed.
+        num_bonds_broken (int): Number of bonds broken.
+        num_fragments (int): Number of molecular fragments affected.
+        stereo_changes (int): Number of stereochemistry changes.
+        similarity_score (float): Tanimoto similarity of mapped atoms.
+        ring_changes (int): Number of ring opening/closing events.
     """
 
     bond_energy_cost: float = 0.0
@@ -111,10 +113,10 @@ class MappingScore:
         Calculate weighted total score (lower is better).
 
         Args:
-            weights: Optional dictionary of metric weights
+            weights (Optional[Dict[str, float]]): Optional dictionary of metric weights.
 
         Returns:
-            Weighted total score
+            float: Weighted total score.
         """
         if weights is None:
             weights = {
@@ -133,33 +135,18 @@ class MappingScore:
             score += weight * getattr(self, metric, 0)
         return score
 
-    def to_dict(self) -> Dict[str, float]:
-        """Convert to dictionary for easy inspection."""
-        return {
-            "bond_energy_cost": self.bond_energy_cost,
-            "num_bond_changes": self.num_bond_changes,
-            "num_bonds_formed": self.num_bonds_formed,
-            "num_bonds_broken": self.num_bonds_broken,
-            "num_fragments": self.num_fragments,
-            "stereo_changes": self.stereo_changes,
-            "similarity_score": self.similarity_score,
-            "ring_changes": self.ring_changes,
-            "total_score": self.total_score(),
-        }
 
-
-@dataclass
-class MappingResult:
+class MappingResult(BaseModel):
     """
     Complete result of an atom-to-atom mapping.
 
-    Attributes:
-        atom_mappings: Set of atom mappings between reactants and products
-        bond_changes: List of bond changes in the reaction
-        score: Scoring metrics for this mapping
-        algorithm_used: Which algorithm produced this mapping
-        mapped_smiles: SMILES with atom mapping numbers
-        reaction_center: Atom indices involved in the reaction center
+    Args:
+        atom_mappings (FrozenSet[AtomMapping]): Set of atom mappings between reactants and products.
+        bond_changes (List[BondChange]): List of bond changes in the reaction.
+        score (MappingScore): Scoring metrics for this mapping.
+        algorithm_used (MappingAlgorithm): Which algorithm produced this mapping.
+        mapped_smiles (str): SMILES with atom mapping numbers.
+        reaction_center (Set[int]): Atom indices involved in the reaction center.
     """
 
     atom_mappings: FrozenSet[AtomMapping]
@@ -167,14 +154,14 @@ class MappingResult:
     score: MappingScore
     algorithm_used: MappingAlgorithm
     mapped_smiles: str = ""
-    reaction_center: Set[int] = field(default_factory=set)
+    reaction_center: Set[int] = Field(default_factory=set)
 
     def get_mapping_dict(self) -> Dict[Tuple[int, int], Tuple[int, int]]:
         """
         Get mapping as dictionary from (mol_idx, atom_idx) -> (mol_idx, atom_idx).
 
         Returns:
-            Dictionary mapping reactant atoms to product atoms
+            Dict[Tuple[int, int], Tuple[int, int]]: Dictionary mapping reactant atoms to product atoms.
         """
         return {
             (m.reactant_mol_idx, m.reactant_atom_idx): (
@@ -185,19 +172,20 @@ class MappingResult:
         }
 
 
-@dataclass
-class ReactionComponents:
+class ReactionComponents(BaseModel):
     """
     Parsed components of a chemical reaction.
 
-    Attributes:
-        reactants: List of reactant molecules (RDKit Mol objects)
-        products: List of product molecules (RDKit Mol objects)
-        original_smiles: Original reaction SMILES
+    Args:
+        reactants (List[Any]): List of reactant molecules (RDKit Mol objects).
+        products (List[Any]): List of product molecules (RDKit Mol objects).
+        original_smiles (str): Original reaction SMILES.
     """
 
-    reactants: List
-    products: List
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    reactants: List[Any]
+    products: List[Any]
     original_smiles: str = ""
 
     @property

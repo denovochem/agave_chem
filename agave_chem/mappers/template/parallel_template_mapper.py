@@ -49,8 +49,7 @@ def _map_one(rxn: str) -> Tuple[str, str, List[str]]:
 
     Uses the module-level ``_template_mapper`` initialised by ``_init_worker``.
     Returns a plain picklable tuple so results can be safely sent back to the
-    main process; ``ReactionMapperResult`` cannot be pickled because
-    ``InitializedSmirksPattern`` contains RDKit objects.
+    main process.
 
     Args:
         rxn (str): Reaction SMILES string to map.
@@ -65,11 +64,9 @@ def _map_one(rxn: str) -> Tuple[str, str, List[str]]:
     result = _template_mapper.map_reaction(  # type: ignore[union-attr]
         rxn, _apply_multiple_smirks, _num_smirks_to_apply
     )
-    selected = result["selected_mapping"]
-    template_names = [
-        p["template_name"] for p in result["possible_mappings"].get(selected, [])
-    ]
-    return (result["original_smiles"], selected, template_names)
+    selected = result.selected_mapping
+    template_names = result.possible_mappings.get(selected, [])
+    return (result.original_smiles, selected, template_names)
 
 
 class ParallelTemplateReactionMapper(ReactionMapper):

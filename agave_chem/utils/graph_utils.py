@@ -1,19 +1,41 @@
 import itertools
+import logging
 
 import networkx as nx
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
+logger = logging.getLogger(__name__)
+
+_MAX_TAUTOMERS_PER_MOL = 1000
+_MAX_TAUTOMER_TRANSFORMS = 1000
+_MAX_TAUTOMERIC_RXN_VARIANTS = 1000
+
+_taut_opts = rdMolStandardize.CleanupParameters()
+_taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+_taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
 _TAUTOMER_ENUMERATOR: rdMolStandardize.TautomerEnumerator = (
-    rdMolStandardize.TautomerEnumerator()
+    rdMolStandardize.TautomerEnumerator(_taut_opts)
 )
+_TAUTOMER_ENUMERATOR.SetMaxTautomers(_MAX_TAUTOMERS_PER_MOL)
+_TAUTOMER_ENUMERATOR.SetMaxTransforms(_MAX_TAUTOMER_TRANSFORMS)
 
 _RESONANCE_SWAP_PATTERNS: list[tuple[Chem.Mol, int, int]] = [
-    (Chem.MolFromSmarts("[O:1]=[N+][O-:2]"), 1, 2),
-    (Chem.MolFromSmarts("[O:1]=C[O-:2]"), 1, 2),
-    (Chem.MolFromSmarts("[O:1]=C[OH:2]"), 1, 2),
-    (Chem.MolFromSmarts("[O:1]=[S](=O)[O-:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[N+;H0][O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=C[O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=C[OH;H1;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[S](=O)[O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[S](=O)[OH;H1;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[S][O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[S][OH;H1;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[N;H0][O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[P]([O-;H0;D1:2])"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[P]([OH;H1;D1:2])"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[B]([O-;H0;D1:2])"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[B]([OH;H1;D1:2])"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[Se](=O)[O-;H0;D1:2]"), 1, 2),
+    (Chem.MolFromSmarts("[O;H0;D1:1]=[As]([O-;H0;D1:2])"), 1, 2),
 ]
 
 
@@ -247,25 +269,38 @@ def _enumerate_tautomers_for_mol(mol: Chem.RWMol) -> list[Chem.Mol]:
     return tauts if tauts else [mol]
 
 
-def _enumerate_tautomeric_rxn_smiles(rxn_smiles: str) -> list[str]:
+def _enumerate_tautomeric_rxn_smiles(
+    rxn_smiles: str,
+    max_variants: int = _MAX_TAUTOMERIC_RXN_VARIANTS,
+) -> list[str]:
     """
     Generate all tautomeric variants of a reaction by independently enumerating tautomers for each fragment.
 
+    Per-molecule tautomer counts are capped by ``_MAX_TAUTOMERS_PER_MOL`` and
+    ``_MAX_TAUTOMER_TRANSFORMS`` on the global enumerator.  The total number of
+    Cartesian-product variants is capped by *max_variants*; only the first
+    *max_variants* combos are returned to avoid combinatorial explosion.
+
     Args:
         rxn_smiles (str): Reaction SMILES parsable by RDKit.
+        max_variants (int): Upper bound on the total number of tautomeric reaction
+            variants to generate.
 
     Returns:
-        List[str]: All reaction SMILES variants arising from the Cartesian product of
-            tautomeric forms across all reactant and product fragments. Always includes
-            at least one entry.
+        List[str]: Up to *max_variants* reaction SMILES arising from the Cartesian
+            product of tautomeric forms across all reactant and product fragments.
+            Always includes at least one entry.
     """
     r_mols, p_mols = _mol_frags_from_rxn(rxn_smiles)
     r_taut_lists = [_enumerate_tautomers_for_mol(m) for m in r_mols]
     p_taut_lists = [_enumerate_tautomers_for_mol(m) for m in p_mols]
+
     variants: list[str] = []
     for r_combo in itertools.product(*r_taut_lists):
         for p_combo in itertools.product(*p_taut_lists):
             variants.append(_mols_to_rxn_smiles(list(r_combo), list(p_combo)))
+            if len(variants) >= max_variants:
+                return variants
     return variants
 
 
@@ -290,6 +325,7 @@ def _enumerate_resonance_swap_variants(rxn_smiles: str) -> list[str]:
     all_mols: list[Chem.RWMol] = r_mols + p_mols
     n_r = len(r_mols)
 
+    seen_pairs: set[tuple[int, int, int]] = set()
     swap_candidates: list[tuple[int, int, int]] = []
     for mol_idx, mol in enumerate(all_mols):
         for pattern, qmap1, qmap2 in _RESONANCE_SWAP_PATTERNS:
@@ -301,7 +337,10 @@ def _enumerate_resonance_swap_variants(rxn_smiles: str) -> list[str]:
                 map_a = mol.GetAtomWithIdx(a_idx).GetAtomMapNum()
                 map_b = mol.GetAtomWithIdx(b_idx).GetAtomMapNum()
                 if map_a or map_b:
-                    swap_candidates.append((mol_idx, a_idx, b_idx))
+                    key = (mol_idx, min(a_idx, b_idx), max(a_idx, b_idx))
+                    if key not in seen_pairs:
+                        seen_pairs.add(key)
+                        swap_candidates.append((mol_idx, a_idx, b_idx))
 
     if not swap_candidates:
         return [rxn_smiles]
@@ -318,6 +357,67 @@ def _enumerate_resonance_swap_variants(rxn_smiles: str) -> list[str]:
                 mol.GetAtomWithIdx(b_idx).SetAtomMapNum(map_a)
         variants.append(_mols_to_rxn_smiles(mols_copy[:n_r], mols_copy[n_r:]))
     return variants
+
+
+def find_resonance_equivalent_groups(mol: Chem.Mol) -> list[list[int]]:
+    """
+    Find groups of atom map numbers that are equivalent by resonance but not by topology.
+
+    Uses the SMARTS patterns in ``_RESONANCE_SWAP_PATTERNS`` to identify
+    resonance-equivalent atom pairs (e.g. the two oxygens in a nitro group).
+    Connected pairs are merged via union-find so that, for example, all four
+    oxygens in a phosphate group ``P(=O)([O-])([O-])([O-])`` form a single
+    group.
+
+    Args:
+        mol (Chem.Mol): An RDKit molecule with atom map numbers set. The
+            molecule is not modified.
+
+    Returns:
+        list[list[int]]: A list of resonance-equivalent groups, where each
+            group is a list of atom map numbers. Only groups with more than
+            one member are included. Atom map numbers of 0 are excluded.
+    """
+    parent: dict[int, int] = {}
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    seen_pairs: set[tuple[int, int]] = set()
+    for pattern, qmap1, qmap2 in _RESONANCE_SWAP_PATTERNS:
+        q_idx1 = _get_query_atom_idx(pattern, qmap1)
+        q_idx2 = _get_query_atom_idx(pattern, qmap2)
+        for match in mol.GetSubstructMatches(pattern):
+            a_idx = match[q_idx1]
+            b_idx = match[q_idx2]
+            key = (min(a_idx, b_idx), max(a_idx, b_idx))
+            if key in seen_pairs:
+                continue
+            seen_pairs.add(key)
+            map_a = mol.GetAtomWithIdx(a_idx).GetAtomMapNum()
+            map_b = mol.GetAtomWithIdx(b_idx).GetAtomMapNum()
+            if map_a == 0 and map_b == 0:
+                continue
+            for mn in (map_a, map_b):
+                if mn != 0 and mn not in parent:
+                    parent[mn] = mn
+            if map_a != 0 and map_b != 0:
+                union(map_a, map_b)
+
+    groups: dict[int, list[int]] = {}
+    for mn in parent:
+        root = find(mn)
+        groups.setdefault(root, []).append(mn)
+
+    return [sorted(g) for g in groups.values() if len(g) > 1]
 
 
 def mapping_equivalent(
@@ -391,8 +491,8 @@ def mapping_equivalent(
         G2 = rxn_to_mapping_graph(rxn2)
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Graph comparison failed for {rxn2}: {e}")
 
     if not consider_tautomers and not consider_resonance_swaps:
         return False
@@ -409,7 +509,8 @@ def mapping_equivalent(
     for smi in candidate_smiles:
         try:
             G2 = rxn_to_mapping_graph(smi)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to build mapping graph for {smi}: {e}")
             continue
         if nx.is_isomorphic(G1, G2, node_match=node_match, edge_match=edge_match):
             return True

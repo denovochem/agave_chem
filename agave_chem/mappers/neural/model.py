@@ -1,71 +1,46 @@
-from dataclasses import dataclass
 from typing import Dict
 
 import torch
+from pydantic import BaseModel, field_validator
 from transformers import AlbertForMaskedLM
 
 
-@dataclass
-class SupervisedConfig:
-    """Configuration for supervised attention alignment training."""
+class SupervisedConfig(BaseModel):
+    """
+    Configuration for supervised attention alignment training.
 
-    target_layer: int = 11  # Which layer's attention to supervise
-    target_head: int = 7  # Which head's attention to supervise
+    Args:
+        target_layer (int): Which layer's attention to supervise.
+        mlm_loss_weight (float): Loss weight for MLM task in multitask learning.
+        attention_loss_weight (float): Loss weight for attention alignment task.
+        multitask (bool): If False, only attention alignment loss is used.
+        freeze_base_model (bool): If True, only train the attention head.
+        bottleneck_size (int): BilinearMappingHead bottleneck size.
+        use_attention_residual (bool): Whether BilinearMappingHead uses attention
+            residual.
+    """
 
-    # Loss weighting for multitask learning
+    target_layer: int = 10
     mlm_loss_weight: float = 1.0
     attention_loss_weight: float = 1.0
-
-    # Training mode
-    multitask: bool = True  # If False, only attention alignment loss
-    freeze_base_model: bool = False  # If True, only train the attention head
-
-    # Dense layer config
-    use_residual: bool = True  # Initialize with identity for residual learning
-
-    # Head type: "attention" for AttentionAlignmentHead, "bilinear" for BilinearMappingHead
-    head_type: str = "bilinear"
-
-    # BilinearMappingHead config (only used when head_type == "bilinear")
+    multitask: bool = True
+    freeze_base_model: bool = False
     bottleneck_size: int = 64
     use_attention_residual: bool = True
 
+    @field_validator("target_layer")
+    @classmethod
+    def _non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("must be non-negative")
+        return v
 
-class AttentionAlignmentHead(torch.nn.Module):
-    """
-    A learnable layer that refines attention scores for atom mapping.
-
-    Initialized as identity (with optional residual connection) so that
-    initial behavior matches the pre-trained attention patterns.
-    """
-
-    def __init__(self, seq_length: int, use_residual: bool = True):
-        super().__init__()
-        self.use_residual = use_residual
-
-        # Linear transformation on attention scores
-        # Input: (batch, seq_len, seq_len) -> Output: (batch, seq_len, seq_len)
-        self.dense = torch.nn.Linear(seq_length, seq_length, bias=True)
-
-        # Initialize as identity for residual learning
-        torch.nn.init.eye_(self.dense.weight)
-        torch.nn.init.zeros_(self.dense.bias)
-
-    def forward(self, attention_scores: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            attention_scores: (batch, seq_len, seq_len) attention weights
-
-        Returns:
-            Refined attention scores of same shape
-        """
-        # attention_scores: (B, S, S)
-        output = self.dense(attention_scores)  # (B, S, S)
-
-        if self.use_residual:
-            output = output + attention_scores
-
-        return output
+    @field_validator("bottleneck_size")
+    @classmethod
+    def _positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("must be positive")
+        return v
 
 
 class BilinearMappingHead(torch.nn.Module):
@@ -153,15 +128,15 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
     """
     Wrapper around AlbertForMaskedLM that adds supervised attention alignment.
 
-    Extracts attention from a specific layer/head, passes through a learnable
-    dense layer, and computes both MLM loss and attention alignment loss.
+    Extracts hidden states and attention from a specific layer, passes through
+    a BilinearMappingHead, and computes both MLM loss and attention alignment
+    loss.
     """
 
     def __init__(
         self,
         base_model: AlbertForMaskedLM,
         supervised_config: SupervisedConfig,
-        max_length: int = 512,
     ):
         super().__init__()
         self.base_model = base_model
@@ -170,23 +145,17 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         if getattr(self.base_model.config, "_attn_implementation", None) != "eager":
             self.base_model.config._attn_implementation = "eager"
 
-        # Enable attention output
+        # Enable attention and hidden state output
         self.base_model.config.output_attentions = True
+        self.base_model.config.output_hidden_states = True
 
         # Mapping head
-        if supervised_config.head_type == "bilinear":
-            self.base_model.config.output_hidden_states = True
-            self.bilinear_head = BilinearMappingHead(
-                hidden_size=self.base_model.config.hidden_size,
-                bottleneck_size=supervised_config.bottleneck_size,
-                num_attention_heads=self.base_model.config.num_attention_heads,
-                use_attention_residual=supervised_config.use_attention_residual,
-            )
-        else:
-            self.attention_head = AttentionAlignmentHead(
-                seq_length=max_length,
-                use_residual=supervised_config.use_residual,
-            )
+        self.bilinear_head = BilinearMappingHead(
+            hidden_size=self.base_model.config.hidden_size,
+            bottleneck_size=supervised_config.bottleneck_size,
+            num_attention_heads=self.base_model.config.num_attention_heads,
+            use_attention_residual=supervised_config.use_attention_residual,
+        )
 
         # Optionally freeze base model
         if supervised_config.freeze_base_model:
@@ -212,15 +181,14 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
                 - attention_loss: Attention alignment loss (if targets provided)
                 - attention_logits: Predicted attention (B, S, S)
         """
-        # Forward through base model with attention output
-        use_bilinear = self.supervised_config.head_type == "bilinear"
+        # Forward through base model with attention and hidden state output
         outputs = self.base_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             labels=labels,
             output_attentions=True,
-            output_hidden_states=use_bilinear,
+            output_hidden_states=True,
         )
 
         result = {}
@@ -230,22 +198,16 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         if mlm_loss is not None:
             result["mlm_loss"] = mlm_loss
 
-        # Compute mapping logits via the appropriate head
+        # Compute mapping logits via BilinearMappingHead
         target_layer = self.supervised_config.target_layer
         attentions = outputs.attentions
 
-        if use_bilinear:
-            # Use output of target layer (richer than input, includes attn+FFN)
-            hidden_states = outputs.hidden_states[target_layer + 1]  # (B, S, H)
-            layer_attention = attentions[target_layer]  # (B, num_heads, S, S)
-            attention_logits = self.bilinear_head(
-                hidden_states, layer_attention
-            )  # (B, S, S)
-        else:
-            target_head = self.supervised_config.target_head
-            layer_attention = attentions[target_layer]  # (B, H, S, S)
-            head_attention = layer_attention[:, target_head, :, :]  # (B, S, S)
-            attention_logits = self.attention_head(head_attention)  # (B, S, S)
+        # Use output of target layer (richer than input, includes attn+FFN)
+        hidden_states = outputs.hidden_states[target_layer + 1]  # (B, S, H)
+        layer_attention = attentions[target_layer]  # (B, num_heads, S, S)
+        attention_logits = self.bilinear_head(
+            hidden_states, layer_attention
+        )  # (B, S, S)
 
         result["attention_logits"] = attention_logits
 
@@ -308,6 +270,37 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
             col_pad_mask = (attention_mask == 0).unsqueeze(1)  # (B, 1, S)
             logits = logits.masked_fill(col_pad_mask, float("-inf"))
         log_probs = torch.nn.functional.log_softmax(logits, dim=-1)  # (B, S, S)
+
+        # # Diagnostic: detect inf/nan before loss computation
+        # if torch.isinf(logits).any() or torch.isnan(logits).any():
+        #     import logging
+
+        #     logging.getLogger(__name__).warning(
+        #         f"_compute_attention_loss: logits contain inf/nan. "
+        #         f"inf_count={torch.isinf(logits).sum().item()}, "
+        #         f"nan_count={torch.isnan(logits).sum().item()}, "
+        #         f"logits_min={logits[~torch.isinf(logits) & ~torch.isnan(logits)].min().item() if (~torch.isinf(logits) & ~torch.isnan(logits)).any() else 'all_inf_nan'}, "
+        #         f"logits_max={logits[~torch.isinf(logits) & ~torch.isnan(logits)].max().item() if (~torch.isinf(logits) & ~torch.isnan(logits)).any() else 'all_inf_nan'}"
+        #     )
+        # if torch.isnan(log_probs).any() or torch.isinf(log_probs).any():
+        #     import logging
+
+        #     logging.getLogger(__name__).warning(
+        #         f"_compute_attention_loss: log_probs contain inf/nan. "
+        #         f"inf_count={torch.isinf(log_probs).sum().item()}, "
+        #         f"nan_count={torch.isnan(log_probs).sum().item()}"
+        #     )
+        # if torch.isnan(targets).any() or torch.isinf(targets).any():
+        #     import logging
+
+        #     logging.getLogger(__name__).warning(
+        #         f"_compute_attention_loss: targets contain inf/nan. "
+        #         f"inf_count={torch.isinf(targets).sum().item()}, "
+        #         f"nan_count={torch.isnan(targets).sum().item()}, "
+        #         f"targets_min={targets[~torch.isinf(targets) & ~torch.isnan(targets)].min().item() if (~torch.isinf(targets) & ~torch.isnan(targets)).any() else 'all_inf_nan'}, "
+        #         f"targets_max={targets[~torch.isinf(targets) & ~torch.isnan(targets)].max().item() if (~torch.isinf(targets) & ~torch.isnan(targets)).any() else 'all_inf_nan'}"
+        #     )
+
         # Guard against 0 * (-inf) = NaN at masked padding columns
         cross_entropy = -(
             torch.where(targets > 0, targets * log_probs, torch.zeros_like(targets))
@@ -342,29 +335,21 @@ class AlbertWithAttentionAlignment(torch.nn.Module):
         token_type_ids: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        use_bilinear = self.supervised_config.head_type == "bilinear"
         outputs = self.base_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             output_attentions=True,
-            output_hidden_states=use_bilinear,
+            output_hidden_states=True,
             return_dict=True,
         )
 
         target_layer = self.supervised_config.target_layer
         attentions = outputs.attentions
 
-        if use_bilinear:
-            hidden_states = outputs.hidden_states[target_layer + 1]
-            layer_attention = attentions[target_layer]
-            attention_logits = self.bilinear_head(hidden_states, layer_attention)
-        else:
-            layer_attention = attentions[target_layer]  # (B,H,S,S)
-            head_attention = layer_attention[
-                :, self.supervised_config.target_head, :, :
-            ]  # (B,S,S)
-            attention_logits = self.attention_head(head_attention)  # (B,S,S)
+        hidden_states = outputs.hidden_states[target_layer + 1]
+        layer_attention = attentions[target_layer]
+        attention_logits = self.bilinear_head(hidden_states, layer_attention)
 
         attention_probs = torch.softmax(attention_logits, dim=-1)  # (B,S,S)
         return attention_probs

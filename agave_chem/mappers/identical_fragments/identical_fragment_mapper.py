@@ -1,9 +1,11 @@
 from typing import List, Tuple
 
 from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.utils.chem_utils import canonicalize_smiles
 from agave_chem.utils.logging_config import logger
 
 
@@ -11,23 +13,59 @@ class IdenticalFragmentMapper(ReactionMapper):
     """
     Reaction mapper that identifies and atom-maps fragments appearing
     identically on both sides of a reaction.
+
+    Fragments that differ only by charge state (e.g. ``N`` vs ``[NH4+]``)
+    are detected as identical by comparing charge-neutral canonical SMILES.
     """
 
     def __init__(self, mapper_name: str, mapper_weight: float = 1):
         super().__init__("identical_fragment", mapper_name, mapper_weight)
 
+        self.uncharger = rdMolStandardize.Uncharger()
+
+    def _charge_neutral_canonicalization(self, smiles: str) -> str:
+        """
+        Return the charge-neutral canonical SMILES for a fragment.
+
+        Uncharges the molecule using ``rdMolStandardize.Uncharger``, then
+        canonicalizes without tautomer enumeration.
+
+        Args:
+            smiles (str): A SMILES string.
+
+        Returns:
+            str: Charge-neutral canonical SMILES, or the original string on failure.
+        """
+        try:
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                return smiles
+            uncharged_mol = self.uncharger.uncharge(mol)
+            uncharged_smiles = Chem.MolToSmiles(uncharged_mol)
+            return canonicalize_smiles(uncharged_smiles, canonicalize_tautomer=False)
+        except Exception as e:
+            logger.warning(f"Could not charge-neutralize {smiles}: {e}")
+            return smiles
+
     def _atom_map_identical_fragments(
         self, reaction_smiles: str
-    ) -> Tuple[List[str], str]:
+    ) -> Tuple[List[Tuple[str, str]], str]:
         """
         Atom map identical fragments in a reaction SMILES string.
+
+        Fragments are compared using charge-neutral canonical SMILES (without
+        tautomer canonicalization) so that fragments differing only by charge
+        state (e.g. ``N`` vs ``[NH4+]``) are detected as identical.
 
         Args:
             reaction_smiles (str): A reaction SMILES string.
 
         Returns:
-            Tuple[List[str], str]:
-                - First element: A list of mapped identical fragment SMILES.
+            Tuple[List[Tuple[str, str]], str]:
+                - First element: A list of ``(reactant_smiles, product_smiles)``
+                  pairs for each matched identical fragment. For truly identical
+                  fragments both elements are the same string; for charge-different
+                  pairs they differ.
                 - Second element: The remaining reaction SMILES with identical
                   fragments removed from both sides.
         """
@@ -36,62 +74,81 @@ class IdenticalFragmentMapper(ReactionMapper):
         reactants_smiles_list = reactants.split(".")
         products_smiles_list = products.split(".")
 
-        ## TODO: We canonicalized these before, but it was very slow...
-        ## almost certainly due to tautomer canonicalization
-
-        # reactants_smiles_list_mapping_dict = {
-        #     canonicalize_smiles(reactant): reactant
-        #     for reactant in reactants_smiles_list
-        # }
-
-        # canonicalized_reactants_smiles_list = [
-        #     canonicalize_smiles(smiles) for smiles in reactants_smiles_list
-        # ]
-        # canonicalized_products_smiles_list = [
-        #     canonicalize_smiles(smiles) for smiles in products_smiles_list
-        # ]
-
-        reactants_smiles_list_mapping_dict = {
-            reactant: reactant for reactant in reactants_smiles_list
-        }
-
-        canonicalized_reactants_smiles_list = [
-            smiles for smiles in reactants_smiles_list
+        # Build lists of (canonical_key, original_smiles) to allow duplicates
+        reactant_keys = [
+            (self._charge_neutral_canonicalization(r), r) for r in reactants_smiles_list
         ]
-        canonicalized_products_smiles_list = [smiles for smiles in products_smiles_list]
+        product_keys = [
+            (self._charge_neutral_canonicalization(p), p) for p in products_smiles_list
+        ]
 
         atom_mapped_identical_reactants_products = []
         atom_map_num = 500
-        for canonicalized_reactant in canonicalized_reactants_smiles_list:
-            reactant = reactants_smiles_list_mapping_dict[canonicalized_reactant]
-            if canonicalized_reactant in canonicalized_products_smiles_list:
-                reactants_smiles_list.remove(reactant)
-                products_smiles_list.remove(reactant)
-                canonicalized_products_smiles_list.remove(canonicalized_reactant)
 
-                reactant_mol = Chem.MolFromSmiles(canonicalized_reactant)
-                for atom in reactant_mol.GetAtoms():
-                    atom.SetAtomMapNum(atom_map_num)
-                    atom_map_num += 1
-                mapped_reactant = Chem.MolToSmiles(reactant_mol)
-                atom_mapped_identical_reactants_products.append(mapped_reactant)
+        matched_reactant_indices: set[int] = set()
+        matched_product_indices: set[int] = set()
+
+        for ri, (r_key, reactant_orig_smiles) in enumerate(reactant_keys):
+            if ri in matched_reactant_indices:
+                continue
+            for pi, (p_key, product_orig_smiles) in enumerate(product_keys):
+                if pi in matched_product_indices:
+                    continue
+                if r_key == p_key:
+                    r_mol = Chem.MolFromSmiles(reactant_orig_smiles)
+                    p_mol = Chem.MolFromSmiles(product_orig_smiles)
+                    if r_mol is None or p_mol is None:
+                        continue
+                    r_neut = self.uncharger.uncharge(r_mol)
+                    p_neut = self.uncharger.uncharge(p_mol)
+
+                    match = p_neut.GetSubstructMatch(r_neut)
+                    if not match:
+                        continue
+
+                    for i, atom in enumerate(r_mol.GetAtoms()):
+                        atom.SetAtomMapNum(atom_map_num + i)
+                        p_mol.GetAtomWithIdx(match[i]).SetAtomMapNum(atom_map_num + i)
+                    atom_map_num += r_mol.GetNumAtoms()
+
+                    mapped_r = Chem.MolToSmiles(r_mol)
+                    mapped_p = Chem.MolToSmiles(p_mol)
+                    atom_mapped_identical_reactants_products.append(
+                        (mapped_r, mapped_p)
+                    )
+                    matched_reactant_indices.add(ri)
+                    matched_product_indices.add(pi)
+                    break
+
+        remaining_reactants = [
+            r
+            for ri, r in enumerate(reactants_smiles_list)
+            if ri not in matched_reactant_indices
+        ]
+        remaining_products = [
+            p
+            for pi, p in enumerate(products_smiles_list)
+            if pi not in matched_product_indices
+        ]
+
         return (
             atom_mapped_identical_reactants_products,
-            ".".join(reactants_smiles_list) + ">>" + ".".join(products_smiles_list),
+            ".".join(remaining_reactants) + ">>" + ".".join(remaining_products),
         )
 
     def _add_identical_fragments_to_mapping(
         self,
         mapped_reaction_smiles: str,
-        atom_mapped_identical_reactants_products: List[str],
+        atom_mapped_identical_reactants_products: List[Tuple[str, str]],
     ) -> str:
         """
         Add identical fragments back to a mapped reaction SMILES string.
 
         Args:
             mapped_reaction_smiles (str): A mapped reaction SMILES string.
-            atom_mapped_identical_reactants_products (List[str]): A list of
-                atom-mapped identical fragment SMILES to append to both sides.
+            atom_mapped_identical_reactants_products (List[Tuple[str, str]]): A
+                list of ``(reactant_smiles, product_smiles)`` pairs to append to
+                the reactant and product sides respectively.
 
         Returns:
             str: A mapped reaction SMILES string with identical fragments added.
@@ -101,9 +158,9 @@ class IdenticalFragmentMapper(ReactionMapper):
         reactants_smiles_list = reactants.split(".")
         products_smiles_list = products.split(".")
 
-        for identical_fragment in atom_mapped_identical_reactants_products:
-            reactants_smiles_list.append(identical_fragment)
-            products_smiles_list.append(identical_fragment)
+        for identical_fragments in atom_mapped_identical_reactants_products:
+            reactants_smiles_list.append(identical_fragments[0])
+            products_smiles_list.append(identical_fragments[1])
 
         mapped_reactants = ".".join(reactants_smiles_list)
         mapped_products = ".".join(products_smiles_list)
@@ -113,7 +170,7 @@ class IdenticalFragmentMapper(ReactionMapper):
     def create_identical_fragments_mapping_list(
         self,
         reaction_smiles_list: List[str],
-    ) -> Tuple[List[str], List[List[str]]]:
+    ) -> Tuple[List[str], List[List[Tuple[str, str]]]]:
         """
         Strip identical fragments from a list of reactions for downstream mapping.
 
@@ -121,10 +178,10 @@ class IdenticalFragmentMapper(ReactionMapper):
             reaction_smiles_list (List[str]): A list of reaction SMILES strings.
 
         Returns:
-            Tuple[List[str], List[List[str]]]:
+            Tuple[List[str], List[List[Tuple[str, str]]]]:
                 - First element: Reaction SMILES with identical fragments removed.
-                - Second element: Per-reaction lists of atom-mapped identical
-                  fragment SMILES to be re-added after downstream mapping.
+                - Second element: Per-reaction lists of ``(reactant_smiles,
+                  product_smiles)`` pairs to be re-added after downstream mapping.
         """
         new_rxns = []
         identical_fragments_mapping_list = []
@@ -139,7 +196,7 @@ class IdenticalFragmentMapper(ReactionMapper):
     def resolve_identical_fragments_mapping_list(
         self,
         mapped_reaction_smiles_list: List[str],
-        identical_fragments_mapping_list: List[List[str]],
+        identical_fragments_mapping_list: List[List[Tuple[str, str]]],
     ) -> List[str]:
         """
         Re-add identical fragments to a list of already-mapped reaction SMILES.
@@ -147,9 +204,9 @@ class IdenticalFragmentMapper(ReactionMapper):
         Args:
             mapped_reaction_smiles_list (List[str]): Mapped reaction SMILES strings
                 (from a downstream mapper).
-            identical_fragments_mapping_list (List[List[str]]): Per-reaction lists of
-                atom-mapped identical fragment SMILES (produced by
-                ``create_identical_fragments_mapping_list``).
+            identical_fragments_mapping_list (List[List[Tuple[str, str]]]):
+                Per-reaction lists of ``(reactant_smiles, product_smiles)`` pairs
+                (produced by ``create_identical_fragments_mapping_list``).
 
         Returns:
             List[str]: Final reaction SMILES strings with identical fragments restored.

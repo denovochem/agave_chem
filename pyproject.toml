@@ -34,6 +34,16 @@ zip-safe = false
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.ruff.lint]
+ignore = ["UP", "BLE001"]
+
+[tool.ruff.lint.per-file-ignores]
+"workflows/model_training_scripts/*" = ["E402"]
+"workflows/model_training_scripts/albert_mapper_supervised_training.py" = ["F401"]
+"workflows/benchmarking/*" = ["E402"]
+"tests/unit/test_workflow_models_unit.py" = ["E402"]
+"tests/unit/test_bench_utils_sync.py" = ["E402"]
+
 [tool.setuptools.package-data]
 agave_chem = [
     "datafiles/models/supervised_albert_model/*.json",

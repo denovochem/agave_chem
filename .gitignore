@@ -80,6 +80,9 @@
 !docs/reference.md
 !docs/stylesheets/
 !docs/stylesheets/extra.css
+!docs/images/
+!docs/images/tnt_balanced_reaction_mapped.png
+!docs/images/tnt_unbalanced_reaction.png
 
 !examples/
 !examples/example_notebook.ipynb
@@ -92,15 +95,27 @@
 !workflows/benchmarking/gold_reactions_filtered.txt
 !workflows/benchmarking/localmapper_gold_reactions_filtered_results.txt
 !workflows/benchmarking/rxnmapper_gold_reactions_filtered_results.txt
+!workflows/benchmarking/_bench_utils.py 
+!workflows/benchmarking/benchmark_agave_chem.py 
+!workflows/benchmarking/benchmark_chython.py 
+!workflows/benchmarking/benchmark_localmapper.py 
+!workflows/benchmarking/benchmark_rxnmapper.py
+!workflows/benchmarking/benchmark_rxnmapper_v2.py
+!workflows/benchmarking/run_external_benchmarks.py 
 
 !workflows/data/
 
 !workflows/model_training_scripts/
 !workflows/model_training_scripts/albert_mapper_unuspervised_training.py
 !workflows/model_training_scripts/albert_mapper_supervised_training.py
+!workflows/model_training_scripts/attention_target_builder.py
 !workflows/model_training_scripts/unsupervised_training.py
 !workflows/model_training_scripts/supervised_training.py
 !workflows/model_training_scripts/layer_head_identification.py
+!workflows/model_training_scripts/cli_utils.py
+!workflows/model_training_scripts/layer_head_identification.ipynb
+!workflows/model_training_scripts/unsupervised_training.ipynb
+!workflows/model_training_scripts/supervised_training.ipynb
 
 !workflows/template_processing/
 !workflows/template_processing/generate_child_smarts_from_smirks.py
@@ -122,9 +137,20 @@
 !tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
+!tests/unit/test_albert_mapper_unsupervised_unit.py
+!tests/unit/test_albert_mapper_supervised_unit.py
+!tests/unit/test_unsupervised_training_unit.py
+!tests/unit/test_supervised_training_unit.py
+!tests/unit/test_layer_head_identification_unit.py
+!tests/unit/test_cli_utils_unit.py
 
-!manuscript/
-!manuscript/images/
-!manuscript/images/*.png
-!manuscript/manuscript.tex
-!manuscript/manuscript.pdf
+
+!golden_seeded_random.pkl
+!golden_seeded_canonicalize.pkl
+!golden_seeded_tautomer.pkl
+!golden_canonical.pkl
+!verify_golden_datasets.py
+
+
+# !manuscript/
+# !manuscript/**

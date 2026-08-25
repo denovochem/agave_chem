@@ -6,14 +6,17 @@ including parsing, sanitization, and atom property access.
 """
 
 import random
-from typing import Dict
+from typing import Dict, Optional
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.utils.logging_config import logger
 
-TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator()
+_taut_opts = rdMolStandardize.CleanupParameters()
+_taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
+_taut_opts.tautomerRemoveBondStereo = False  # type: ignore[assignment]
+TAUTOMER_ENUMERATOR = rdMolStandardize.TautomerEnumerator(_taut_opts)
 
 
 def canonicalize_smiles(
@@ -50,7 +53,8 @@ def canonicalize_smiles(
             if canonicalize_tautomer:
                 m = TAUTOMER_ENUMERATOR.Canonicalize(m)
             if remove_mapping:
-                [a.SetAtomMapNum(0) for a in m.GetAtoms()]
+                for a in m.GetAtoms():
+                    a.SetAtomMapNum(0)
             canonical_smiles_string = str(
                 Chem.MolToSmiles(m, canonical=True, isomericSmiles=isomeric)
             )
@@ -60,7 +64,7 @@ def canonicalize_smiles(
     except Exception as e:
         logger.warning(f"Could not canonicalize {smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return smiles
 
 
@@ -71,21 +75,47 @@ def randomize_smiles(
     remove_mapping: bool = True,
     randomize_tautomer: bool = False,
     throw_error_on_failure: bool = False,
+    seed: Optional[int] = None,
 ) -> str:
+    """
+    Randomize a SMILES string by shuffling fragment order, atom order, and optionally tautomers.
+
+    When ``seed`` is provided, all stochastic operations use a local
+    ``random.Random`` instance so that results are fully deterministic
+    and global random state is not affected.
+
+    Args:
+        smiles (str): The input SMILES string to randomize.
+        isomeric (bool): Whether to retain isomeric information. Defaults to True.
+        shuffle_order (bool): Whether to shuffle the order of fragments. Defaults to True.
+        remove_mapping (bool): Whether to remove atom mapping numbers. Defaults to True.
+        randomize_tautomer (bool): Whether to randomize the tautomer form. Defaults to False.
+        throw_error_on_failure (bool): Whether to throw an error if randomization fails.
+            Defaults to False.
+        seed (Optional[int]): If provided, uses a local ``random.Random`` instance
+            seeded with this value for all stochastic operations, making the output
+            fully deterministic. When ``None``, uses the global ``random`` module.
+
+    Returns:
+        str: The randomized SMILES string. If conversion fails, returns the input
+            string unchanged.
+    """
+    rng = random.Random(seed) if seed is not None else random
     try:
         x = smiles.split(".")
         if shuffle_order:
-            random.shuffle(x)
+            rng.shuffle(x)
         frags = []
         for i in x:
             m = Chem.MolFromSmiles(i)
             if randomize_tautomer:
                 tautomers = TAUTOMER_ENUMERATOR.Enumerate(m)
-                m = random.choice(tautomers)
+                m = rng.choice(tautomers)
             if remove_mapping:
-                [a.SetAtomMapNum(0) for a in m.GetAtoms()]
+                for a in m.GetAtoms():
+                    a.SetAtomMapNum(0)
             new_atom_order = list(range(m.GetNumAtoms()))
-            random.shuffle(new_atom_order)
+            rng.shuffle(new_atom_order)
             random_mol = Chem.RenumberAtoms(m, newOrder=new_atom_order)
             random_smiles_string = str(
                 Chem.MolToSmiles(random_mol, canonical=False, isomericSmiles=isomeric)
@@ -96,7 +126,7 @@ def randomize_smiles(
     except Exception as e:
         logger.warning(f"Could not randomize {smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return smiles
 
 
@@ -154,7 +184,7 @@ def canonicalize_reaction_smiles(
     except Exception as e:
         logger.warning(f"Could not canonicalize {rxn_smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return rxn_smiles
 
 
@@ -166,7 +196,36 @@ def randomize_reaction_smiles(
     randomize_tautomer: bool = False,
     randomize_atom_mapping: bool = False,
     throw_error_on_failure: bool = False,
+    seed: Optional[int] = None,
 ) -> str:
+    """
+    Randomize a reaction SMILES string by randomizing each fragment and shuffling order.
+
+    When ``seed`` is provided, all stochastic operations (including those inside
+    ``randomize_smiles``) use a local ``random.Random`` instance so that results
+    are fully deterministic and global random state is not affected.
+
+    Args:
+        rxn_smiles (str): The input reaction SMILES string to randomize.
+        isomeric (bool): Whether to retain isomeric information. Defaults to True.
+        remove_mapping (bool): Whether to remove atom mapping numbers. Defaults to True.
+        shuffle_order (bool): Whether to shuffle the order of reactants and products.
+            Defaults to True.
+        randomize_tautomer (bool): Whether to randomize the tautomer form. Defaults to False.
+        randomize_atom_mapping (bool): Whether to randomize atom mapping numbers.
+            Defaults to False.
+        throw_error_on_failure (bool): Whether to throw an error if randomization fails.
+            Defaults to False.
+        seed (Optional[int]): If provided, uses a local ``random.Random`` instance
+            seeded with this value for all stochastic operations (including those
+            inside ``randomize_smiles``), making the output fully deterministic.
+            When ``None``, uses the global ``random`` module.
+
+    Returns:
+        str: The randomized reaction SMILES string. If conversion fails, returns
+            the input string unchanged.
+    """
+    rng = random.Random(seed) if seed is not None else random
     try:
         split_roles = rxn_smiles.split(">>")
         if len(split_roles) != 2:
@@ -180,6 +239,7 @@ def randomize_reaction_smiles(
                     isomeric=isomeric,
                     remove_mapping=remove_mapping,
                     randomize_tautomer=randomize_tautomer,
+                    seed=seed,
                 )
             )
         for product in split_roles[1].split("."):
@@ -189,17 +249,18 @@ def randomize_reaction_smiles(
                     isomeric=isomeric,
                     remove_mapping=remove_mapping,
                     randomize_tautomer=randomize_tautomer,
+                    seed=seed,
                 )
             )
         if shuffle_order:
-            random.shuffle(reactants_list)
-            random.shuffle(products_list)
+            rng.shuffle(reactants_list)
+            rng.shuffle(products_list)
         randomized_rxn = ">>".join([".".join(reactants_list), ".".join(products_list)])
         return randomized_rxn
     except Exception as e:
         logger.warning(f"Could not randomize {rxn_smiles}: {e}")
         if throw_error_on_failure:
-            raise e
+            raise
         return rxn_smiles
 
 
@@ -210,7 +271,8 @@ def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:
     unmapped_reactants = []
     for reactant in reactants:
         reactant_mol = Chem.MolFromSmiles(reactant)
-        [a.SetAtomMapNum(0) for a in reactant_mol.GetAtoms()]
+        for a in reactant_mol.GetAtoms():
+            a.SetAtomMapNum(0)
         reactant = Chem.MolToSmiles(
             reactant_mol, canonical=False, doRandom=False, isomericSmiles=True
         )
@@ -218,7 +280,8 @@ def remove_reaction_smiles_atom_mapping(rxn_smiles: str) -> str:
     unmapped_products = []
     for product in products:
         product_mol = Chem.MolFromSmiles(product)
-        [a.SetAtomMapNum(0) for a in product_mol.GetAtoms()]
+        for a in product_mol.GetAtoms():
+            a.SetAtomMapNum(0)
         product = Chem.MolToSmiles(
             product_mol, canonical=False, doRandom=False, isomericSmiles=True
         )

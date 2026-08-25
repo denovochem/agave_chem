@@ -9,15 +9,33 @@ from agave_chem.utils.logging_config import logger
 
 
 def has_top_level_comma(s: str) -> bool:
-    """Check if string has a comma at top level (not inside [] or ())."""
+    """
+    Check if a string has a comma at top level (not inside [] or ()).
+
+    Commas that separate recursive SMARTS ``$()`` OR-alternatives
+    (e.g. ``$([#6]:[#6]),$([#6]=[#6])``) are excluded, since those are
+    valid SMARTS OR expressions that RDKit handles natively and should
+    not be expanded into separate child templates.
+
+    Args:
+        s (str): The bracket content to check.
+
+    Returns:
+        bool: True if an expandable top-level comma is found, False otherwise.
+    """
     depth = 0
+    prev_char = ""
     for char in s:
         if char in "([":
             depth += 1
         elif char in ")]":
             depth -= 1
         elif char == "," and depth == 0:
+            if prev_char == ")" and depth == 0:
+                # Look ahead for '$' — this is a $() OR separator, skip it
+                continue
             return True
+        prev_char = char
     return False
 
 
@@ -54,12 +72,11 @@ def find_innermost_bracket_with_comma(s: str) -> Optional[Tuple[int, int]]:
     for i, char in enumerate(s):
         if char == "[":
             bracket_stack.append(i)
-        elif char == "]":
-            if bracket_stack:
-                start = bracket_stack.pop()
-                content = s[start + 1 : i]
-                if has_top_level_comma(content):
-                    return (start, i + 1)
+        elif char == "]" and bracket_stack:
+            start = bracket_stack.pop()
+            content = s[start + 1 : i]
+            if has_top_level_comma(content):
+                return (start, i + 1)
 
     return None
 
@@ -167,6 +184,12 @@ def verify_validity_of_template(template: str, parent_template: str) -> bool:
     ]
     product_mols = [Chem.MolFromSmarts(smarts) for smarts in product_smarts.split(".")]
 
+    if any(mol is None for mol in reactant_mols) or any(
+        mol is None for mol in product_mols
+    ):
+        logger.warning(f"Unparseable SMARTS fragment in template: {template}")
+        return False
+
     product_atom_maps_and_elements = {}
     for mol in product_mols:
         for atom in mol.GetAtoms():
@@ -269,6 +292,16 @@ if __name__ == "__main__":
             filtered_smirks_list.append(smirk)
 
         default_smirk_pattern["child_smirks"] = filtered_smirks_list
+
+        if not verify_validity_of_template(
+            smirks,
+            default_smirk_pattern["smirks"],
+        ):
+            logger.warning(
+                f"Parent SMIRKS failed validation, skipping: "
+                f"{default_smirk_pattern['name']} — {default_smirk_pattern['smirks']}"
+            )
+            continue
 
         default_smirk_pattern["superclass_id"] = (
             default_smirk_pattern["superclass_id"] or 0

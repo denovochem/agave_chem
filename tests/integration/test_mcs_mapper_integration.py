@@ -61,7 +61,7 @@ def test_mcs_mapper_uspto_1k_reactions_sanity() -> None:
     product_mapped_atoms = 0
     for i, rxn in enumerate(rxns):
         res = mapper.map_reaction(rxn)
-        mapped = res["selected_mapping"]
+        mapped = res.selected_mapping
 
         product_str = mapped.split(">>")[-1]
         product_mol = Chem.MolFromSmiles(product_str)
