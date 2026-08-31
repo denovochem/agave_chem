@@ -87,7 +87,10 @@ class ReactionMapperResult(BaseModel):
             classification metadata, keyed by mapped SMILES string (same keys as
             ``possible_mappings``).  Each value is a list of dicts, one per matching
             template, containing ``template_name``, ``class_str``, ``class_id``,
-            ``subclass_id``, ``subsubclass_id``, ``superclass_id``, and
+            ``subclass_id``, ``subsubclass_id``, ``superclass_id``,
+            ``superclass_name``, ``superclass_description``, ``class_name``,
+            ``class_description``, ``subclass_name``, ``subclass_description``,
+            ``subsubclass_name``, ``subsubclass_description``, and
             ``rxno_classification`` (a list of RXNO classification dicts, each
             containing ``rxno_id``, ``rxno_label``, and ``rxno_definition``).
             Only populated by the template mapper; other mappers leave this empty.
@@ -128,7 +131,10 @@ class AgaveChemMapperResult(BaseModel):
             classification metadata, keyed by mapped SMILES string.  Each value
             is a list of dicts (one per matching template) containing
             ``template_name``, ``class_str``, ``class_id``, ``subclass_id``,
-            ``subsubclass_id``, ``superclass_id``, and ``rxno_classification``
+            ``subsubclass_id``, ``superclass_id``, ``superclass_name``,
+            ``superclass_description``, ``class_name``, ``class_description``,
+            ``subclass_name``, ``subclass_description``, ``subsubclass_name``,
+            ``subsubclass_description``, and ``rxno_classification``
             (a list of RXNO classification dicts with ``rxno_id``,
             ``rxno_label``, and ``rxno_definition``).  Always populated when a
             template mapper matches ``final_mapping``; empty otherwise.

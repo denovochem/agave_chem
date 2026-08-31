@@ -27,6 +27,103 @@ from agave_chem.utils.chem_utils import (
 from agave_chem.utils.logging_config import logger
 
 
+def _build_class_hierarchy_lookup(
+    reaction_classes_data: Dict[str, Any],
+) -> Dict[str, Dict[str, str]]:
+    """
+    Flatten reaction_classes.json into a lookup keyed by composite ID path.
+
+    Keys are dot-delimited ID paths (e.g. ``"1.1.1"`` for superclass 1,
+    class 1, subclass 1).  Values are dicts with ``name`` and ``description``
+    for each level of the hierarchy.
+
+    Args:
+        reaction_classes_data (Dict[str, Any]): Parsed contents of
+            ``reaction_classes.json``.
+
+    Returns:
+        Dict[str, Dict[str, str]]: Mapping from dot-delimited ID path to a dict
+        containing ``superclass_name``, ``superclass_description``,
+        ``class_name``, ``class_description``, ``subclass_name``,
+        ``subclass_description``, ``subsubclass_name``, and
+        ``subsubclass_description``.
+    """
+    lookup: Dict[str, Dict[str, str]] = {}
+
+    for superclass in reaction_classes_data.get("superclasses", []):
+        sc_id = str(superclass.get("id", ""))
+        sc_name = str(superclass.get("name", ""))
+        sc_desc = str(superclass.get("description", ""))
+
+        for cls in superclass.get("classes", []):
+            c_id = str(cls.get("id", ""))
+            c_name = str(cls.get("name", ""))
+            c_desc = str(cls.get("description", ""))
+
+            for subclass in cls.get("subclasses", []):
+                sub_id = str(subclass.get("id", ""))
+                sub_name = str(subclass.get("name", ""))
+                sub_desc = str(subclass.get("description", ""))
+
+                for subsub in subclass.get("subsubclasses", []):
+                    subsub_id = str(subsub.get("id", ""))
+                    subsub_name = str(subsub.get("name", ""))
+                    subsub_desc = str(subsub.get("description", ""))
+
+                    key = f"{sc_id}.{c_id}.{sub_id}.{subsub_id}"
+                    lookup[key] = {
+                        "superclass_name": sc_name,
+                        "superclass_description": sc_desc,
+                        "class_name": c_name,
+                        "class_description": c_desc,
+                        "subclass_name": sub_name,
+                        "subclass_description": sub_desc,
+                        "subsubclass_name": subsub_name,
+                        "subsubclass_description": subsub_desc,
+                    }
+
+                if not subclass.get("subsubclasses"):
+                    key = f"{sc_id}.{c_id}.{sub_id}."
+                    lookup[key] = {
+                        "superclass_name": sc_name,
+                        "superclass_description": sc_desc,
+                        "class_name": c_name,
+                        "class_description": c_desc,
+                        "subclass_name": sub_name,
+                        "subclass_description": sub_desc,
+                        "subsubclass_name": "",
+                        "subsubclass_description": "",
+                    }
+
+            if not cls.get("subclasses"):
+                key = f"{sc_id}.{c_id}.."
+                lookup[key] = {
+                    "superclass_name": sc_name,
+                    "superclass_description": sc_desc,
+                    "class_name": c_name,
+                    "class_description": c_desc,
+                    "subclass_name": "",
+                    "subclass_description": "",
+                    "subsubclass_name": "",
+                    "subsubclass_description": "",
+                }
+
+        if not superclass.get("classes"):
+            key = f"{sc_id}..."
+            lookup[key] = {
+                "superclass_name": sc_name,
+                "superclass_description": sc_desc,
+                "class_name": "",
+                "class_description": "",
+                "subclass_name": "",
+                "subclass_description": "",
+                "subsubclass_name": "",
+                "subsubclass_description": "",
+            }
+
+    return lookup
+
+
 def _offset_map_nums(smirks: str, offset: int) -> str:
     return re.sub(
         r":(\d+)",
@@ -171,6 +268,12 @@ class TemplateReactionMapper(ReactionMapper):
         self._initialized_smirks_patterns: Optional[List[InitializedSmirksPattern]] = (
             None
         )
+
+        reaction_classes_file = files("agave_chem.datafiles.smirks_patterns").joinpath(
+            "reaction_classes.json"
+        )
+        with reaction_classes_file.open("r") as f:
+            self._class_hierarchy_lookup = _build_class_hierarchy_lookup(json.load(f))
 
         _taut_opts = rdMolStandardize.CleanupParameters()
         _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -1466,6 +1569,44 @@ class TemplateReactionMapper(ReactionMapper):
 
         return selected_mapping
 
+    def _lookup_class_names(
+        self,
+        superclass_id: str,
+        class_id: str,
+        subclass_id: str,
+        subsubclass_id: str,
+    ) -> Dict[str, str]:
+        """
+        Look up class names and descriptions from the pre-built hierarchy.
+
+        Args:
+            superclass_id (str): Superclass ID.
+            class_id (str): Class ID.
+            subclass_id (str): Subclass ID.
+            subsubclass_id (str): Sub-subclass ID.
+
+        Returns:
+            Dict[str, str]: Dict with ``superclass_name``, ``superclass_description``,
+            ``class_name``, ``class_description``, ``subclass_name``,
+            ``subclass_description``, ``subsubclass_name``, and
+            ``subsubclass_description``.  Values are empty strings when the
+            composite key is not found in the lookup.
+        """
+        key = f"{superclass_id}.{class_id}.{subclass_id}.{subsubclass_id}"
+        return self._class_hierarchy_lookup.get(
+            key,
+            {
+                "superclass_name": "",
+                "superclass_description": "",
+                "class_name": "",
+                "class_description": "",
+                "subclass_name": "",
+                "subclass_description": "",
+                "subsubclass_name": "",
+                "subsubclass_description": "",
+            },
+        )
+
     def _filter_and_deduplicate_outcomes(
         self,
         mapped_outcomes_smirks_dict: Dict[str, List[InitializedSmirksPattern]],
@@ -1568,6 +1709,12 @@ class TemplateReactionMapper(ReactionMapper):
                         "subsubclass_id": p["subsubclass_id"],
                         "superclass_id": p["superclass_id"],
                         "rxno_classification": p["rxno_classification"],
+                        **self._lookup_class_names(
+                            p["superclass_id"],
+                            p["class_id"],
+                            p["subclass_id"],
+                            p["subsubclass_id"],
+                        ),
                     }
                     for p in patterns
                 }.values()

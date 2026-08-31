@@ -6,6 +6,7 @@ import pytest
 
 from agave_chem.mappers.template.template_mapper import (
     TemplateReactionMapper,
+    _build_class_hierarchy_lookup,
     _make_composite_smirks_pattern,
 )
 from agave_chem.mappers.types import InitializedSmirksPattern, ReactionMapperResult
@@ -172,6 +173,21 @@ class TestInitializeSmirksPatterns:
         for p in patterns:
             assert required_keys.issubset(p.keys())
 
+    def test_lookup_class_names_returns_names_for_known_ids(self, mapper):
+        """_lookup_class_names should return non-empty names for valid hierarchy IDs."""
+        result = mapper._lookup_class_names("1", "1", "1", "")
+        assert isinstance(result["superclass_name"], str)
+        assert isinstance(result["class_name"], str)
+        assert isinstance(result["subclass_name"], str)
+
+    def test_lookup_class_names_returns_empty_for_unknown_ids(self, mapper):
+        """_lookup_class_names should return empty strings for unknown hierarchy IDs."""
+        result = mapper._lookup_class_names("99", "99", "99", "99")
+        assert result["superclass_name"] == ""
+        assert result["class_name"] == ""
+        assert result["subclass_name"] == ""
+        assert result["subsubclass_name"] == ""
+
 
 # ---------------------------------------------------------------------------
 # map_reaction classification_info
@@ -214,7 +230,30 @@ class TestMapReactionClassificationInfo:
             assert "subclass_id" in entry
             assert "subsubclass_id" in entry
             assert "superclass_id" in entry
+            assert "superclass_name" in entry
+            assert "superclass_description" in entry
+            assert "class_name" in entry
+            assert "class_description" in entry
+            assert "subclass_name" in entry
+            assert "subclass_description" in entry
+            assert "subsubclass_name" in entry
+            assert "subsubclass_description" in entry
             assert "rxno_classification" in entry
+
+    def test_class_names_are_non_empty_for_known_reaction(self, mapper):
+        """classification_info entries should have non-empty class names for known reactions."""
+        result = mapper.map_reaction(
+            "[CH2:0]([Cl])[c:1]1ccccc1.[CH2:2]([O:3][H])>>[CH2:0]([O:3])[c:1]1ccccc1.[Cl][H]"
+        )
+        if result.selected_mapping:
+            for entries in result.classification_info.values():
+                for entry in entries:
+                    assert isinstance(entry["superclass_name"], str)
+                    assert isinstance(entry["class_name"], str)
+                    assert isinstance(entry["subclass_name"], str)
+                    assert isinstance(entry["superclass_description"], str)
+                    assert isinstance(entry["class_description"], str)
+                    assert isinstance(entry["subclass_description"], str)
 
     def test_classification_info_keys_match_possible_mappings(self, mapper):
         """classification_info keys should match possible_mappings keys."""
@@ -294,3 +333,101 @@ class TestNonTemplateMappersClassificationInfo:
         )
         assert len(result.classification_info) == 1
         assert result.classification_info["[C:1]>>[C:1]"][0]["template_name"] == "Test"
+
+
+# ---------------------------------------------------------------------------
+# _build_class_hierarchy_lookup
+# ---------------------------------------------------------------------------
+
+
+class TestBuildClassHierarchyLookup:
+    """Tests for _build_class_hierarchy_lookup helper."""
+
+    def test_lookup_returns_names_and_descriptions(self):
+        """Lookup should return name and description for each hierarchy level."""
+        data = {
+            "superclasses": [
+                {
+                    "id": 1,
+                    "name": "Heteroatom Alkylation",
+                    "description": "Heteroatom alkylation reactions",
+                    "classes": [
+                        {
+                            "id": 1,
+                            "name": "N-alkylation",
+                            "description": "N-alkylation reactions",
+                            "subclasses": [
+                                {
+                                    "id": 1,
+                                    "name": "Reductive amination",
+                                    "description": "Reductive amination",
+                                    "subsubclasses": [],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+        lookup = _build_class_hierarchy_lookup(data)
+        key = "1.1.1."
+        assert key in lookup
+        assert lookup[key]["superclass_name"] == "Heteroatom Alkylation"
+        assert (
+            lookup[key]["superclass_description"] == "Heteroatom alkylation reactions"
+        )
+        assert lookup[key]["class_name"] == "N-alkylation"
+        assert lookup[key]["class_description"] == "N-alkylation reactions"
+        assert lookup[key]["subclass_name"] == "Reductive amination"
+        assert lookup[key]["subclass_description"] == "Reductive amination"
+        assert lookup[key]["subsubclass_name"] == ""
+        assert lookup[key]["subsubclass_description"] == ""
+
+    def test_lookup_with_subsubclasses(self):
+        """Lookup should include subsubclass names when present."""
+        data = {
+            "superclasses": [
+                {
+                    "id": 2,
+                    "name": "Acylation",
+                    "description": "Acylation reactions",
+                    "classes": [
+                        {
+                            "id": 5,
+                            "name": "Amide formation",
+                            "description": "Amide bond formation",
+                            "subclasses": [
+                                {
+                                    "id": 1,
+                                    "name": "Carbodiimide coupling",
+                                    "description": "Carbodiimide-mediated coupling",
+                                    "subsubclasses": [
+                                        {
+                                            "id": 1,
+                                            "name": "EDC coupling",
+                                            "description": "EDC/HOBt coupling",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+        lookup = _build_class_hierarchy_lookup(data)
+        key = "2.5.1.1"
+        assert key in lookup
+        assert lookup[key]["subsubclass_name"] == "EDC coupling"
+        assert lookup[key]["subsubclass_description"] == "EDC/HOBt coupling"
+
+    def test_lookup_empty_data(self):
+        """Lookup should return empty dict for empty input."""
+        lookup = _build_class_hierarchy_lookup({})
+        assert lookup == {}
+
+    def test_lookup_missing_key_returns_empty_strings(self):
+        """Lookup should not contain keys for missing hierarchy levels."""
+        data = {"superclasses": []}
+        lookup = _build_class_hierarchy_lookup(data)
+        assert "1.1.1." not in lookup
