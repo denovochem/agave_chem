@@ -125,8 +125,27 @@ def _build_class_hierarchy_lookup(
 
 
 def _offset_map_nums(smirks: str, offset: int) -> str:
+    """
+    Shift atom-map numbers in a SMIRKS string by a fixed offset.
+
+    Only colon-prefixed numbers that appear immediately before a closing
+    bracket ``]`` are adjusted (i.e. true atom-map numbers such as
+    ``[*:103]`` or ``[O;H0;D2;+0:102]``).  Aromatic-bond / ring-closure
+    tokens outside atom brackets (e.g. ``:1`` in ``[c:206]:1``) are left
+    untouched.
+
+    Atom-map numbers >= 900 are treated as reserved and left unchanged.
+
+    Args:
+        smirks (str): A SMIRKS reaction string.
+        offset (int): Non-negative integer added to every non-reserved
+            atom-map number.
+
+    Returns:
+        str: A new SMIRKS string with atom-map numbers shifted by ``offset``.
+    """
     return re.sub(
-        r":(\d+)",
+        r":(\d+)(?=\])",
         lambda m: (
             f":{m.group(1)}"
             if int(m.group(1)) >= 900
@@ -137,6 +156,22 @@ def _offset_map_nums(smirks: str, offset: int) -> str:
 
 
 def _combine_child_smirks(smirks_list: List[str]) -> str:
+    """
+    Merge multiple child SMIRKS into a single composite SMIRKS string.
+
+    Each child SMIRKS is shifted by ``(i + 1) * 100`` via
+    :func:`_offset_map_nums` to prevent atom-map collisions between
+    fragments, then all product fragments are joined on the left of
+    ``>>`` and all reactant fragments on the right.
+
+    Args:
+        smirks_list (List[str]): One or more child SMIRKS strings, each
+            in ``"products>>reactants"`` form.
+
+    Returns:
+        str: A composite SMIRKS string of the form
+        ``"prod1.prod2...>>react1.react2..."``.
+    """
     products_parts: List[str] = []
     reactants_parts: List[str] = []
     for i, smirks in enumerate(smirks_list):

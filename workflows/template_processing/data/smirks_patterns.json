@@ -7214,7 +7214,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[#6;+0:1]-[O;H0;D2;+0:2]-[C;H3;D1;+0]>>[#6;+0:1]-[O;H1;D1;+0:2]",
+        "smirks": "[#6;+0;!$(C=[#8]):1]-[O;H0;D2;+0:2]-[C;H3;D1;+0]>>[#6;+0:1]-[O;H1;D1;+0:2]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
@@ -8811,7 +8811,7 @@
     },
     {
         "class_id": null,
-        "name": "{Pictet-Spengler}",
+        "name": "Pictet-Spengler reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8868,7 +8868,7 @@
     },
     {
         "class_id": null,
-        "name": "{benzothiazole}",
+        "name": "Benzothiazole synthesis from 2-aminothiophenol and aldehyde",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8925,7 +8925,7 @@
     },
     {
         "class_id": null,
-        "name": "{thiazole}",
+        "name": "Hantzsch thiazole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9115,7 +9115,7 @@
     },
     {
         "class_id": 1,
-        "name": "{3-nitrile-pyridine}",
+        "name": "Pyridine synthesis with 3-cyano substitution (from 1,3-dicarbonyl)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9134,7 +9134,7 @@
     },
     {
         "class_id": null,
-        "name": "{spiro-chromanone}",
+        "name": "Spiro-chromanone synthesis (o-hydroxyaryl ketone + cyclic ketone)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9153,7 +9153,7 @@
     },
     {
         "class_id": null,
-        "name": "{pyrazole}",
+        "name": "Knorr pyrazole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9172,7 +9172,7 @@
     },
     {
         "class_id": null,
-        "name": "{phthalazinone}",
+        "name": "Phthalazinone synthesis from 2-acylbenzoic acid and hydrazine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9191,7 +9191,7 @@
     },
     {
         "class_id": 3,
-        "name": "{Paal-Knorr pyrrole}",
+        "name": "Paal-Knorr pyrrole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9210,7 +9210,7 @@
     },
     {
         "class_id": null,
-        "name": "{triaryl-imidazole}",
+        "name": "Radziszewski imidazole synthesis (triaryl)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9229,7 +9229,7 @@
     },
     {
         "class_id": 2,
-        "name": "{Fischer indole}",
+        "name": "Fischer indole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9248,7 +9248,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Friedlaender chinoline}",
+        "name": "Friedlander quinoline synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9267,7 +9267,7 @@
     },
     {
         "class_id": 4,
-        "name": "{benzofuran}",
+        "name": "Larock benzofuran synthesis (o-halophenol + alkyne)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9286,7 +9286,7 @@
     },
     {
         "class_id": 5,
-        "name": "{benzothiophene}",
+        "name": "Larock benzothiophene synthesis (o-halothioanisole + alkyne)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9305,7 +9305,7 @@
     },
     {
         "class_id": 2,
-        "name": "{indole}",
+        "name": "Larock indole synthesis (o-iodoaniline + alkyne)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9324,7 +9324,7 @@
     },
     {
         "class_id": null,
-        "name": "{oxadiazole}",
+        "name": "1,2,4-Oxadiazole synthesis from nitrile and carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9341,7 +9341,7 @@
     },
     {
         "class_id": 6,
-        "name": "{Williamson ether}",
+        "name": "Williamson ether synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9360,7 +9360,7 @@
     },
     {
         "class_id": 1,
-        "name": "{reductive amination}",
+        "name": "Reductive amination",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9379,7 +9379,7 @@
     },
     {
         "class_id": 2,
-        "name": "{Suzuki}",
+        "name": "Suzuki-Miyaura coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9417,7 +9417,7 @@
     },
     {
         "class_id": 8,
-        "name": "{Negishi}",
+        "name": "Negishi coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9607,7 +9607,7 @@
     },
     {
         "class_id": 8,
-        "name": "{Stille}",
+        "name": "Stille coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9721,7 +9721,7 @@
     },
     {
         "class_id": 6,
-        "name": "{Wittig}",
+        "name": "Wittig reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9740,7 +9740,7 @@
     },
     {
         "class_id": 4,
-        "name": "{Buchwald-Hartwig}",
+        "name": "Buchwald-Hartwig amination",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9759,7 +9759,7 @@
     },
     {
         "class_id": null,
-        "name": "{imidazole}",
+        "name": "Debus-Radziszewski imidazole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9854,7 +9854,7 @@
     },
     {
         "class_id": 1,
-        "name": "{urea}",
+        "name": "Urea formation from isocyanate and amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -9873,7 +9873,7 @@
     },
     {
         "class_id": 1,
-        "name": "{thiourea}",
+        "name": "Thiourea formation from isothiocyanate and amine",
         "priority": {
             "priority_class": null,
             "priority": null

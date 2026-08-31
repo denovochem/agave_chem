@@ -20787,7 +20787,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
+        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5].[I-].C[n+]1ccccc1Cl>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -20806,7 +20806,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH;D2;+0:5]-[*:6]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[N;H0;D3;+0:5](-[*:4])-[*:6]",
+        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH;D2;+0:5]-[*:6].[I-].C[n+]1ccccc1Cl>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[N;H0;D3;+0:5](-[*:4])-[*:6]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -29387,7 +29387,26 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;D3;+0:1](=[O;D1;H0;+0])([*:2])[*:3]>>[C;D3;+0:1]([*:2])([*:3])=[CH2]",
+        "smirks": "[C;D3;+0:1](=[O;D1;H0;+0])([*:2])[*:3].C[Al-]1(C[Ti+2][Cl+]1)C.[cH-]1cccc1.[cH-]1cccc1>>[C;D3;+0:1]([*:2])([*:3])=[CH2]",
+        "subclass_id": null,
+        "subsubclass_id": null,
+        "superclass_id": 4,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000480",
+                "rxno_label": "Tebbe olefination",
+                "rxno_definition": "Reaction of an aldehyde or ketone or carboxylic ester or amide with the Tebbe reagent to yield an olefin or an enol ether or an enamine."
+            }
+        ]
+    },
+    {
+        "class_id": 6,
+        "name": "Tebbe Olefination; Ketone/aldehyde methylenation with Tebbe's reagent",
+        "priority": {
+            "priority_class": null,
+            "priority": null
+        },
+        "smirks": "[C;D3;+0:1](=[O;D1;H0;+0])([*:2])[*:3].C[Al](C)C[Ti]Cl.[cH-]1cccc1.[cH-]1cccc1>>[C;D3;+0:1]([*:2])([*:3])=[CH2]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
@@ -29406,7 +29425,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C:1](=[O;D1;H0])([*:2])[*:3]>>[C:1](=[CH2])([*:2])[*:3]",
+        "smirks": "[C:1](=[O;D1;H0])([*:2])[*:3].[Ti](C)(C).c1[cH-]ccc1.c2[cH-]ccc2>>[C:1](=[CH2])([*:2])[*:3]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
@@ -32243,7 +32262,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
+        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5].CC[n+]1ccc(o1)-c2cccc(c2)S([O-])(=O)=O>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -32300,7 +32319,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
+        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5].[N-]=[N+]=NP(=O)(Oc1ccccc1)Oc2ccccc2>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -32319,7 +32338,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
+        "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[OH;D1;+0])-[*:3].[*:4]-[NH2;D1;+0:5].CCOP(=O)(OCC)C#N>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[NH;D2;+0:5]-[*:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,

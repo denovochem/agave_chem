@@ -6,6 +6,8 @@
 [![Build Docs](https://img.shields.io/github/actions/workflow/status/denovochem/agave_chem/docs.yml?logo=github&logoColor=%23ffffff&label=docs)](https://denovochem.github.io/agave_chem/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/denovochem/agave_chem/blob/main/examples/example_notebook.ipynb)
 
+> **Try the web demo:** [denovochem.com/demos/reaction-atom-mapper](https://denovochem.com/demos/reaction-atom-mapper)
+
 An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. AgaveChem provides four composable mappers from deterministic graph-based methods to a supervised neural mapper that can be used individually or combined into a pipeline. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
 
 | Mapper | Per-reaction mapping accuracy |
