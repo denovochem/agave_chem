@@ -5933,7 +5933,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H2;D2;+0:1](-[OH;D1;+0:2])-[*:3]>>[C;H1;D2;+0:1](=[O;H0;D1;+0:2])-[*:3]",
+        "smirks": "[O]=[Cr](=[O])=[O].c1ccncc1.c1ccncc1.[C;H2;D2;+0:1](-[OH;D1;+0:2])-[*:3]>>[C;H1;D2;+0:1](=[O;H0;D1;+0:2])-[*:3]",
         "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -5952,7 +5952,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H1;D3;+0:1](-[OH;D1;+0:2])(-[*:3])-[*:4]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:2])(-[*:3])-[*:4]",
+        "smirks": "[O]=[Cr](=[O])=[O].c1ccncc1.c1ccncc1.[C;H1;D3;+0:1](-[OH;D1;+0:2])(-[*:3])-[*:4]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:2])(-[*:3])-[*:4]",
         "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -6503,7 +6503,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H1;D3;+0:1](-[OH;D1;+0:2])(-[*:3])-[*:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[*:3])-[*:4]",
+        "smirks": "O=C1N(Cl)C(=O)CC1.CSC.[C;H1;D3;+0:1](-[OH;D1;+0:2])(-[*:3])-[*:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[*:3])-[*:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -6522,7 +6522,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H2;D2;+0:1](-[OH;D1;+0:2])-[*:3]>>[C;H1;D2;+0:1](=[O;D1;H0;+0:2])-[*:3]",
+        "smirks": "O=C1N(Cl)C(=O)CC1.CSC.[C;H2;D2;+0:1](-[OH;D1;+0:2])-[*:3]>>[C;H1;D2;+0:1](=[O;D1;H0;+0:2])-[*:3]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -6691,7 +6691,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[C;H2;D2;+0:2]-[O;H1;D1;+0:3]>>[*:1]-[C;H1;D2;+0:2]=[O;H0;D1;+0:3]",
+        "smirks": "C1=CC=[NH+]C=C1.[O-][Cr](=O)(=O)Cl.[*:1]-[C;H2;D2;+0:2]-[O;H1;D1;+0:3]>>[*:1]-[C;H1;D2;+0:2]=[O;H0;D1;+0:3]",
         "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -6705,7 +6705,7 @@
     },
     {
         "class_id": 1,
-        "name": "Corey-Suggs Oxidation; Secondary alcohol to ketone",
+        "name": "C1=CC=[NH+]C=C1.[O-][Cr](=O)(=O)Cl.Corey-Suggs Oxidation; Secondary alcohol to ketone",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -18341,7 +18341,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0]>>[C;H1;D2;+0:1](-[*:2])=[O;D1;H0;+0]",
+        "smirks": "CCC[N+](CCC)(CCC)CCC.O=[Ru](=O)([O-])=O.[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0]>>[C;H1;D2;+0:1](-[*:2])=[O;D1;H0;+0]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -18360,7 +18360,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H1;D3;+0:1](-[*:2])(-[*:3])-[OH;D1;+0:4]>>[C;H0;D3;+0:1](-[*:2])(-[*:3])=[O;D1;H0;+0:4]",
+        "smirks": "CCC[N+](CCC)(CCC)CCC.O=[Ru](=O)([O-])=O.[C;H1;D3;+0:1](-[*:2])(-[*:3])-[OH;D1;+0:4]>>[C;H0;D3;+0:1](-[*:2])(-[*:3])=[O;D1;H0;+0:4]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -22619,7 +22619,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H1;D3;+0:1]([*:2])([*:3])-[OH;D1;+0:4]>>[C;H0;D3;+0:1]([*:2])([*:3])=[O;D1;H0;+0:4]",
+        "smirks": "O=S(=O)=O.n1ccccc1.[C;H1;D3;+0:1]([*:2])([*:3])-[OH;D1;+0:4]>>[C;H0;D3;+0:1]([*:2])([*:3])=[O;D1;H0;+0:4]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -22638,7 +22638,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H2;D2;+0:1]([*:2])-[OH;D1;+0]>>[C;H1;D2;+0:1]([*:2])=[O;D1;H0;+0]",
+        "smirks": "O=S(=O)=O.n1ccccc1.[C;H2;D2;+0:1]([*:2])-[OH;D1;+0]>>[C;H1;D2;+0:1]([*:2])=[O;D1;H0;+0]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -29142,7 +29142,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H2;D2;+0:1](-[*:2])-[O;H1;D1;+0:3]>>[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]",
+        "smirks": "ClC(=O)C(=O)Cl.CS(=O)C.[C;H2;D2;+0:1](-[*:2])-[O;H1;D1;+0:3]>>[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -29161,7 +29161,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;H1;D3;+0:1](-[*:2])(-[*:4])-[O;H1;D1;+0:3]>>[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]",
+        "smirks": "ClC(=O)C(=O)Cl.CS(=O)C.[C;H1;D3;+0:1](-[*:2])(-[*:4])-[O;H1;D1;+0:3]>>[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -32357,7 +32357,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H2;D2;+0:5]-[O;H1;D1;+0:6]>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H2;D2;+0:5]-[*:4]",
+        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H2;D2;+0:5]-[O;H1;D1;+0:6].C1=C(C=C(C(=C1Cl)C(=O)Cl)Cl)Cl>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H2;D2;+0:5]-[*:4]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -32376,7 +32376,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H1;D3;+0:5]-[O;H1;D1;+0:6]>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H1;D3;+0:5]-[*:4]",
+        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H1;D3;+0:5]-[O;H1;D1;+0:6].C1=C(C=C(C(=C1Cl)C(=O)Cl)Cl)Cl>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H1;D3;+0:5]-[*:4]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -32395,7 +32395,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H0;D4;+0:5]-[O;H1;D1;+0:6]>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H0;D4;+0:5]-[*:4]",
+        "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H1;D1;+0].[*:4]-[C;H0;D4;+0:5]-[O;H1;D1;+0:6].C1=C(C=C(C(=C1Cl)C(=O)Cl)Cl)Cl>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[O;H0;D2;+0:6]-[C;H0;D4;+0:5]-[*:4]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
