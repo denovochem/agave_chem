@@ -18,7 +18,7 @@
     },
     {
         "class_id": 1,
-        "name": "Acylation of Nitrogen Nucleophiles by Acyl\\/Thioacyl\\/Carbamoyl Halides and Analogs_N",
+        "name": "N-Acylation of Nitrogen Nucleophiles by Acyl/Thioacyl/Carbamoyl Halides and Analogs",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -35,7 +35,7 @@
     },
     {
         "class_id": 1,
-        "name": "Acylation of Nitrogen Nucleophiles by Acyl\\/Thioacyl\\/Carbamoyl Halides and Analogs_OS",
+        "name": "O/S-Acylation of Nitrogen Nucleophiles by Acyl/Thioacyl/Carbamoyl Halides and Analogs",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -732,7 +732,7 @@
     },
     {
         "class_id": 3,
-        "name": "S-alkylation of thiols ",
+        "name": "S-alkylation of thiols",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -1565,7 +1565,7 @@
     },
     {
         "class_id": 4,
-        "name": "Intramolecular transesterification\\/Lactone formation",
+        "name": "Intramolecular transesterification/Lactone formation",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2449,7 +2449,7 @@
     },
     {
         "class_id": 1,
-        "name": "Addition of primary amines to aldehydes\\/thiocarbonyls",
+        "name": "Addition of primary amines to aldehydes/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2466,7 +2466,7 @@
     },
     {
         "class_id": 1,
-        "name": "Addition of primary amines to ketones\\/thiocarbonyls",
+        "name": "Addition of primary amines to ketones/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2483,7 +2483,7 @@
     },
     {
         "class_id": 1,
-        "name": "Addition of secondary amines to ketones\\/thiocarbonyls",
+        "name": "Addition of secondary amines to ketones/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2500,7 +2500,7 @@
     },
     {
         "class_id": 1,
-        "name": "Addition of secondary amines to aldehydes\\/thiocarbonyls",
+        "name": "Addition of secondary amines to aldehydes/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2551,7 +2551,7 @@
     },
     {
         "class_id": null,
-        "name": "Benzothiazole formation from ester\\/carboxylic acid",
+        "name": "Benzothiazole formation from ester/carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2602,7 +2602,7 @@
     },
     {
         "class_id": 6,
-        "name": "Benzoxazole formation from ester\\/carboxylic acid",
+        "name": "Benzoxazole formation from ester/carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -2670,7 +2670,7 @@
     },
     {
         "class_id": null,
-        "name": "Benzimidazole formation from ester\\/carboxylic acid",
+        "name": "Benzimidazole formation from ester/carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -3690,7 +3690,7 @@
     },
     {
         "class_id": 4,
-        "name": "N-arylation (d-Hartwig\\/Ullmann-Goldberg)",
+        "name": "N-arylation (d-Hartwig/Ullmann-Goldberg)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -3911,7 +3911,7 @@
     },
     {
         "class_id": null,
-        "name": "in-situ Schmidt reaction acid_amine",
+        "name": "in-situ Schmidt reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -3928,7 +3928,7 @@
     },
     {
         "class_id": null,
-        "name": "in-situ Schmidt reaction acid_amine",
+        "name": "in-situ Schmidt reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -3945,7 +3945,7 @@
     },
     {
         "class_id": null,
-        "name": "Schmidt reaction acid_amine",
+        "name": "Schmidt reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -3962,7 +3962,7 @@
     },
     {
         "class_id": null,
-        "name": "Schmidt reaction acid_amine",
+        "name": "Schmidt reaction",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -5067,7 +5067,7 @@
     },
     {
         "class_id": 1,
-        "name": "Hydrogenolysis of amides\\/imides\\/carbamates",
+        "name": "Hydrogenolysis of amides/imides/carbamates",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -5084,7 +5084,7 @@
     },
     {
         "class_id": null,
-        "name": "Hydrolysis of primary amides\\/imides\\/carbamates with water",
+        "name": "Hydrolysis of primary amides/imides/carbamates with water",
         "priority": {
             "priority_class": 2,
             "priority": 3
@@ -5101,7 +5101,7 @@
     },
     {
         "class_id": null,
-        "name": "Hydrolysis of secondary amides\\/imides\\/carbamates with water",
+        "name": "Hydrolysis of secondary amides/imides/carbamates with water",
         "priority": {
             "priority_class": 2,
             "priority": 3
@@ -5118,7 +5118,7 @@
     },
     {
         "class_id": 3,
-        "name": "Hydrolysis of primary amides\\/imides\\/carbamates with base",
+        "name": "Hydrolysis of primary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
             "priority": 5
@@ -5135,7 +5135,7 @@
     },
     {
         "class_id": null,
-        "name": "Hydrolysis of secondary amides\\/imides\\/carbamates with base",
+        "name": "Hydrolysis of secondary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
             "priority": 5
@@ -5169,7 +5169,7 @@
     },
     {
         "class_id": null,
-        "name": "Ketone\\/aldehyde to hydrazone",
+        "name": "Ketone/aldehyde to hydrazone",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6070,7 +6070,7 @@
     },
     {
         "class_id": 3,
-        "name": "thioether_nucl_sub",
+        "name": "Thioether nucleophilic substitution",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6087,7 +6087,7 @@
     },
     {
         "class_id": 3,
-        "name": "thioether_nucl_sub",
+        "name": "Thioether nucleophilic substitution",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6104,7 +6104,7 @@
     },
     {
         "class_id": 1,
-        "name": "primary_amine_nucl_sub",
+        "name": "Primary amine nucleophilic substitution",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6121,7 +6121,7 @@
     },
     {
         "class_id": 1,
-        "name": "secondary_amine_nucl_sub",
+        "name": "Secondary amine nucleophilic substitution",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6138,7 +6138,7 @@
     },
     {
         "class_id": 1,
-        "name": "tertiary_amine_nucl_sub",
+        "name": "Tertiary amine nucleophilic substitution",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6155,7 +6155,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira acetylene_aryl halide",
+        "name": "Sonogashira acetylene - aryl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6172,7 +6172,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira alkyne_aryl halide",
+        "name": "Sonogashira alkyne - aryl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6189,7 +6189,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira acetylene_aryl OTf",
+        "name": "Sonogashira acetylene - aryl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6206,7 +6206,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira alkyne_aryl OTf",
+        "name": "Sonogashira alkyne - aryl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6223,7 +6223,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira acetylene_alkenyl halide",
+        "name": "Sonogashira acetylene - alkenyl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6240,7 +6240,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira alkyne_alkenyl halide",
+        "name": "Sonogashira alkyne - alkenyl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6257,7 +6257,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira acetylene_alkenyl OTf",
+        "name": "Sonogashira acetylene - alkenyl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6274,7 +6274,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira alkyne_alkenyl OTf",
+        "name": "Sonogashira alkyne - alkenyl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6291,7 +6291,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira acetylene_acyl halide",
+        "name": "Sonogashira acetylene - acyl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6308,7 +6308,7 @@
     },
     {
         "class_id": 8,
-        "name": "Sonogashira alkyne_acyl halide",
+        "name": "Sonogashira alkyne - acyl halide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6478,7 +6478,7 @@
     },
     {
         "class_id": 4,
-        "name": "Buchwald-Hartwig\\/Ullmann-Goldberg\\/N-arylation primary amine",
+        "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation primary amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6495,7 +6495,7 @@
     },
     {
         "class_id": null,
-        "name": "Buchwald-Hartwig\\/Ullmann-Goldberg\\/N-arylation secondary amine",
+        "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6512,7 +6512,7 @@
     },
     {
         "class_id": 4,
-        "name": "Buchwald-Hartwig\\/Ullmann-Goldberg\\/N-arylation secondary amine",
+        "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -6665,7 +6665,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_sulfonyl chloride",
+        "name": "Alcohol to chloride - sulfonyl chloride",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6682,7 +6682,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_SOCl2",
+        "name": "Alcohol to chloride - SOCl2",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6699,7 +6699,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_CHCl3",
+        "name": "Alcohol to chloride - CHCl3",
         "priority": {
             "priority_class": 3,
             "priority": 1
@@ -6716,7 +6716,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_CH2Cl2",
+        "name": "Alcohol to chloride - CH2Cl2",
         "priority": {
             "priority_class": 3,
             "priority": 1
@@ -6733,7 +6733,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_PCl5_ortho",
+        "name": "Alcohol to chloride - PCl5 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6750,7 +6750,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_POCl3_ortho",
+        "name": "Alcohol to chloride - POCl3 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6767,7 +6767,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_POCl3_para",
+        "name": "Alcohol to chloride - POCl3 para",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6784,7 +6784,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_POCl3",
+        "name": "Alcohol to chloride - POCl3",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6801,7 +6801,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_HCl",
+        "name": "Alcohol to chloride - HCl",
         "priority": {
             "priority_class": 3,
             "priority": 3
@@ -6818,7 +6818,7 @@
     },
     {
         "class_id": 1,
-        "name": "Alcohol to chloride_Salt",
+        "name": "Alcohol to chloride -salt",
         "priority": {
             "priority_class": 3,
             "priority": 1
@@ -6835,7 +6835,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_peroxide",
+        "name": "Sulfanyl to sulfinyl - peroxide",
         "priority": {
             "priority_class": 2,
             "priority": 4
@@ -6852,7 +6852,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_H2O2",
+        "name": "Sulfanyl to sulfinyl - H2O2",
         "priority": {
             "priority_class": 3,
             "priority": 5
@@ -6869,7 +6869,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_H2O",
+        "name": "Sulfanyl to sulfinyl - H2O",
         "priority": {
             "priority_class": 3,
             "priority": 2
@@ -6886,7 +6886,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_SO3-",
+        "name": "Sulfanyl to sulfinyl - SO3-",
         "priority": {
             "priority_class": 2,
             "priority": 2
@@ -6903,7 +6903,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_sulfonyl",
+        "name": "Sulfanyl to sulfinyl - sulfonyl",
         "priority": {
             "priority_class": 2,
             "priority": 3
@@ -6920,7 +6920,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_MeOH",
+        "name": "Sulfanyl to sulfinyl - MeOH",
         "priority": {
             "priority_class": 3,
             "priority": 2
@@ -6937,7 +6937,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_COO",
+        "name": "Sulfanyl to sulfinyl - COO",
         "priority": {
             "priority_class": 2,
             "priority": 2
@@ -6954,7 +6954,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_COOH",
+        "name": "Sulfanyl to sulfinyl - COOH",
         "priority": {
             "priority_class": 2,
             "priority": 2
@@ -6971,7 +6971,7 @@
     },
     {
         "class_id": 6,
-        "name": "Sulfanyl to sulfinyl_COOOH",
+        "name": "Sulfanyl to sulfinyl - COOOH",
         "priority": {
             "priority_class": 2,
             "priority": 5
@@ -7039,7 +7039,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_vinyl",
+        "name": "Stille reaction - vinyl",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7056,7 +7056,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_aryl",
+        "name": "Stille reaction - aryl",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7073,7 +7073,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_benzyl",
+        "name": "Stille reaction - benzyl",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7090,7 +7090,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_allyl",
+        "name": "Stille reaction - allyl",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7107,7 +7107,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_vinyl OTf",
+        "name": "Stille reaction - vinyl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7124,7 +7124,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_aryl OTf",
+        "name": "Stille reaction - aryl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7141,7 +7141,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_benzyl OTf",
+        "name": "Stille reaction - benzyl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7158,7 +7158,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_allyl OTf",
+        "name": "Stille reaction - allyl OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7175,7 +7175,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_other",
+        "name": "Stille reaction - other",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7192,7 +7192,7 @@
     },
     {
         "class_id": 8,
-        "name": "Stille reaction_other OTf",
+        "name": "Stille reaction - other OTf",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7226,7 +7226,7 @@
     },
     {
         "class_id": 1,
-        "name": "N-Methylation with MeI_primary",
+        "name": "N-Methylation with MeI - primary amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7243,7 +7243,7 @@
     },
     {
         "class_id": 1,
-        "name": "N-Methylation with MeI_secondary",
+        "name": "N-Methylation with MeI - secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7294,7 +7294,7 @@
     },
     {
         "class_id": null,
-        "name": "C-Methylation with MeI_primary",
+        "name": "C-Methylation with MeI - primary",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7311,7 +7311,7 @@
     },
     {
         "class_id": null,
-        "name": "C-Methylation with MeI_secondary",
+        "name": "C-Methylation with MeI - secondary",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7328,7 +7328,7 @@
     },
     {
         "class_id": null,
-        "name": "C-Methylation with MeI_tertiary",
+        "name": "C-Methylation with MeI - tertiary",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7379,7 +7379,7 @@
     },
     {
         "class_id": null,
-        "name": "C-Methylation with MeI_aryl",
+        "name": "C-Methylation with MeI - aryl",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7396,7 +7396,7 @@
     },
     {
         "class_id": 3,
-        "name": "S-Methylation with MeI_SH",
+        "name": "S-Methylation with MeI - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7413,7 +7413,7 @@
     },
     {
         "class_id": 3,
-        "name": "S-Methylation with DMS_SH",
+        "name": "S-Methylation with DMS - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7430,7 +7430,7 @@
     },
     {
         "class_id": 3,
-        "name": "S-Methylation with DMC_SH",
+        "name": "S-Methylation with DMC - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7447,7 +7447,7 @@
     },
     {
         "class_id": 2,
-        "name": "O-Methylation with MeI_SH",
+        "name": "O-Methylation with MeI - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7464,7 +7464,7 @@
     },
     {
         "class_id": 2,
-        "name": "O-Methylation with DMS_SH",
+        "name": "O-Methylation with DMS - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -7481,7 +7481,7 @@
     },
     {
         "class_id": 2,
-        "name": "O-Methylation with DMC_SH",
+        "name": "O-Methylation with DMC - thiol",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8042,7 +8042,7 @@
     },
     {
         "class_id": null,
-        "name": "{benzimidazole_derivatives_carboxylic-acid\\/ester}",
+        "name": "Benzimidazole synthesis from carboxylic acid/ester",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8059,7 +8059,7 @@
     },
     {
         "class_id": null,
-        "name": "{benzimidazole_derivatives_aldehyde}",
+        "name": "Benzimidazole synthesis from aldehyde",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8093,7 +8093,7 @@
     },
     {
         "class_id": 6,
-        "name": "{benzoxazole_arom-aldehyde}",
+        "name": "Benzoxazole synthesis from aromatic aldehyde",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8110,7 +8110,7 @@
     },
     {
         "class_id": 6,
-        "name": "{benzoxazole_carboxylic-acid}",
+        "name": "Benzoxazole synthesis from carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8144,7 +8144,7 @@
     },
     {
         "class_id": null,
-        "name": "{Niementowski_quinazoline}",
+        "name": "Niementowski quinazoline synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8161,7 +8161,7 @@
     },
     {
         "class_id": null,
-        "name": "{tetrazole_terminal}",
+        "name": "Tetrazole synthesis from nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8178,7 +8178,7 @@
     },
     {
         "class_id": null,
-        "name": "{tetrazole_connect_regioisomere_1}",
+        "name": "Tetrazole synthesis, N-alkylated regioisomer 1",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8195,7 +8195,7 @@
     },
     {
         "class_id": null,
-        "name": "{tetrazole_connect_regioisomere_2}",
+        "name": "Tetrazole synthesis, N-alkylated regioisomer 2",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8212,7 +8212,7 @@
     },
     {
         "class_id": null,
-        "name": "{Huisgen_Cu-catalyzed_1,4-subst}",
+        "name": "Cu-catalyzed azide-alkyne cycloaddition (1,4-triazole)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8229,7 +8229,7 @@
     },
     {
         "class_id": null,
-        "name": "{Huisgen_Ru-catalyzed_1,5_subst}",
+        "name": "Ru-catalyzed azide-alkyne cycloaddition (1,5-triazole)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8246,7 +8246,7 @@
     },
     {
         "class_id": null,
-        "name": "{Huisgen_disubst-alkyne}",
+        "name": "Huisgen azide-alkyne cycloaddition (internal alkyne)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8263,7 +8263,7 @@
     },
     {
         "class_id": null,
-        "name": "{1,2,4-triazole_acetohydrazide}",
+        "name": "1,2,4-Triazole synthesis from acetohydrazide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8280,7 +8280,7 @@
     },
     {
         "class_id": null,
-        "name": "{1,2,4-triazole_carboxylic-acid\\/ester}",
+        "name": "1,2,4-Triazole synthesis from carboxylic acid/ester",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8552,7 +8552,7 @@
     },
     {
         "class_id": 1,
-        "name": "{piperidine_indole}",
+        "name": "Pictet-Spengler cyclization with piperidone",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8586,7 +8586,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_imide}",
+        "name": "Mitsunobu to imide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8603,7 +8603,7 @@
     },
     {
         "class_id": 2,
-        "name": "{Mitsunobu_phenole}",
+        "name": "Mitsunobu to phenyl ether",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8620,7 +8620,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_sulfonamide}",
+        "name": "Mitsunobu to sulfonamide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8637,7 +8637,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_tetrazole_1}",
+        "name": "Mitsunobu to tetrazole (N-1)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8654,7 +8654,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_tetrazole_2}",
+        "name": "Mitsunobu to tetrazole (N-2)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8671,7 +8671,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_tetrazole_3}",
+        "name": "Mitsunobu to tetrazole (N-3)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8688,7 +8688,7 @@
     },
     {
         "class_id": 1,
-        "name": "{Mitsunobu_tetrazole_4}",
+        "name": "Mitsunobu to tetrazole (N-4)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8705,7 +8705,7 @@
     },
     {
         "class_id": 7,
-        "name": "{Heck_terminal_vinyl}",
+        "name": "Heck coupling with terminal alkene",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8722,7 +8722,7 @@
     },
     {
         "class_id": 7,
-        "name": "{Heck_non-terminal_vinyl}",
+        "name": "Heck coupling with internal alkene",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8756,7 +8756,7 @@
     },
     {
         "class_id": 3,
-        "name": "{Grignard_carbonyl}",
+        "name": "Grignard addition to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8773,7 +8773,7 @@
     },
     {
         "class_id": 3,
-        "name": "{Grignard_alcohol}",
+        "name": "Grignard addition to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8790,7 +8790,7 @@
     },
     {
         "class_id": 5,
-        "name": "{Schotten-Baumann_amide}",
+        "name": "Schotten-Baumann to amide",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8807,7 +8807,7 @@
     },
     {
         "class_id": 1,
-        "name": "{sulfon_amide}",
+        "name": "Sulfonamide formation from sulfonyl chloride",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8824,7 +8824,7 @@
     },
     {
         "class_id": 4,
-        "name": "{N-arylation_heterocycles}",
+        "name": "Chan-Lam N-arylation of heterocycles",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8892,7 +8892,7 @@
     },
     {
         "class_id": 8,
-        "name": "{decarboxylative_coupling}",
+        "name": "Decarboxylative cross-coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8909,7 +8909,7 @@
     },
     {
         "class_id": 4,
-        "name": "{heteroaromatic_nuc_sub}",
+        "name": "Nucleophilic aromatic substitution on heteroarene",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8926,7 +8926,7 @@
     },
     {
         "class_id": 4,
-        "name": "{nucl_sub_aromatic_ortho_nitro}",
+        "name": "Nucleophilic aromatic substitution (ortho-nitro)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -8943,7 +8943,7 @@
     },
     {
         "class_id": 4,
-        "name": "{nucl_sub_aromatic_para_nitro}",
+        "name": "Nucleophilic aromatic substitution (para-nitro)",
         "priority": {
             "priority_class": null,
             "priority": null
