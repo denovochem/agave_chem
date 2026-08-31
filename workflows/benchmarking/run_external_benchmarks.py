@@ -381,7 +381,7 @@ def main() -> int:
         "--agave-mappers",
         nargs="+",
         default=None,
-        help="Mapper(s) to pass to benchmark_agave_chem.py (e.g. neural expert pipeline)",
+        help="Mapper(s) to pass to benchmark_agave_chem.py (e.g. neural template pipeline)",
     )
     args = parser.parse_args()
 

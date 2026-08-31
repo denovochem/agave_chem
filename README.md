@@ -35,7 +35,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 - **Configurable radius**: A `min_radius_to_anchor_new_mapping` parameter controls how close to the reactive center mapping extends, yielding conservative partial maps that avoid incorrectly assigning atoms near reaction centers
 - **Anchor-extend strategy**: Alternates between propagating mappings from already-assigned anchor atoms and seeding new anchors, ensuring consistent multi-fragment mapping
 
-### Expert template mapper
+### Template mapper
 
 - **Curated SMIRKS library**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions
 - **Custom template support**: User-supplied SMIRKS patterns can supplement or replace the built-in library via `custom_smirks_patterns`
@@ -106,7 +106,7 @@ result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl"
 print(result.selected_mapping)
 ```
 
-### Expert template mapper
+### Template mapper
 
 ```python
 from agave_chem import TemplateReactionMapper

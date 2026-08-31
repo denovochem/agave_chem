@@ -100,7 +100,7 @@ def _get_default_mappers() -> Tuple[ReactionMapper, ...]:
 
     return (
         NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1),
-        TemplateReactionMapper("expert_default"),
+        TemplateReactionMapper("template_default"),
     )
 
 
@@ -167,7 +167,8 @@ def map_reactions_using_mappers(
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
         order as the input.  Each result contains the final mapping, the original
-        reaction SMILES, and per-mapper results.
+        reaction SMILES, and per-mapper results.  Template mapper results include
+        ``classification_info`` with reaction classification metadata.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
@@ -249,7 +250,9 @@ def map_reactions(
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
         order as the (deduplicated) input.  Each result contains the final
-        mapping, the original reaction SMILES, and per-mapper results.
+        mapping, the original reaction SMILES, and per-mapper results.  Template
+        mapper results include ``classification_info`` with reaction
+        classification metadata.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if

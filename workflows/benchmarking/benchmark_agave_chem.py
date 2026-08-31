@@ -6,7 +6,7 @@ Env var AGAVE_BENCH_DIR must point to the benchmarking directory
 (or pass --gold-reactions explicitly).
 
 Supports two modes:
-  - Per-mapper: benchmark individual mappers (neural, expert) one at a time.
+  - Per-mapper: benchmark individual mappers (neural, template) one at a time.
   - Pipeline:   benchmark the full map_reactions pipeline (batch processing,
                 identical-fragment handling, multi-mapper fallback) by passing
                 --mapper pipeline.
@@ -29,12 +29,12 @@ from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.neural.neural_mapper import NeuralReactionMapper
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
 
-_MAPPER_CHOICES = ["neural", "expert", "pipeline"]
+_MAPPER_CHOICES = ["neural", "template", "pipeline"]
 
 _MAPPER_LABELS = {
     "mcs": "agave_chem/mcs",
     "neural": "agave_chem/neural",
-    "expert": "agave_chem/expert",
+    "template": "agave_chem/template",
     "pipeline": "agave_chem/pipeline",
 }
 
@@ -44,8 +44,8 @@ def _build_mapper(name: str):
         return MCSReactionMapper(mapper_name="mcs", mapper_weight=1)
     if name == "neural":
         return NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1)
-    if name == "expert":
-        return TemplateReactionMapper("expert_default")
+    if name == "template":
+        return TemplateReactionMapper("template_default")
     if name == "pipeline":
         raise ValueError(
             "pipeline mode does not use a single mapper; use _benchmark_pipeline"

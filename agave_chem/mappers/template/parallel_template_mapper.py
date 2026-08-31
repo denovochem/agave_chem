@@ -8,7 +8,7 @@ module-level convenience wrapper around the same pool logic.
 """
 
 import multiprocessing as mp
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
@@ -43,30 +43,25 @@ def _init_worker(apply_multiple_smirks: bool, num_smirks_to_apply: int) -> None:
     _num_smirks_to_apply = num_smirks_to_apply
 
 
-def _map_one(rxn: str) -> Tuple[str, str, List[str]]:
+def _map_one(rxn: str) -> ReactionMapperResult:
     """
     Atom-map a single reaction SMILES string using the worker-local mapper.
 
     Uses the module-level ``_template_mapper`` initialised by ``_init_worker``.
-    Returns a plain picklable tuple so results can be safely sent back to the
-    main process.
+    Returns the full ``ReactionMapperResult`` so that ``classification_info``
+    and ``possible_mappings`` are preserved across process boundaries.
 
     Args:
         rxn (str): Reaction SMILES string to map.
 
     Returns:
-        Tuple[str, str, List[str]]:
-            - original_smiles: The original reaction SMILES.
-            - selected_mapping: Atom-mapped reaction SMILES, or ``""`` on failure.
-            - template_names: Names of the templates matched for the selected
-              mapping.
+        ReactionMapperResult: Template-based mapping result, including
+        classification metadata. If the input is invalid or no valid mapping
+        can be produced, a default empty result is returned.
     """
-    result = _template_mapper.map_reaction(  # type: ignore[union-attr]
+    return _template_mapper.map_reaction(  # type: ignore[union-attr]
         rxn, _apply_multiple_smirks, _num_smirks_to_apply
     )
-    selected = result.selected_mapping
-    template_names = result.possible_mappings.get(selected, [])
-    return (result.original_smiles, selected, template_names)
 
 
 class ParallelTemplateReactionMapper(ReactionMapper):
@@ -167,20 +162,9 @@ class ParallelTemplateReactionMapper(ReactionMapper):
             initializer=_init_worker,
             initargs=(self._apply_multiple_smirks, self._num_smirks_to_apply),
         ) as pool:
-            worker_results = list(
+            return list(
                 pool.imap(_map_one, reaction_smiles_list, chunksize=self._chunksize)
             )
-        return [
-            ReactionMapperResult(
-                original_smiles=orig,
-                selected_mapping=selected,
-                possible_mappings={},
-                mapping_type=self._mapper_type,
-                mapping_score=None,
-                additional_info=[{"template_names": template_names}],
-            )
-            for orig, selected, template_names in worker_results
-        ]
 
 
 def map_reactions_parallel_template(
@@ -189,7 +173,7 @@ def map_reactions_parallel_template(
     chunksize: int = 50,
     apply_multiple_smirks: bool = True,
     num_smirks_to_apply: int = 2,
-) -> List[Tuple[str, str, List[str]]]:
+) -> List[ReactionMapperResult]:
     """
     Atom-map a list of reaction SMILES strings in parallel using TemplateReactionMapper.
 
@@ -208,11 +192,10 @@ def map_reactions_parallel_template(
             reaction.
 
     Returns:
-        List[Tuple[str, str, List[str]]]: Results in the same order as
-            ``reaction_smiles``, where each tuple contains:
-            - original_smiles: The original reaction SMILES.
-            - selected_mapping: Atom-mapped reaction SMILES, or ``""`` on failure.
-            - template_names: Names of the templates matched for the selected mapping.
+        List[ReactionMapperResult]: Template-based mapping results in the same
+        order as ``reaction_smiles``, including ``classification_info`` and
+        ``possible_mappings``. Reactions that fail to map have an empty string
+        for ``selected_mapping``.
     """
     with mp.Pool(
         processes=workers,

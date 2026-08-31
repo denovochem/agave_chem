@@ -25,6 +25,7 @@ class InitializedSmirksPattern(TypedDict):
     superclass_id: str
     class_id: str
     subclass_id: str
+    subsubclass_id: str
     class_str: str
     products_smarts: List[Chem.Mol]
     reactants_smarts: List[Chem.Mol]
@@ -35,6 +36,7 @@ class InitializedSmirksPattern(TypedDict):
     child_smirks: str
     template_name: str
     priority: Tuple[int, int]
+    rxno_classification: List[str]
 
 
 class AppliedSmirkData(TypedDict):
@@ -56,6 +58,9 @@ class SmirksPattern(BaseModel):
         superclass_id (Optional[int]): Optional superclass identifier.
         class_id (Optional[int]): Optional class identifier.
         subclass_id (Optional[int]): Optional subclass identifier.
+        subsubclass_id (Optional[int]): Optional sub-subclass identifier.
+        rxno_classification (List[Dict[str, str]]): Optional list of RXNO
+            classification entries, each containing an ``rxno_id`` key.
     """
 
     name: str
@@ -63,6 +68,8 @@ class SmirksPattern(BaseModel):
     superclass_id: Optional[int] = None
     class_id: Optional[int] = None
     subclass_id: Optional[int] = None
+    subsubclass_id: Optional[int] = None
+    rxno_classification: List[Dict[str, str]] = Field(default_factory=list)
 
 
 class ReactionMapperResult(BaseModel):
@@ -76,6 +83,13 @@ class ReactionMapperResult(BaseModel):
         mapping_type (str): The type of mapper that produced this result (e.g. "mcs", "template", "neural").
         mapping_score (Any): Optional score or scoring object for the selected mapping.
         additional_info (List[Dict[str, Any]]): Additional metadata about the mapping.
+        classification_info (Dict[str, List[Dict[str, Any]]]): Per-mapping reaction
+            classification metadata, keyed by mapped SMILES string (same keys as
+            ``possible_mappings``).  Each value is a list of dicts, one per matching
+            template, containing ``template_name``, ``class_id``, ``subclass_id``,
+            ``subsubclass_id``, ``superclass_id``, and ``rxno_classification`` (a
+            list of RXNO ID strings).  Only populated by the template mapper;
+            other mappers leave this empty.
     """
 
     original_smiles: str = ""
@@ -85,6 +99,9 @@ class ReactionMapperResult(BaseModel):
     mapping_score: Any = None
     additional_info: List[Dict[str, Any]] = Field(
         default_factory=_default_additional_info
+    )
+    classification_info: Dict[str, List[Dict[str, Any]]] = Field(
+        default_factory=dict
     )
 
 

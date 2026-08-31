@@ -41,6 +41,7 @@ ignore = ["UP", "BLE001"]
 "workflows/model_training_scripts/*" = ["E402"]
 "workflows/model_training_scripts/albert_mapper_supervised_training.py" = ["F401"]
 "workflows/benchmarking/*" = ["E402"]
+"workflows/compare_mappers/*" = ["E402"]
 "tests/unit/test_workflow_models_unit.py" = ["E402"]
 "tests/unit/test_bench_utils_sync.py" = ["E402"]
 

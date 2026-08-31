@@ -10,7 +10,7 @@ AgaveChem provides four composable mappers that can be used independently or com
 
 1. **Identical fragment mapper** — maps spectator molecules and structurally unchanged fragments before any other mapper is invoked
 2. **MCS mapper** — assigns atom-map numbers to atoms whose local chemical environment is preserved across the reaction, yielding conservative partial maps
-3. **Expert template mapper** — applies a curated library of reaction SMIRKS templates to classify and fully map known reaction classes
+3. **Template mapper** — applies a curated library of reaction SMIRKS templates to classify and fully map known reaction classes
 4. **Neural mapper** — an ALBERT-based model trained on labeled USPTO reactions, used for complete mapping at inference time
 
 Each mapper operates on unmapped reaction SMILES and returns a `ReactionMapperResult` dictionary. A higher-priority mapper in the pipeline overrides the output of a lower-priority one.
@@ -39,7 +39,7 @@ for r in results:
 ### Parameters
 
 - `reaction_list` (`List[str]`) — list of unmapped reaction SMILES strings; a single string is also accepted
-- `mappers_list` (`List[ReactionMapper]`) — list of mapper instances to apply in order; defaults to `[MCSReactionMapper("mcs_default"), TemplateReactionMapper("expert_default")]`
+- `mappers_list` (`List[ReactionMapper]`) — list of mapper instances to apply in order; defaults to `[MCSReactionMapper("mcs_default"), TemplateReactionMapper("template_default")]`
 - `batch_size` (`int`) — number of reactions per processing batch (default: `500`, max: `1000`)
 
 ### Using the neural mapper in the pipeline
@@ -130,9 +130,9 @@ print(result["selected_mapping"])
 
 ---
 
-## Expert template mapper
+## Template mapper
 
-The expert template mapper applies a curated library of reaction SMIRKS templates to classify and fully map reactions that match known reaction classes.
+The template mapper applies a curated library of reaction SMIRKS templates to classify and fully map reactions that match known reaction classes.
 
 ```python
 from agave_chem import TemplateReactionMapper

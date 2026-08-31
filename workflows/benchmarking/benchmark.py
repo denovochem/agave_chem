@@ -9,7 +9,7 @@ from agave_chem.utils.chem_utils import canonicalize_reaction_smiles
 
 mcs_mapper = MCSReactionMapper(mapper_name="mcs", mapper_weight=1)
 neural_mapper = NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1)
-expert_mapper = TemplateReactionMapper("expert_default")
+template_mapper = TemplateReactionMapper("template_default")
 
 
 def calculate_metrics(y_true, y_probs, threshold=0.5):
@@ -91,7 +91,7 @@ for i, gold_reaction in enumerate(gold_reactions):
         better_reaction, remove_mapping=True
     )
     try:
-        out = expert_mapper.map_reaction(unmapped_better_reaction)
+        out = template_mapper.map_reaction(unmapped_better_reaction)
     except Exception:
         print("oops")
     if time.time() - rxn_start > 5:

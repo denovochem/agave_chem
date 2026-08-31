@@ -3,7 +3,7 @@ import re
 from collections import defaultdict, deque
 from importlib.resources import files
 from itertools import product as iterproduct
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from rdchiral import main as rdc
 from rdkit import Chem, DataStructs
@@ -95,12 +95,21 @@ def _make_composite_smirks_pattern(
 
     primary = max(patterns, key=lambda p: p["priority"])
 
+    combined_rxno: List[str] = []
+    seen_rxno: Set[str] = set()
+    for p in patterns:
+        for rxno_id in p["rxno_classification"]:
+            if rxno_id not in seen_rxno:
+                seen_rxno.add(rxno_id)
+                combined_rxno.append(rxno_id)
+
     return InitializedSmirksPattern(
         name=_join_unique("name"),
         template_name=_join_unique("template_name"),
         superclass_id=primary["superclass_id"],
         class_id=_join_unique("class_id"),
         subclass_id=_join_unique("subclass_id"),
+        subsubclass_id=_join_unique("subsubclass_id"),
         class_str=_join_unique("class_str"),
         products_smarts=[frag for p in patterns for frag in p["products_smarts"]],
         reactants_smarts=[frag for p in patterns for frag in p["reactants_smarts"]],
@@ -110,12 +119,13 @@ def _make_composite_smirks_pattern(
         parent_smirks="",
         child_smirks=combined_smirks,
         priority=primary["priority"],
+        rxno_classification=combined_rxno,
     )
 
 
 class TemplateReactionMapper(ReactionMapper):
     """
-    Expert template reaction classification and atom-mapping
+    Template reaction classification and atom-mapping
     """
 
     def __init__(
@@ -221,12 +231,20 @@ class TemplateReactionMapper(ReactionMapper):
                 ):
                     continue
 
+                rxno_raw = pattern.get("rxno_classification", [])
+                rxno_ids = [
+                    item["rxno_id"]
+                    for item in rxno_raw
+                    if isinstance(item, dict) and item.get("rxno_id")
+                ]
+
                 initialized_smirks_patterns.append(
                     InitializedSmirksPattern(
                         name=str(pattern.get("name", "")),
                         superclass_id=str(pattern.get("superclass_id", "")),
                         class_id=str(pattern.get("class_id", "")),
                         subclass_id=str(pattern.get("subclass_id", "")),
+                        subsubclass_id=str(pattern.get("subsubclass_id") or ""),
                         class_str=str(pattern.get("class_str", "")),
                         products_smarts=products_smarts,
                         reactants_smarts=reactants_smarts,
@@ -241,6 +259,7 @@ class TemplateReactionMapper(ReactionMapper):
                         child_smirks=str(child_pattern),
                         template_name=str(pattern.get("name", "")),
                         priority=pattern_priority_tuple,
+                        rxno_classification=rxno_ids,
                     )
                 )
 
@@ -1524,6 +1543,21 @@ class TemplateReactionMapper(ReactionMapper):
             for mapping, patterns in deduplicated_mapped_outcomes.items()
         }
 
+        classification_info: Dict[str, List[Dict[str, Any]]] = {
+            mapping: [
+                {
+                    "template_name": p["template_name"],
+                    "class_id": p["class_id"],
+                    "subclass_id": p["subclass_id"],
+                    "subsubclass_id": p["subsubclass_id"],
+                    "superclass_id": p["superclass_id"],
+                    "rxno_classification": p["rxno_classification"],
+                }
+                for p in patterns
+            ]
+            for mapping, patterns in deduplicated_mapped_outcomes.items()
+        }
+
         return ReactionMapperResult(
             original_smiles=original_smiles,
             selected_mapping=selected_mapping,
@@ -1531,6 +1565,7 @@ class TemplateReactionMapper(ReactionMapper):
             mapping_type=self._mapper_type,
             mapping_score=None,
             additional_info=[],
+            classification_info=classification_info,
         )
 
     def map_reaction_with_mcs_optimization(

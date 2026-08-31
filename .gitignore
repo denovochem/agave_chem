@@ -103,6 +103,21 @@
 !workflows/benchmarking/benchmark_rxnmapper_v2.py
 !workflows/benchmarking/run_external_benchmarks.py 
 
+!workflows/compare_mappers/
+!workflows/compare_mappers/elo_rating.py
+!workflows/compare_mappers/viz_utils.py
+!workflows/compare_mappers/bradley_terry_comparison.ipynb
+!workflows/compare_mappers/filter_reactions.py
+!workflows/compare_mappers/run_rxnmapper.py
+!workflows/compare_mappers/run_rxnmapper_v2.py
+!workflows/compare_mappers/run_agavechem.py
+!workflows/compare_mappers/run_localmapper.py
+!workflows/compare_mappers/run_chython.py
+!workflows/compare_mappers/combine_results.py
+!workflows/compare_mappers/compile_speed_table.py
+!workflows/compare_mappers/run_all.sh
+!workflows/compare_mappers/run_speed_benchmark.sh
+
 !workflows/data/
 
 !workflows/model_training_scripts/
@@ -143,13 +158,6 @@
 !tests/unit/test_supervised_training_unit.py
 !tests/unit/test_layer_head_identification_unit.py
 !tests/unit/test_cli_utils_unit.py
-
-
-!golden_seeded_random.pkl
-!golden_seeded_canonicalize.pkl
-!golden_seeded_tautomer.pkl
-!golden_canonical.pkl
-!verify_golden_datasets.py
 
 
 # !manuscript/
