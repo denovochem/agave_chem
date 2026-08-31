@@ -4722,16 +4722,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Pauson-Khand reaction",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:1]=[#6;+0:2].[#6;+0:3]#[#6;+0:4].[O;H0;D1;+1:5]#[C;H0;D1;-1:6]>>[#6;+0:3]1=[#6;+0:4]-[C;+0:6](=[O;H0;D1;+0:5])-[#6;+0:1]-[#6;+0:2]-1",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 4,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000464",
@@ -5644,16 +5644,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Hydrolysis of secondary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
             "priority": 5
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000011",
@@ -5680,16 +5680,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Ketone/aldehyde to hydrazone",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);H0,H1;+0:1]=[O;H0;D1;+0]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+0]-[N;H2;D1;+0]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -7132,16 +7132,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 4,
         "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[N;H0;D3;+0:3]-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
-        "superclass_id": null,
+        "superclass_id": 1,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000192",
@@ -11076,16 +11076,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "N-hydroxyimidamide from nitrile and hydroxylamine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D1;+0:2]#[C;H0;D2;+0:3].[NH2;D1;+0:7]-[O;D1;H1:8]>>[NH;D1;+0:2]=[C;H0;D3;+0:3](-[NH;D2;+0:7]-[O;D1;H1:8])",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000011",
@@ -11951,16 +11951,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxime formation",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[OH;D1;+0:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[O;D1;H1:5])",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -12566,16 +12566,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "primary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H2;D2;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H2;D2;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000331",
@@ -12585,16 +12585,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "secondary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H1;D3;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H1;D3;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": 12,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000331",
@@ -12697,16 +12697,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Formation of peroxy acids from acyl halides",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[CX3;+0:3](=[O;H0;D1;+0:4])-[Cl,Br,I].[O;D1;H1;+0:6]-[O;D1;H1;+0:7]>>[CX3;+0:3](=[O;H0;D1;+0:4])-[O;H0;D2;+0:6]-[O;H1;D1;+0:7]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
-        "superclass_id": null,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000331",
