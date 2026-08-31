@@ -245,12 +245,9 @@ class EloRatingSystem:
             for p in available_pairs
         ]
 
-        min_count = min(
-            self.comparison_counts.get(p, 0) for p in normalised
-        )
+        min_count = min(self.comparison_counts.get(p, 0) for p in normalised)
         undersampled = [
-            p for p in normalised
-            if self.comparison_counts.get(p, 0) == min_count
+            p for p in normalised if self.comparison_counts.get(p, 0) == min_count
         ]
         selected = random.choice(undersampled)
         if random.random() < 0.5:
@@ -275,8 +272,7 @@ class EloRatingSystem:
             "ratings": self.ratings,
             "comparisons": [asdict(c) for c in self.comparisons],
             "comparison_counts": {
-                f"{a}||{b}": cnt
-                for (a, b), cnt in self.comparison_counts.items()
+                f"{a}||{b}": cnt for (a, b), cnt in self.comparison_counts.items()
             },
         }
         Path(path).write_text(json.dumps(data, indent=2))
@@ -292,9 +288,7 @@ class EloRatingSystem:
             A reconstructed EloRatingSystem instance.
         """
         data = json.loads(Path(path).read_text())
-        comparisons = [
-            Comparison(**c) for c in data.get("comparisons", [])
-        ]
+        comparisons = [Comparison(**c) for c in data.get("comparisons", [])]
         comparison_counts: Dict[Tuple[str, str], int] = defaultdict(int)
         for key, cnt in data.get("comparison_counts", {}).items():
             a, b = key.split("||")

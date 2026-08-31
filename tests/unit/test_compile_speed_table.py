@@ -20,9 +20,7 @@ import pytest
 def _load_compile_speed_table():
     """Import compile_speed_table module from workflows/compare_mappers/."""
     workflow_dir = (
-        Path(__file__).resolve().parent.parent.parent
-        / "workflows"
-        / "compare_mappers"
+        Path(__file__).resolve().parent.parent.parent / "workflows" / "compare_mappers"
     )
     if str(workflow_dir) not in sys.path:
         sys.path.insert(0, str(workflow_dir))
@@ -63,7 +61,9 @@ def timing_dir(tmp_path):
         "speed_localmapper_bs1.json": _make_timing("localmapper", 1, 11.2),
         "speed_agavechem_neural_bs1.json": _make_timing("agavechem_neural", 1, 10.9),
         "speed_agavechem_neural_bs32.json": _make_timing("agavechem_neural", 32, 10.9),
-        "speed_agavechem_pipeline_bs32.json": _make_timing("agavechem_pipeline", 32, 10.8),
+        "speed_agavechem_pipeline_bs32.json": _make_timing(
+            "agavechem_pipeline", 32, 10.8
+        ),
     }
     for name, data in files.items():
         (tmp_path / name).write_text(json.dumps(data, indent=2) + "\n")
@@ -119,7 +119,9 @@ class TestLoadTimingFiles:
 
     def test_non_speed_files_ignored(self, timing_dir):
         # Add a non-speed JSON file
-        (timing_dir / "other.json").write_text(json.dumps({"tool": "x", "batch_size": 1}))
+        (timing_dir / "other.json").write_text(
+            json.dumps({"tool": "x", "batch_size": 1})
+        )
         timings = load_timing_files(timing_dir)
         assert len(timings) == 9  # unchanged
 
@@ -140,8 +142,11 @@ class TestWriteCSV:
         with open(csv_path) as f:
             reader = csv.DictReader(f)
             assert reader.fieldnames == [
-                "tool", "batch_size", "num_reactions",
-                "total_time_s", "ms_per_rxn",
+                "tool",
+                "batch_size",
+                "num_reactions",
+                "total_time_s",
+                "ms_per_rxn",
             ]
 
     def test_csv_has_all_rows(self, timing_dir, tmp_path):

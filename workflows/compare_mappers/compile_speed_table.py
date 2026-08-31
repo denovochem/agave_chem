@@ -71,7 +71,13 @@ def write_csv(timings: dict[tuple[str, int], dict], output_path: Path) -> None:
     with open(output_path, "w", newline="") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["tool", "batch_size", "num_reactions", "total_time_s", "ms_per_rxn"],
+            fieldnames=[
+                "tool",
+                "batch_size",
+                "num_reactions",
+                "total_time_s",
+                "ms_per_rxn",
+            ],
         )
         writer.writeheader()
         for (tool, batch_size), data in sorted(timings.items()):

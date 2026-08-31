@@ -77,7 +77,9 @@ def main() -> None:
             batch_time = time.time() - t0
 
             for result in results:
-                mapped_results.append(result.final_mapping if result.final_mapping else "")
+                mapped_results.append(
+                    result.final_mapping if result.final_mapping else ""
+                )
 
             done = min(batch_start + args.batch_size, len(reactions))
             elapsed = time.time() - total_start
@@ -104,7 +106,9 @@ def main() -> None:
             batch_time = time.time() - t0
 
             for result in results:
-                mapped_results.append(result.selected_mapping if result.selected_mapping else "")
+                mapped_results.append(
+                    result.selected_mapping if result.selected_mapping else ""
+                )
 
             done = min(batch_start + args.batch_size, len(reactions))
             elapsed = time.time() - total_start
@@ -121,7 +125,9 @@ def main() -> None:
     print(f"Wrote {len(mapped_results)} mapped reactions to {args.output}")
 
     if args.timing_output:
-        tool_name = "agavechem_neural" if args.mode == "neural" else "agavechem_pipeline"
+        tool_name = (
+            "agavechem_neural" if args.mode == "neural" else "agavechem_pipeline"
+        )
         timing = {
             "tool": tool_name,
             "batch_size": args.batch_size,

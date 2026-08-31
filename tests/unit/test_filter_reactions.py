@@ -20,9 +20,7 @@ import pytest
 def _load_filter_reactions():
     """Import filter_reactions module from workflows/compare_mappers/."""
     workflow_dir = (
-        Path(__file__).resolve().parent.parent.parent
-        / "workflows"
-        / "compare_mappers"
+        Path(__file__).resolve().parent.parent.parent / "workflows" / "compare_mappers"
     )
     if str(workflow_dir) not in sys.path:
         sys.path.insert(0, str(workflow_dir))
@@ -79,11 +77,11 @@ class TestIsFullyMapped:
 def tmp_reaction_file(tmp_path):
     """Create a temp file with a mix of mapped, partially-mapped, and unmapped reactions."""
     reactions = [
-        "[C:1][C:2]>>[C:1][C:2]",       # fully mapped
-        "[C:1][C:2]>>[C:1]C",            # partially mapped
-        "CC>>CC",                         # unmapped (not fully mapped)
-        "[O:1]>>[O:1].[C:2]>>[C:2]",     # invalid (two >>), treated as fully mapped
-        "CCO>>CCO",                       # unmapped (not fully mapped)
+        "[C:1][C:2]>>[C:1][C:2]",  # fully mapped
+        "[C:1][C:2]>>[C:1]C",  # partially mapped
+        "CC>>CC",  # unmapped (not fully mapped)
+        "[O:1]>>[O:1].[C:2]>>[C:2]",  # invalid (two >>), treated as fully mapped
+        "CCO>>CCO",  # unmapped (not fully mapped)
     ]
     rxn_file = tmp_path / "reactions.txt"
     rxn_file.write_text("\n".join(reactions) + "\n")
@@ -93,11 +91,16 @@ def tmp_reaction_file(tmp_path):
 @pytest.fixture
 def mock_canonicalize():
     """Mock canonicalize_reaction_smiles to return input unchanged (stripped of mapping)."""
+
     def _strip(rxn, remove_mapping=True):
         # Simple mock: just remove atom map numbers
-        return rxn.replace("[C:1]", "[C]").replace("[C:2]", "[C]").replace("[O:1]", "[O]")
+        return (
+            rxn.replace("[C:1]", "[C]").replace("[C:2]", "[C]").replace("[O:1]", "[O]")
+        )
 
-    with patch.object(filter_reactions, "canonicalize_reaction_smiles", side_effect=_strip):
+    with patch.object(
+        filter_reactions, "canonicalize_reaction_smiles", side_effect=_strip
+    ):
         yield
 
 
@@ -109,14 +112,18 @@ class TestFilterReactionsMain:
     ):
         result = tmp_path / "out"
         import sys
+
         old_argv = sys.argv
         sys.argv = [
             "filter_reactions.py",
-            "--input", str(tmp_reaction_file),
-            "--output-dir", str(result),
+            "--input",
+            str(tmp_reaction_file),
+            "--output-dir",
+            str(result),
             "--require-partial",
             "--no-random",
-            "--limit", "100",
+            "--limit",
+            "100",
         ]
         try:
             filter_reactions.main()
@@ -139,13 +146,17 @@ class TestFilterReactionsMain:
     ):
         result = tmp_path / "out"
         import sys
+
         old_argv = sys.argv
         sys.argv = [
             "filter_reactions.py",
-            "--input", str(tmp_reaction_file),
-            "--output-dir", str(result),
+            "--input",
+            str(tmp_reaction_file),
+            "--output-dir",
+            str(result),
             "--no-random",
-            "--limit", "100",
+            "--limit",
+            "100",
         ]
         try:
             filter_reactions.main()
@@ -162,15 +173,20 @@ class TestFilterReactionsMain:
         result2 = tmp_path / "out2"
 
         import sys
+
         old_argv = sys.argv
 
         for out_dir in [result1, result2]:
             sys.argv = [
                 "filter_reactions.py",
-                "--input", str(tmp_reaction_file),
-                "--output-dir", str(out_dir),
-                "--seed", "42",
-                "--limit", "3",
+                "--input",
+                str(tmp_reaction_file),
+                "--output-dir",
+                str(out_dir),
+                "--seed",
+                "42",
+                "--limit",
+                "3",
             ]
             try:
                 filter_reactions.main()
@@ -195,15 +211,20 @@ class TestFilterReactionsMain:
         result2 = tmp_path / "out2"
 
         import sys
+
         old_argv = sys.argv
 
         for seed, out_dir in [(42, result1), (99, result2)]:
             sys.argv = [
                 "filter_reactions.py",
-                "--input", str(rxn_file),
-                "--output-dir", str(out_dir),
-                "--seed", str(seed),
-                "--limit", "10",
+                "--input",
+                str(rxn_file),
+                "--output-dir",
+                str(out_dir),
+                "--seed",
+                str(seed),
+                "--limit",
+                "10",
             ]
             try:
                 filter_reactions.main()
@@ -222,13 +243,17 @@ class TestFilterReactionsMain:
     ):
         result = tmp_path / "out"
         import sys
+
         old_argv = sys.argv
         sys.argv = [
             "filter_reactions.py",
-            "--input", str(tmp_reaction_file),
-            "--output-dir", str(result),
+            "--input",
+            str(tmp_reaction_file),
+            "--output-dir",
+            str(result),
             "--no-random",
-            "--limit", "2",
+            "--limit",
+            "2",
         ]
         try:
             filter_reactions.main()

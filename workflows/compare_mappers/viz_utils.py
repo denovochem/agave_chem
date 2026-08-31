@@ -131,10 +131,7 @@ class DifferingAtoms:
     def has_differences(self) -> bool:
         """True if any atoms differ between the two mappings."""
         return bool(
-            self.reactant_a
-            or self.product_a
-            or self.reactant_b
-            or self.product_b
+            self.reactant_a or self.product_a or self.reactant_b or self.product_b
         )
 
 
@@ -509,7 +506,11 @@ def draw_reaction_highlighted(
     r_offset = 0
     for frag_i, mol in enumerate(r_mols):
         n_atoms = mol.GetNumAtoms()
-        hl = {idx - r_offset for idx in r_highlight if r_offset <= idx < r_offset + n_atoms}
+        hl = {
+            idx - r_offset
+            for idx in r_highlight
+            if r_offset <= idx < r_offset + n_atoms
+        }
         ag = {idx - r_offset for idx in r_agree if r_offset <= idx < r_offset + n_atoms}
         img = _draw_mol_panel(mol, hl, ag, draw_panel_w, draw_panel_h)
         if img is None:
@@ -521,7 +522,11 @@ def draw_reaction_highlighted(
     p_offset = 0
     for frag_i, mol in enumerate(p_mols):
         n_atoms = mol.GetNumAtoms()
-        hl = {idx - p_offset for idx in p_highlight if p_offset <= idx < p_offset + n_atoms}
+        hl = {
+            idx - p_offset
+            for idx in p_highlight
+            if p_offset <= idx < p_offset + n_atoms
+        }
         ag = {idx - p_offset for idx in p_agree if p_offset <= idx < p_offset + n_atoms}
         img = _draw_mol_panel(mol, hl, ag, draw_panel_w, draw_panel_h)
         if img is None:

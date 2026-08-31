@@ -89,7 +89,9 @@ def main() -> None:
     print(f"AgaveChem mapped:    {len(agavechem_mapped)}")
 
     if len(rxnmapper_mapped) < n or len(agavechem_mapped) < n:
-        print("WARNING: mapped file lengths differ from raw — padding with empty strings")
+        print(
+            "WARNING: mapped file lengths differ from raw — padding with empty strings"
+        )
 
     total_start = time.time()
     rows = []

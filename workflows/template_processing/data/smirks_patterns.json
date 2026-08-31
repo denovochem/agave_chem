@@ -3264,7 +3264,7 @@
     },
     {
         "class_id": 5,
-        "name": "",
+        "name": "Ullmann condensation (O-arylation)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11242,7 +11242,7 @@
     },
     {
         "class_id": 2,
-        "name": "",
+        "name": "Sulfonyl chloride to sulfonamide (ammonia/primary amine)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11261,7 +11261,7 @@
     },
     {
         "class_id": 2,
-        "name": "",
+        "name": "Sulfonyl chloride to sulfonamide (secondary amine)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11278,7 +11278,7 @@
     },
     {
         "class_id": 1,
-        "name": "",
+        "name": "Acyl halide to primary amide (ammonia)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11297,7 +11297,7 @@
     },
     {
         "class_id": 1,
-        "name": "",
+        "name": "N-Methoxycarbonyl deprotection",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11316,7 +11316,7 @@
     },
     {
         "class_id": 1,
-        "name": "",
+        "name": "N-Ethoxycarbonyl deprotection",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11787,7 +11787,7 @@
     },
     {
         "class_id": 8,
-        "name": "sonogashira",
+        "name": "Sonogashira coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11861,7 +11861,7 @@
     },
     {
         "class_id": 8,
-        "name": "",
+        "name": "Sonogashira coupling",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11880,7 +11880,7 @@
     },
     {
         "class_id": 3,
-        "name": "",
+        "name": "Amine to thiol (hydrosulfide displacement)",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -11897,7 +11897,7 @@
     },
     {
         "class_id": 1,
-        "name": "",
+        "name": "Isocyanate + alcohol to carbamate",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -12567,7 +12567,7 @@
     },
     {
         "class_id": 0,
-        "name": "primary halogenoalkane to nitrile",
+        "name": "Primary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -12586,7 +12586,7 @@
     },
     {
         "class_id": 0,
-        "name": "secondary halogenoalkane to nitrile",
+        "name": "Secondary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -12605,7 +12605,7 @@
     },
     {
         "class_id": null,
-        "name": "tertiary halogenoalkane to nitrile",
+        "name": "Tertiary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
@@ -144,10 +144,67 @@ def _resolve_identical_fragments(
         all_mapper_results_by_reaction[base_index + j].append(reaction)
 
 
+def _extract_classification_summary(
+    mapper_results: List[ReactionMapperResult],
+    final_mapping: str,
+) -> Tuple[str, str, Dict[str, List[Dict[str, Any]]]]:
+    """
+    Extract classification summary fields from template mapper results.
+
+    Scans all mapper results for non-empty ``classification_info`` and extracts
+    the entry matching ``final_mapping``.  Builds pipe-delimited summary strings
+    from the unique ``class_str`` values and unique ``rxno_id`` values across all
+    matching templates.
+
+    Args:
+        mapper_results (List[ReactionMapperResult]): Per-mapper results for a
+            single reaction.
+        final_mapping (str): The final selected mapped SMILES to look up in
+            each mapper result's ``classification_info``.
+
+    Returns:
+        Tuple[str, str, Dict[str, List[Dict[str, Any]]]]:
+            - Pipe-delimited string of unique class_str values (e.g. ``"1.1.1|2.5.1"``).
+            - Pipe-delimited string of unique RXNO IDs (e.g. ``"RXNO:0000335|RXNO:0000357"``).
+            - The full ``classification_info`` dict for ``final_mapping`` (empty if no match).
+    """
+    classification_info: Dict[str, List[Dict[str, Any]]] = {}
+    for mr in mapper_results:
+        if mr.classification_info and final_mapping in mr.classification_info:
+            classification_info = {final_mapping: mr.classification_info[final_mapping]}
+            break
+
+    if not classification_info:
+        return "", "", {}
+
+    templates = classification_info.get(final_mapping, [])
+    seen_class_strs: List[str] = []
+    seen_rxno_ids: List[str] = []
+    seen_class_set: Set[str] = set()
+    seen_rxno_set: Set[str] = set()
+
+    for entry in templates:
+        cs = entry.get("class_str", "")
+        if cs and cs not in seen_class_set:
+            seen_class_set.add(cs)
+            seen_class_strs.append(cs)
+        for rxno in entry.get("rxno_classification", []):
+            if isinstance(rxno, dict):
+                rid = rxno.get("rxno_id", "")
+            else:
+                rid = str(rxno)
+            if rid and rid not in seen_rxno_set:
+                seen_rxno_set.add(rid)
+                seen_rxno_ids.append(rid)
+
+    return "|".join(seen_class_strs), "|".join(seen_rxno_ids), classification_info
+
+
 def map_reactions_using_mappers(
     reaction_list: Union[str, List[str]],
     mappers_list: List[ReactionMapper],
     batch_size: int,
+    return_detailed_mapper_info: bool = False,
 ) -> List[AgaveChemMapperResult]:
     """
     Run multiple reaction mappers over a list of reactions with batch processing.
@@ -163,12 +220,20 @@ def map_reactions_using_mappers(
         mappers_list (List[ReactionMapper]): A list of ReactionMapper instances
             to run.  Must be non-empty with unique mapper names.
         batch_size (int): Number of reactions to process per batch (1-1000).
+        return_detailed_mapper_info (bool): If True, populate
+            ``AgaveChemMapperResult.mapper_results`` with per-mapper
+            ``ReactionMapperResult`` objects (including template classification
+            metadata).  If False (default), ``mapper_results`` is left empty to
+            reduce result size for callers that only need ``final_mapping``.
 
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
-        order as the input.  Each result contains the final mapping, the original
-        reaction SMILES, and per-mapper results.  Template mapper results include
-        ``classification_info`` with reaction classification metadata.
+            order as the input.  Each result always contains ``final_mapping``,
+            ``original_reaction``, ``class_str``, ``rxno_classifications``, and
+            ``classification_info`` (the latter three are populated when a
+            template mapper matches ``final_mapping``; empty otherwise).  When
+            ``return_detailed_mapper_info`` is True, ``mapper_results`` also
+            contains per-mapper ``ReactionMapperResult`` objects.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
@@ -210,13 +275,22 @@ def map_reactions_using_mappers(
                 final_mapping = mapper_result.selected_mapping
                 break
 
-        results.append(
-            AgaveChemMapperResult(
-                final_mapping=final_mapping,
-                original_reaction=original_reaction,
-                mapper_results=mapper_results,
-            )
+        result_kwargs: dict = {
+            "final_mapping": final_mapping,
+            "original_reaction": original_reaction,
+        }
+        class_str, rxno_classifications, classification_info = (
+            _extract_classification_summary(mapper_results, final_mapping)
         )
+        if class_str:
+            result_kwargs["class_str"] = class_str
+        if rxno_classifications:
+            result_kwargs["rxno_classifications"] = rxno_classifications
+        if classification_info:
+            result_kwargs["classification_info"] = classification_info
+        if return_detailed_mapper_info:
+            result_kwargs["mapper_results"] = mapper_results
+        results.append(AgaveChemMapperResult(**result_kwargs))
 
     return results
 
@@ -226,6 +300,7 @@ def map_reactions(
     mappers_list: Optional[List[ReactionMapper]] = None,
     mapping_selection_mode: Union[str, Callable] = "weighted",
     batch_size: int = 500,
+    return_detailed_mapper_info: bool = False,
 ) -> List[AgaveChemMapperResult]:
     """
     Map atom-to-atom correspondences for a list of reaction SMILES strings.
@@ -246,13 +321,21 @@ def map_reactions(
             implemented; reserved for future use.
         batch_size (int): Number of reactions to process per batch (1-1000).
             Defaults to 500.
+        return_detailed_mapper_info (bool): If True, populate
+            ``AgaveChemMapperResult.mapper_results`` with per-mapper
+            ``ReactionMapperResult`` objects (including template classification
+            metadata).  If False (default), ``mapper_results`` is left empty to
+            reduce result size for callers that only need ``final_mapping``.
 
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
-        order as the (deduplicated) input.  Each result contains the final
-        mapping, the original reaction SMILES, and per-mapper results.  Template
-        mapper results include ``classification_info`` with reaction
-        classification metadata.
+            order as the (deduplicated) input.  Each result always contains
+            ``final_mapping``, ``original_reaction``, ``class_str``,
+            ``rxno_classifications``, and ``classification_info`` (the latter
+            three are populated when a template mapper matches ``final_mapping``;
+            empty otherwise).  When ``return_detailed_mapper_info`` is True,
+            ``mapper_results`` also contains per-mapper ``ReactionMapperResult``
+            objects.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
@@ -273,4 +356,9 @@ def map_reactions(
             "Invalid input: mapping_selection_mode must be a string or function."
         )
 
-    return map_reactions_using_mappers(reaction_list, mappers_list, batch_size)
+    return map_reactions_using_mappers(
+        reaction_list,
+        mappers_list,
+        batch_size,
+        return_detailed_mapper_info=return_detailed_mapper_info,
+    )

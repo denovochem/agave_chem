@@ -37,9 +37,11 @@ class _StubMapper(ReactionMapper):
         mapper_type: str = "stub",
         mapper_weight: float = 1.0,
         mappings: list[str] | None = None,
+        classification_info: dict[str, list[dict]] | None = None,
     ):
         super().__init__(mapper_type, mapper_name, mapper_weight)
         self._mappings = mappings or []
+        self._classification_info = classification_info or {}
 
     def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
         return self.map_reactions([reaction_smiles])[0]
@@ -55,6 +57,7 @@ class _StubMapper(ReactionMapper):
                     original_smiles=rxn,
                     selected_mapping=mapping,
                     mapping_type=self._mapper_type,
+                    classification_info=self._classification_info,
                 )
             )
         return results
@@ -194,10 +197,29 @@ class TestMapReactionsUsingMappers:
         rxns = ["CC>>CC"]
         m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
         m2 = _StubMapper(mapper_name="m2", mappings=["map2"])
-        results = map_reactions_using_mappers(rxns, [m1, m2], 100)
+        results = map_reactions_using_mappers(
+            rxns, [m1, m2], 100, return_detailed_mapper_info=True
+        )
         assert len(results[0].mapper_results) == 2
         assert results[0].mapper_results[0].selected_mapping == "map1"
         assert results[0].mapper_results[1].selected_mapping == "map2"
+
+    def test_mapper_results_empty_by_default(self):
+        rxns = ["CC>>CC"]
+        m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
+        m2 = _StubMapper(mapper_name="m2", mappings=["map2"])
+        results = map_reactions_using_mappers(rxns, [m1, m2], 100)
+        assert results[0].mapper_results == []
+        assert results[0].final_mapping == "map2"
+
+    def test_mapper_results_empty_when_return_detailed_false(self):
+        rxns = ["CC>>CC"]
+        m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
+        results = map_reactions_using_mappers(
+            rxns, [m1], 100, return_detailed_mapper_info=False
+        )
+        assert results[0].mapper_results == []
+        assert results[0].final_mapping == "map1"
 
     def test_batching_with_multiple_batches(self):
         rxns = [f"R{i}>>P{i}" for i in range(5)]
@@ -283,3 +305,165 @@ class TestMapReactions:
             mapping_selection_mode=lambda x: x,
         )
         assert len(results) == 1
+
+    def test_detailed_mapper_info_false_by_default(self):
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert results[0].mapper_results == []
+
+    def test_detailed_mapper_info_true_populates_results(self):
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        results = map_reactions(
+            ["CC>>CC"],
+            mappers_list=[mapper],
+            return_detailed_mapper_info=True,
+        )
+        assert len(results[0].mapper_results) == 1
+        assert results[0].mapper_results[0].selected_mapping == "map1"
+
+    def test_classification_fields_populated_by_default(self):
+        mapping = "[C:1]>>[C:1]"
+        classification_info = {
+            mapping: [
+                {
+                    "template_name": "Amide coupling",
+                    "class_str": "2.5.1",
+                    "class_id": "5",
+                    "subclass_id": "1",
+                    "subsubclass_id": "",
+                    "superclass_id": "2",
+                    "rxno_classification": [
+                        {
+                            "rxno_id": "RXNO:0000357",
+                            "rxno_label": "Amide formation",
+                            "rxno_definition": "Formation of an amide bond.",
+                        }
+                    ],
+                }
+            ]
+        }
+        mapper = _StubMapper(
+            mapper_name="template",
+            mappings=[mapping],
+            classification_info=classification_info,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert results[0].class_str == "2.5.1"
+        assert results[0].rxno_classifications == "RXNO:0000357"
+        assert mapping in results[0].classification_info
+        assert results[0].mapper_results == []
+
+    def test_classification_fields_empty_without_template_mapper(self):
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert results[0].class_str == ""
+        assert results[0].rxno_classifications == ""
+        assert results[0].classification_info == {}
+
+    def test_classification_fields_empty_when_final_mapping_empty(self):
+        mapper = _StubMapper(
+            mapper_name="template",
+            mappings=[""],
+            classification_info={"some_mapping": []},
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert results[0].final_mapping == ""
+        assert results[0].class_str == ""
+        assert results[0].rxno_classifications == ""
+        assert results[0].classification_info == {}
+
+    def test_classification_fields_with_multiple_templates(self):
+        mapping = "[C:1]>>[C:1]"
+        classification_info = {
+            mapping: [
+                {
+                    "template_name": "Reductive amination",
+                    "class_str": "1.1.1",
+                    "class_id": "1",
+                    "subclass_id": "1",
+                    "subsubclass_id": "",
+                    "superclass_id": "1",
+                    "rxno_classification": [
+                        {
+                            "rxno_id": "RXNO:0000335",
+                            "rxno_label": "",
+                            "rxno_definition": "",
+                        }
+                    ],
+                },
+                {
+                    "template_name": "Amide coupling",
+                    "class_str": "2.5.1",
+                    "class_id": "5",
+                    "subclass_id": "1",
+                    "subsubclass_id": "",
+                    "superclass_id": "2",
+                    "rxno_classification": [
+                        {
+                            "rxno_id": "RXNO:0000357",
+                            "rxno_label": "",
+                            "rxno_definition": "",
+                        }
+                    ],
+                },
+                {
+                    "template_name": "Ester aminolysis",
+                    "class_str": "2.5.2",
+                    "class_id": "5",
+                    "subclass_id": "2",
+                    "subsubclass_id": "",
+                    "superclass_id": "2",
+                    "rxno_classification": [
+                        {
+                            "rxno_id": "RXNO:0000357",
+                            "rxno_label": "",
+                            "rxno_definition": "",
+                        }
+                    ],
+                },
+            ]
+        }
+        mapper = _StubMapper(
+            mapper_name="template",
+            mappings=[mapping],
+            classification_info=classification_info,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert results[0].class_str == "1.1.1|2.5.1|2.5.2"
+        assert results[0].rxno_classifications == "RXNO:0000335|RXNO:0000357"
+        assert len(results[0].classification_info[mapping]) == 3
+
+    def test_classification_fields_populated_without_detailed_mapper_info(self):
+        mapping = "[C:1]>>[C:1]"
+        classification_info = {
+            mapping: [
+                {
+                    "template_name": "Schotten-Baumann",
+                    "class_str": "2.1.1",
+                    "class_id": "1",
+                    "subclass_id": "1",
+                    "subsubclass_id": "",
+                    "superclass_id": "2",
+                    "rxno_classification": [
+                        {
+                            "rxno_id": "RXNO:0000165",
+                            "rxno_label": "",
+                            "rxno_definition": "",
+                        }
+                    ],
+                }
+            ]
+        }
+        mapper = _StubMapper(
+            mapper_name="template",
+            mappings=[mapping],
+            classification_info=classification_info,
+        )
+        results = map_reactions(
+            ["CC>>CC"],
+            mappers_list=[mapper],
+            return_detailed_mapper_info=False,
+        )
+        assert results[0].class_str == "2.1.1"
+        assert results[0].rxno_classifications == "RXNO:0000165"
+        assert results[0].mapper_results == []

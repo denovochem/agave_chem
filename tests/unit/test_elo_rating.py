@@ -209,7 +209,9 @@ class TestGetNextPair:
 class TestPersistence:
     def test_save_load_round_trip(self, elo: EloRatingSystem, tmp_path: Path) -> None:
         elo.update_ratings("mapper_a", "mapper_b", OUTCOME_A_CORRECT, reaction_index=5)
-        elo.update_ratings("mapper_b", "mapper_c", OUTCOME_BOTH_WRONG, reaction_index=10)
+        elo.update_ratings(
+            "mapper_b", "mapper_c", OUTCOME_BOTH_WRONG, reaction_index=10
+        )
 
         path = tmp_path / "test_elo.json"
         elo.save(path)
@@ -223,7 +225,9 @@ class TestPersistence:
         assert loaded.k_factor == elo.k_factor
         assert loaded.initial_rating == elo.initial_rating
 
-    def test_load_preserves_comparison_counts(self, elo: EloRatingSystem, tmp_path: Path) -> None:
+    def test_load_preserves_comparison_counts(
+        self, elo: EloRatingSystem, tmp_path: Path
+    ) -> None:
         elo.update_ratings("mapper_a", "mapper_b", OUTCOME_A_CORRECT)
         elo.update_ratings("mapper_a", "mapper_b", OUTCOME_B_CORRECT)
 
@@ -233,7 +237,9 @@ class TestPersistence:
         pair = ("mapper_a", "mapper_b")
         assert loaded.comparison_counts[pair] == 2
 
-    def test_save_creates_valid_json(self, elo: EloRatingSystem, tmp_path: Path) -> None:
+    def test_save_creates_valid_json(
+        self, elo: EloRatingSystem, tmp_path: Path
+    ) -> None:
         elo.update_ratings("mapper_a", "mapper_b", OUTCOME_A_CORRECT)
         path = tmp_path / "test_elo.json"
         elo.save(path)
@@ -242,7 +248,9 @@ class TestPersistence:
         assert "comparisons" in data
         assert "model_names" in data
 
-    def test_resume_increments_timestamp(self, elo: EloRatingSystem, tmp_path: Path) -> None:
+    def test_resume_increments_timestamp(
+        self, elo: EloRatingSystem, tmp_path: Path
+    ) -> None:
         elo.update_ratings("mapper_a", "mapper_b", OUTCOME_A_CORRECT)
         path = tmp_path / "test_elo.json"
         elo.save(path)
@@ -262,7 +270,6 @@ class TestLeaderboardStr:
         s = elo.leaderboard_str()
         for name in elo.ratings:
             assert name in s
-
 
     def test_contains_header(self, elo: EloRatingSystem) -> None:
         s = elo.leaderboard_str()

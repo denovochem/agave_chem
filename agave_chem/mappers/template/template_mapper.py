@@ -95,13 +95,14 @@ def _make_composite_smirks_pattern(
 
     primary = max(patterns, key=lambda p: p["priority"])
 
-    combined_rxno: List[str] = []
+    combined_rxno: List[Dict[str, str]] = []
     seen_rxno: Set[str] = set()
     for p in patterns:
-        for rxno_id in p["rxno_classification"]:
+        for rxno in p["rxno_classification"]:
+            rxno_id = rxno["rxno_id"]
             if rxno_id not in seen_rxno:
                 seen_rxno.add(rxno_id)
-                combined_rxno.append(rxno_id)
+                combined_rxno.append(rxno)
 
     return InitializedSmirksPattern(
         name=_join_unique("name"),
@@ -232,8 +233,8 @@ class TemplateReactionMapper(ReactionMapper):
                     continue
 
                 rxno_raw = pattern.get("rxno_classification", [])
-                rxno_ids = [
-                    item["rxno_id"]
+                rxno_entries = [
+                    item
                     for item in rxno_raw
                     if isinstance(item, dict) and item.get("rxno_id")
                 ]
@@ -259,7 +260,7 @@ class TemplateReactionMapper(ReactionMapper):
                         child_smirks=str(child_pattern),
                         template_name=str(pattern.get("name", "")),
                         priority=pattern_priority_tuple,
-                        rxno_classification=rxno_ids,
+                        rxno_classification=rxno_entries,
                     )
                 )
 
@@ -1544,17 +1545,33 @@ class TemplateReactionMapper(ReactionMapper):
         }
 
         classification_info: Dict[str, List[Dict[str, Any]]] = {
-            mapping: [
+            mapping: list(
                 {
-                    "template_name": p["template_name"],
-                    "class_id": p["class_id"],
-                    "subclass_id": p["subclass_id"],
-                    "subsubclass_id": p["subsubclass_id"],
-                    "superclass_id": p["superclass_id"],
-                    "rxno_classification": p["rxno_classification"],
-                }
-                for p in patterns
-            ]
+                    (
+                        p["template_name"],
+                        p["class_id"],
+                        p["subclass_id"],
+                        p["subsubclass_id"],
+                        p["superclass_id"],
+                        tuple(
+                            r["rxno_id"]
+                            for r in p["rxno_classification"]
+                            if isinstance(r, dict) and "rxno_id" in r
+                        )
+                        if isinstance(p["rxno_classification"], list)
+                        else p["rxno_classification"],
+                    ): {
+                        "template_name": p["template_name"],
+                        "class_str": p["class_str"],
+                        "class_id": p["class_id"],
+                        "subclass_id": p["subclass_id"],
+                        "subsubclass_id": p["subsubclass_id"],
+                        "superclass_id": p["superclass_id"],
+                        "rxno_classification": p["rxno_classification"],
+                    }
+                    for p in patterns
+                }.values()
+            )
             for mapping, patterns in deduplicated_mapped_outcomes.items()
         }
 

@@ -36,7 +36,7 @@ class InitializedSmirksPattern(TypedDict):
     child_smirks: str
     template_name: str
     priority: Tuple[int, int]
-    rxno_classification: List[str]
+    rxno_classification: List[Dict[str, str]]
 
 
 class AppliedSmirkData(TypedDict):
@@ -86,10 +86,11 @@ class ReactionMapperResult(BaseModel):
         classification_info (Dict[str, List[Dict[str, Any]]]): Per-mapping reaction
             classification metadata, keyed by mapped SMILES string (same keys as
             ``possible_mappings``).  Each value is a list of dicts, one per matching
-            template, containing ``template_name``, ``class_id``, ``subclass_id``,
-            ``subsubclass_id``, ``superclass_id``, and ``rxno_classification`` (a
-            list of RXNO ID strings).  Only populated by the template mapper;
-            other mappers leave this empty.
+            template, containing ``template_name``, ``class_str``, ``class_id``,
+            ``subclass_id``, ``subsubclass_id``, ``superclass_id``, and
+            ``rxno_classification`` (a list of RXNO classification dicts, each
+            containing ``rxno_id``, ``rxno_label``, and ``rxno_definition``).
+            Only populated by the template mapper; other mappers leave this empty.
     """
 
     original_smiles: str = ""
@@ -100,9 +101,7 @@ class ReactionMapperResult(BaseModel):
     additional_info: List[Dict[str, Any]] = Field(
         default_factory=_default_additional_info
     )
-    classification_info: Dict[str, List[Dict[str, Any]]] = Field(
-        default_factory=dict
-    )
+    classification_info: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
 
 
 class AgaveChemMapperResult(BaseModel):
@@ -112,9 +111,32 @@ class AgaveChemMapperResult(BaseModel):
     Args:
         final_mapping (str): The final selected atom-mapped reaction SMILES.
         original_reaction (str): The original unmapped reaction SMILES.
-        mapper_results (List[ReactionMapperResult]): Results from each individual mapper.
+        mapper_results (List[ReactionMapperResult]): Results from each individual
+            mapper.  Only populated when the caller passes
+            ``return_detailed_mapper_info=True`` to ``map_reactions`` or
+            ``map_reactions_using_mappers``; otherwise left empty to reduce
+            result size.
+        class_str (str): Pipe-delimited string of unique classification paths
+            (e.g. ``"1.1.1|2.5.1|2.5.3"``) for all templates matching the
+            ``final_mapping``.  Empty when no template mapper is used or no
+            template matches ``final_mapping``.
+        rxno_classifications (str): Pipe-delimited string of unique RXNO IDs
+            (e.g. ``"RXNO:0000335|RXNO:0000357"``) for all templates matching
+            the ``final_mapping``.  Empty when no template mapper is used or no
+            template matches ``final_mapping``.
+        classification_info (Dict[str, List[Dict[str, Any]]]): Per-mapping
+            classification metadata, keyed by mapped SMILES string.  Each value
+            is a list of dicts (one per matching template) containing
+            ``template_name``, ``class_str``, ``class_id``, ``subclass_id``,
+            ``subsubclass_id``, ``superclass_id``, and ``rxno_classification``
+            (a list of RXNO classification dicts with ``rxno_id``,
+            ``rxno_label``, and ``rxno_definition``).  Always populated when a
+            template mapper matches ``final_mapping``; empty otherwise.
     """
 
     final_mapping: str = ""
     original_reaction: str = ""
     mapper_results: List[ReactionMapperResult] = Field(default_factory=list)
+    class_str: str = ""
+    rxno_classifications: str = ""
+    classification_info: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
