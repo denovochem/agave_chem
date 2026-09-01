@@ -10,7 +10,7 @@ from agave_chem.main import (
     map_reactions_using_mappers,
 )
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 
 
 class _PassThroughIdenticalFragmentMapper:
@@ -49,14 +49,19 @@ class _StubMapper(ReactionMapper):
         return self.map_reactions([reaction_smiles])[0]
 
     def map_reactions(
-        self, reaction_smiles_list: list[str]
+        self, reaction_smiles_list: list[str] | list[ReactionInput]
     ) -> list[ReactionMapperResult]:
         results: list[ReactionMapperResult] = []
         for i, rxn in enumerate(reaction_smiles_list):
-            mapping = self._mappings[i] if i < len(self._mappings) else rxn
+            original = (
+                rxn.stripped_smiles
+                if isinstance(rxn, ReactionInput)
+                else rxn
+            )
+            mapping = self._mappings[i] if i < len(self._mappings) else original
             results.append(
                 ReactionMapperResult(
-                    original_smiles=rxn,
+                    original_smiles=original,
                     selected_mapping=mapping,
                     mapping_type=self._mapper_type,
                     mapping_score=self._mapping_score,

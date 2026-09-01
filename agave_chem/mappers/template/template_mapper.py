@@ -1,9 +1,9 @@
 import json
 import re
-from collections import defaultdict, deque
+from collections import defaultdict
 from importlib.resources import files
 from itertools import product as iterproduct
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from rdchiral import main as rdc
 from rdkit import Chem, DataStructs
@@ -16,6 +16,7 @@ from agave_chem.mappers.types import (
     AppliedSmirkData,
     InitializedSmirksPattern,
     ReactionData,
+    ReactionInput,
     ReactionMapperResult,
     SmirksPattern,
 )
@@ -25,6 +26,7 @@ from agave_chem.utils.chem_utils import (
     canonicalize_smiles,
 )
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.reaction_balancing import compute_unmapped_product_atom_islands
 
 
 def _build_class_hierarchy_lookup(
@@ -1509,49 +1511,20 @@ class TemplateReactionMapper(ReactionMapper):
         """
         Find connected components ("islands") of unmapped atoms in a product SMILES.
 
+        Thin wrapper around :func:`agave_chem.utils.reaction_balancing.compute_unmapped_product_atom_islands`.
+
         Args:
             smiles (str): Product SMILES string to analyze.
 
         Returns:
             Dict[int, Set[int]]: Mapping from island index (0..N-1) to a set of RDKit
-            atom indices belonging to that connected component, considering only atoms
-            with atom map number equal to 0.
+                atom indices belonging to that connected component, considering only atoms
+                with atom map number equal to 0.
 
         Raises:
             ValueError: If the SMILES cannot be parsed into an RDKit molecule.
         """
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            raise ValueError(f"Could not parse SMILES: {smiles}")
-
-        unmapped = {
-            atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomMapNum() == 0
-        }
-
-        visited = set()
-        islands: Dict[int, Set[int]] = {}
-
-        for idx in unmapped:
-            if idx in visited:
-                continue
-
-            island: Set[int] = set()
-            queue = deque([idx])
-            visited.add(idx)
-
-            while queue:
-                current = queue.popleft()
-                island.add(current)
-
-                for neighbor in mol.GetAtomWithIdx(current).GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx in unmapped and neighbor_idx not in visited:
-                        visited.add(neighbor_idx)
-                        queue.append(neighbor_idx)
-
-            islands[len(islands)] = island
-
-        return islands
+        return compute_unmapped_product_atom_islands(smiles)
 
     def _select_preferred_mapping(
         self, possible_outcomes: Dict[str, List[InitializedSmirksPattern]]
@@ -1814,7 +1787,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def map_reaction_with_mcs_optimization(
         self,
-        reaction_smiles: str,
+        reaction_smiles: Union[str, ReactionInput],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> Tuple[ReactionMapperResult, ReactionMapperResult]:
@@ -1822,8 +1795,13 @@ class TemplateReactionMapper(ReactionMapper):
         Map a reaction SMILES string using template-based atom mapping with optimization
         that uses MCS to identify probable reaction center.
 
+        When a ``ReactionInput`` is provided with pre-computed MCS results, the
+        internal MCS mapping step is skipped and the pre-computed islands are
+        used directly.
+
         Args:
-            reaction_smiles (str): Reaction SMILES to map.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES to map,
+                or a ``ReactionInput`` with pre-computed MCS data.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
@@ -1832,6 +1810,11 @@ class TemplateReactionMapper(ReactionMapper):
                 mapping result and the MCS mapping result.
         """
         self._initialize_smirks_patterns()
+
+        reaction_input: Optional[ReactionInput] = None
+        if isinstance(reaction_smiles, ReactionInput):
+            reaction_input = reaction_smiles
+            reaction_smiles = reaction_input.stripped_smiles
 
         if not self._reaction_smiles_valid(reaction_smiles):
             return (
@@ -1844,7 +1827,20 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
         unmapped_product_atom_islands = {}
-        if self._mcs_mapper is not None:
+        mcs_result = self._return_default_mapping_dict(reaction_smiles)
+        if reaction_input is not None and reaction_input.mcs_mapped_smiles:
+            mcs_result = ReactionMapperResult(
+                original_smiles=reaction_smiles,
+                selected_mapping=reaction_input.mcs_mapped_smiles,
+                possible_mappings={},
+                mapping_type="mcs",
+                mapping_score=None,
+                additional_info=[{}],
+            )
+            unmapped_product_atom_islands = (
+                reaction_input.unmapped_product_atom_islands
+            )
+        elif self._mcs_mapper is not None:
             mcs_result = self._mcs_mapper.map_reaction(canonicalized_reaction_smiles)
 
             if mcs_result.selected_mapping != "":
@@ -1876,7 +1872,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def map_reaction(
         self,
-        reaction_smiles: str,
+        reaction_smiles: Union[str, ReactionInput],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> ReactionMapperResult:
@@ -1886,14 +1882,15 @@ class TemplateReactionMapper(ReactionMapper):
         This is a convenience method that calls map_reaction_with_mcs_optimization and returns only the main mapping result.
 
         Args:
-            reaction_smiles (str): Reaction SMILES to map.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES to map,
+                or a ``ReactionInput`` with pre-computed data.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             ReactionMapperResult: A mapping result containing the selected mapping and
-            related metadata. If the input is invalid or no unique valid mapping can be
-            produced, an "empty" default result is returned.
+                related metadata. If the input is invalid or no unique valid mapping can be
+                produced, an "empty" default result is returned.
         """
         result, _ = self.map_reaction_with_mcs_optimization(
             reaction_smiles, apply_multiple_smirks, num_smirks_to_apply
@@ -1902,7 +1899,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def map_reactions(
         self,
-        reaction_list: List[str],
+        reaction_list: Union[List[str], List[ReactionInput]],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> List[ReactionMapperResult]:
@@ -1910,7 +1907,8 @@ class TemplateReactionMapper(ReactionMapper):
         Map a list of reaction SMILES strings using this mapper.
 
         Args:
-            reaction_list (List[str]): Reaction SMILES strings to map.
+            reaction_list (Union[List[str], List[ReactionInput]]): Reaction SMILES
+                strings or ``ReactionInput`` objects to map.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 

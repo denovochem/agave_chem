@@ -4,9 +4,18 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
 )
+from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.types import AgaveChemMapperResult, ReactionMapperResult
+from agave_chem.mappers.types import (
+    AgaveChemMapperResult,
+    ReactionInput,
+    ReactionMapperResult,
+)
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.reaction_balancing import (
+    compute_unmapped_product_atom_islands,
+    determine_one_to_one_correspondence,
+)
 
 
 def _validate_and_normalize_input(
@@ -102,6 +111,72 @@ def _get_default_mappers() -> Tuple[ReactionMapper, ...]:
         NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1),
         TemplateReactionMapper("template_default"),
     )
+
+
+def _prepare_reaction_inputs(
+    reaction_list: List[str],
+    identical_fragment_mapper: IdenticalFragmentMapper,
+    mcs_mapper: Optional[MCSReactionMapper] = None,
+) -> Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
+    """
+    Pre-compute ``ReactionInput`` objects for a batch of reactions.
+
+    Strips identical fragments, optionally runs a conservative MCS mapping,
+    computes unmapped product atom islands, and determines the
+    ``one_to_one_correspondence`` flag per reaction.
+
+    Args:
+        reaction_list (List[str]): Raw reaction SMILES strings.
+        identical_fragment_mapper (IdenticalFragmentMapper): Mapper used to
+            strip and later re-add identical fragments.
+        mcs_mapper (Optional[MCSReactionMapper]): If provided, used to compute
+            a partial MCS mapping for each reaction.  If None, MCS and island
+            detection are skipped.
+
+    Returns:
+        Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
+            - List of ``ReactionInput`` objects, one per input reaction.
+            - Per-reaction lists of identical-fragment mapping pairs for
+              later re-addition.
+    """
+    stripped_rxns, identical_fragments_mapping_list = (
+        identical_fragment_mapper.create_identical_fragments_mapping_list(
+            reaction_list
+        )
+    )
+
+    reaction_inputs: List[ReactionInput] = []
+    for original_smiles, stripped_smiles, identical_fragments in zip(
+        reaction_list, stripped_rxns, identical_fragments_mapping_list
+    ):
+        mcs_mapped_smiles: Optional[str] = None
+        islands: Dict[int, Set[int]] = {}
+
+        if mcs_mapper is not None:
+            mcs_result = mcs_mapper.map_reaction(stripped_smiles)
+            if mcs_result.selected_mapping:
+                mcs_mapped_smiles = mcs_result.selected_mapping
+                try:
+                    islands = compute_unmapped_product_atom_islands(
+                        mcs_mapped_smiles.split(">>")[1]
+                    )
+                except ValueError:
+                    islands = {}
+
+        o2o = determine_one_to_one_correspondence(stripped_smiles, islands)
+
+        reaction_inputs.append(
+            ReactionInput(
+                original_smiles=original_smiles,
+                stripped_smiles=stripped_smiles,
+                identical_fragments=identical_fragments,
+                mcs_mapped_smiles=mcs_mapped_smiles,
+                unmapped_product_atom_islands=islands,
+                one_to_one_correspondence=o2o,
+            )
+        )
+
+    return reaction_inputs, identical_fragments_mapping_list
 
 
 def _resolve_identical_fragments(
@@ -273,13 +348,25 @@ def map_reactions_using_mappers(
         [] for _ in reaction_list
     ]
     identical_fragment_mapper = IdenticalFragmentMapper("identical_fragment_helper")
+
+    needs_mcs = any(
+        mapper._mapper_type in ("neural", "template") for mapper in mappers_list
+    )
+    mcs_mapper = MCSReactionMapper("mcs_orchestrator", 0) if needs_mcs else None
+
+    # Pre-compute ReactionInput objects once per batch (not per mapper)
+    # to avoid duplicate MCS and identical-fragment work.
+    batched_inputs: List[Tuple[List[ReactionInput], List[List[Tuple[str, str]]], int]] = []
+    for i in range(0, len(reaction_list), batch_size):
+        chunk = reaction_list[i : i + batch_size]
+        reaction_inputs, identical_fragments_mapping_list = (
+            _prepare_reaction_inputs(chunk, identical_fragment_mapper, mcs_mapper)
+        )
+        batched_inputs.append((reaction_inputs, identical_fragments_mapping_list, i))
+
     for mapper in mappers_list:
-        for i in range(0, len(reaction_list), batch_size):
-            chunk = reaction_list[i : i + batch_size]
-            new_rxns, identical_fragments_mapping_list = (
-                identical_fragment_mapper.create_identical_fragments_mapping_list(chunk)
-            )
-            out = mapper.map_reactions(new_rxns)
+        for reaction_inputs, identical_fragments_mapping_list, i in batched_inputs:
+            out = mapper.map_reactions(reaction_inputs)
             _resolve_identical_fragments(
                 out,
                 identical_fragments_mapping_list,

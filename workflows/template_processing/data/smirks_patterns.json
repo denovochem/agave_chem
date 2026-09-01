@@ -1181,7 +1181,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[#7;H0,H1;+0:2]>>[#7;H1,H2;+0:2]",
+        "smirks": "[*]-[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[#7;H0,H1;+0:2]>>[#7;H1,H2;+0:2]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 3,
@@ -2202,7 +2202,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[O;H0;D2;+0]-[O;H0;D2;+0:3]>>[#6;+0:2]-[O;H1;D1;+0:3]",
+        "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[*]-[O;H0;D2;+0]-[O;H1;D1;+0:3]>>[#6;+0:2]-[O;H1;D1;+0:3]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
@@ -3024,7 +3024,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H0;D2;+0].[#7;H3;D0;+0:5]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H2;D1;+0:5]",
+        "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H0;D2;+0]-[*].[#7;H3;D0;+0:5]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H2;D1;+0:5]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -3043,7 +3043,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;!$(OC(C)(C)C);H0;D1;+0:4])-[O;H0;D2;+0].[#7;H2;D1;+0:6]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H1;D2;+0:6]",
+        "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;!$(OC(C)(C)C);H0;D1;+0:4])-[O;H0;D2;+0]-[*].[#7;H2;D1;+0:6]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H1;D2;+0:6]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
@@ -3761,7 +3761,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[C;+0:1]=[C;H2;+0:2].[O;H0;D2;+0]-[O;H0;D2;+0:3]>>[C;!$(CO);+0:1]-[C;!$(C=O);+0:2]-[O;H1;D1;+0:3]",
+        "smirks": "[C;+0:1]=[C;H2;+0:2].[*]-[O;H0;D2;+0]-[O;H1;D1;+0:3]>>[C;!$(CO);+0:1]-[C;!$(C=O);+0:2]-[O;H1;D1;+0:3]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 7,
@@ -5117,7 +5117,7 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[*:1]-[Mg]-[Br].[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H0;D3;+0]-[O;H0;D2;+0]>>[*:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:2]",
+        "smirks": "[*:1]-[Mg]-[Br].[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H0;D3;+0]-[O;H0;D2;+0]-[*]>>[*:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[*:2]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,

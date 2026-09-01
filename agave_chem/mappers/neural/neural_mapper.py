@@ -1,13 +1,14 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Literal, Optional, Set, Tuple, TypedDict, Union
 
 import numpy as np
 import torch
 from rdkit import Chem
 from transformers import AlbertForMaskedLM
 
+from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.neural.constants import (
     smiles_token_to_id_dict,
     token_atom_identity_dict,
@@ -17,9 +18,14 @@ from agave_chem.mappers.neural.model import (
     SupervisedConfig,
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
-from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.chem_utils import canonicalize_reaction_smiles
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.reaction_balancing import (
+    compute_unmapped_product_atom_islands,
+    determine_one_to_one_correspondence,
+)
 from agave_chem.utils.symmetry_classes import get_symmetry_class_from_mol
 
 
@@ -134,6 +140,7 @@ class NeuralReactionMapper(ReactionMapper):
         )
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
+        self._mcs_mapper: Optional[MCSReactionMapper] = None
 
     def _encode_atom(self, atom: Chem.Atom) -> List[int]:
         """
@@ -1095,10 +1102,62 @@ class NeuralReactionMapper(ReactionMapper):
 
         return ".".join(kept_frags) + ">>" + products_str
 
-    def map_reaction(
+    def _resolve_one_to_one_correspondence(
         self,
         rxn_smiles: str,
-        one_to_one_correspondence: bool = True,
+        one_to_one_correspondence: Union[bool, Literal["auto"]],
+        reaction_input: Optional[ReactionInput] = None,
+    ) -> bool:
+        """
+        Resolve the ``one_to_one_correspondence`` flag for a single reaction.
+
+        When the flag is ``"auto"``, the method uses pre-computed data from
+        ``reaction_input`` if available, or lazily instantiates an
+        ``MCSReactionMapper`` to compute the MCS mapping and unmapped atom
+        islands, then calls
+        :func:`determine_one_to_one_correspondence`.
+
+        Args:
+            rxn_smiles (str): The reaction SMILES to evaluate.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): The
+                correspondence mode.  ``True`` or ``False`` are passed through
+                unchanged; ``"auto"`` triggers detection.
+            reaction_input (Optional[ReactionInput]): Pre-computed reaction
+                data including MCS results and the determined flag.  If
+                provided and the mode is ``"auto"``, the
+                ``one_to_one_correspondence`` field is used directly.
+
+        Returns:
+            bool: The resolved ``one_to_one_correspondence`` flag.
+        """
+        if one_to_one_correspondence != "auto":
+            return one_to_one_correspondence
+
+        if reaction_input is not None:
+            return reaction_input.one_to_one_correspondence
+
+        if self._mcs_mapper is None:
+            self._mcs_mapper = MCSReactionMapper(
+                mapper_name="mcs_auto",
+                mapper_weight=0,
+            )
+
+        mcs_result = self._mcs_mapper.map_reaction(rxn_smiles)
+        islands: Dict[int, Set[int]] = {}
+        if mcs_result.selected_mapping:
+            try:
+                islands = compute_unmapped_product_atom_islands(
+                    mcs_result.selected_mapping.split(">>")[1]
+                )
+            except ValueError:
+                islands = {}
+
+        return determine_one_to_one_correspondence(rxn_smiles, islands)
+
+    def map_reaction(
+        self,
+        rxn_smiles: Union[str, ReactionInput],
+        one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
     ) -> ReactionMapperResult:
         """
@@ -1107,8 +1166,13 @@ class NeuralReactionMapper(ReactionMapper):
         Convenience wrapper around map_reactions for single-reaction use.
 
         Args:
-            rxn_smiles (str): A reaction SMILES string.
-            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            rxn_smiles (Union[str, ReactionInput]): A reaction SMILES string or
+                a ``ReactionInput`` with pre-computed data.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): If True,
+                enforces greedy one-to-one assignment.  If False, allows
+                oversubscription for reaction balancing.  If ``"auto"`` (the
+                default), the flag is determined per-reaction using atom-count
+                imbalance and MCS-based island detection.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers from the input SMILES before remapping.
 
@@ -1124,8 +1188,8 @@ class NeuralReactionMapper(ReactionMapper):
 
     def map_reactions(
         self,
-        reaction_list: List[str],
-        one_to_one_correspondence: bool = True,
+        reaction_list: Union[List[str], List[ReactionInput]],
+        one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
         batch_size: int = 32,
     ) -> List[ReactionMapperResult]:
@@ -1142,8 +1206,15 @@ class NeuralReactionMapper(ReactionMapper):
         on the NeuralReactionMapper instance at construction time.
 
         Args:
-            reaction_list (List[str]): A list of unmapped reaction SMILES strings.
-            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            reaction_list (Union[List[str], List[ReactionInput]]): A list of
+                unmapped reaction SMILES strings or ``ReactionInput`` objects.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): If True,
+                enforces greedy one-to-one assignment for all reactions.  If
+                False, allows oversubscription for all reactions.  If
+                ``"auto"`` (the default), the flag is determined per-reaction
+                using atom-count imbalance and MCS-based island detection.
+                When ``ReactionInput`` objects are provided, their
+                pre-computed ``one_to_one_correspondence`` field is used.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers before remapping.
             batch_size (int): Number of reactions to process in a single forward pass.
@@ -1169,15 +1240,32 @@ class NeuralReactionMapper(ReactionMapper):
             for _ in reaction_list
         ]
 
-        # Preprocess: validate and optionally strip existing partial maps
+        # Preprocess: validate, resolve one_to_one_correspondence per reaction,
+        # and optionally strip existing partial maps
         prepared: List[
-            Optional[Tuple[str, Optional[Dict[int, int]], Optional[Dict[int, int]]]]
+            Optional[
+                Tuple[str, bool, Optional[Dict[int, int]], Optional[Dict[int, int]]]
+            ]
         ] = []
-        for rxn_smiles in reaction_list:
+        for item in reaction_list:
+            reaction_input: Optional[ReactionInput] = None
+            if isinstance(item, ReactionInput):
+                reaction_input = item
+                rxn_smiles = item.stripped_smiles
+            else:
+                rxn_smiles = item
+
             rxn_smiles = canonicalize_reaction_smiles(rxn_smiles)
             if not self._reaction_smiles_valid(rxn_smiles):
                 prepared.append(None)
                 continue
+
+            resolved_o2o = self._resolve_one_to_one_correspondence(
+                rxn_smiles,
+                one_to_one_correspondence,
+                reaction_input,
+            )
+
             reactants_atom_idx_to_orig_mapping = None
             products_atom_idx_to_orig_mapping = None
             if start_from_partial_map:
@@ -1189,6 +1277,7 @@ class NeuralReactionMapper(ReactionMapper):
             prepared.append(
                 (
                     rxn_smiles,
+                    resolved_o2o,
                     reactants_atom_idx_to_orig_mapping,
                     products_atom_idx_to_orig_mapping,
                 )
@@ -1224,14 +1313,14 @@ class NeuralReactionMapper(ReactionMapper):
             )
             for local_idx, (
                 orig_idx,
-                (rxn_smiles, reactants_map, products_map),
+                (rxn_smiles, o2o, reactants_map, products_map),
             ) in enumerate(batch_pairs):
                 attn, tokens = attn_tokens_list[local_idx]
                 result, expanded_rxn_smiles = self._map_from_attention(
                     rxn_smiles=rxn_smiles,
                     attn=attn,
                     tokens=tokens,
-                    one_to_one_correspondence=one_to_one_correspondence,
+                    one_to_one_correspondence=o2o,
                     reactants_atom_idx_to_orig_mapping=reactants_map,
                     products_atom_idx_to_orig_mapping=products_map,
                 )

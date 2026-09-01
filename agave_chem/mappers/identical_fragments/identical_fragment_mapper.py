@@ -1,10 +1,10 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.chem_utils import canonicalize_smiles
 from agave_chem.utils.logging_config import logger
 
@@ -222,17 +222,22 @@ class IdenticalFragmentMapper(ReactionMapper):
             )
         return final_reactions
 
-    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
+    def map_reaction(
+        self, reaction_smiles: Union[str, ReactionInput]
+    ) -> ReactionMapperResult:
         """
         Map a single reaction by atom-mapping its identical fragments.
 
         Args:
-            reaction_smiles (str): A reaction SMILES string.
+            reaction_smiles (Union[str, ReactionInput]): A reaction SMILES
+                string or a ``ReactionInput`` with pre-computed data.
 
         Returns:
             ReactionMapperResult: Mapping result. If the input is invalid, an empty
                 default result is returned.
         """
+        reaction_smiles = self._get_smiles(reaction_smiles)
+
         if not self._reaction_smiles_valid(reaction_smiles):
             return self._return_default_mapping_dict(reaction_smiles)
 
@@ -262,12 +267,15 @@ class IdenticalFragmentMapper(ReactionMapper):
             additional_info=[{}],
         )
 
-    def map_reactions(self, reaction_list: List[str]) -> List[ReactionMapperResult]:
+    def map_reactions(
+        self, reaction_list: Union[List[str], List[ReactionInput]]
+    ) -> List[ReactionMapperResult]:
         """
         Map a list of reaction SMILES strings using the identical-fragment mapper.
 
         Args:
-            reaction_list (List[str]): List of reaction SMILES strings to map.
+            reaction_list (Union[List[str], List[ReactionInput]]): List of
+                reaction SMILES strings or ``ReactionInput`` objects to map.
 
         Returns:
             List[ReactionMapperResult]: The mapping results in the same order as the

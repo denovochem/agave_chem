@@ -5,6 +5,43 @@ from rdchiral import main as rdc
 from rdkit import Chem, DataStructs
 
 
+class ReactionInput(BaseModel):
+    """
+    Pre-processed reaction data shared across mappers to avoid duplicate work.
+
+    Created once by the orchestration layer (``map_reactions_using_mappers``)
+    and passed to each mapper.  When a mapper is used standalone with a raw
+    SMILES string, it internally builds a ``ReactionInput`` as needed.
+
+    Args:
+        original_smiles (str): The original, unmodified reaction SMILES.
+        stripped_smiles (str): Reaction SMILES with identical fragments
+            removed (may be identical to ``original_smiles`` if no identical
+            fragments were found).
+        identical_fragments (List[Tuple[str, str]]): Per-reaction list of
+            ``(reactant_smiles, product_smiles)`` pairs for identical
+            fragments that were stripped, to be re-added after mapping.
+        mcs_mapped_smiles (Optional[str]): Partially mapped SMILES from a
+            conservative MCS mapping pass, or ``None`` if MCS was not run.
+        unmapped_product_atom_islands (Dict[int, Set[int]]): Connected
+            components of unmapped atoms in the product side of
+            ``mcs_mapped_smiles``, keyed by island index.  Empty if MCS
+            was not run or produced no mapping.
+        one_to_one_correspondence (bool): Per-reaction flag determined by
+            the ``"auto"`` detection logic.  ``True`` when the reaction is
+            expected to have a one-to-one atom correspondence; ``False``
+            when atom-count imbalance or multiple unmapped islands suggest
+            the reaction needs balancing.
+    """
+
+    original_smiles: str = ""
+    stripped_smiles: str = ""
+    identical_fragments: List[Tuple[str, str]] = Field(default_factory=list)
+    mcs_mapped_smiles: Optional[str] = None
+    unmapped_product_atom_islands: Dict[int, Set[int]] = Field(default_factory=dict)
+    one_to_one_correspondence: bool = True
+
+
 def _default_additional_info() -> List[Dict[str, Any]]:
     return [{}]
 
