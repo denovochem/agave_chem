@@ -79380,7 +79380,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*:1]-[NH2;D1;+0:2].[*:3]-[Cl,Br,I]>>[*:1]-[NH;D2;+0:2]-[*:3]",
+    "smirks": "[C;H1;D2;+0](=[O;H0;D1;+0]).[*:1]-[NH2;D1;+0:2].[*:3]-[Cl,Br,I]>>[*:1]-[NH;D2;+0:2]-[*:3]",
     "subclass_id": 2,
     "subsubclass_id": null,
     "superclass_id": 1,
@@ -79390,9 +79390,9 @@
       }
     ],
     "child_smirks": [
-      "[*:1]-[NH;D2;+0:2]-[*:3]>>[*:1]-[NH2;D1;+0:2].[*:3]-[Cl]",
-      "[*:1]-[NH;D2;+0:2]-[*:3]>>[*:1]-[NH2;D1;+0:2].[*:3]-[Br]",
-      "[*:1]-[NH;D2;+0:2]-[*:3]>>[*:1]-[NH2;D1;+0:2].[*:3]-[I]"
+      "[*:1]-[NH;D2;+0:2]-[*:3]>>[C;H1;D2;+0](=[O;H0;D1;+0]).[*:1]-[NH2;D1;+0:2].[*:3]-[Cl]",
+      "[*:1]-[NH;D2;+0:2]-[*:3]>>[C;H1;D2;+0](=[O;H0;D1;+0]).[*:1]-[NH2;D1;+0:2].[*:3]-[Br]",
+      "[*:1]-[NH;D2;+0:2]-[*:3]>>[C;H1;D2;+0](=[O;H0;D1;+0]).[*:1]-[NH2;D1;+0:2].[*:3]-[I]"
     ],
     "class_str": "1.1.2"
   },
@@ -83514,7 +83514,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[*:4]-[O;H1;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[*:4]",
+    "smirks": "[C;H0;D3;+0](=[O;H0;D1;+0])[O;D2;+0][C;H0;D3;+0](=[O;H0;D1;+0]).[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[*:4]-[O;H1;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[*:4]",
     "subclass_id": 2,
     "subsubclass_id": null,
     "superclass_id": 2,
@@ -83526,7 +83526,7 @@
       }
     ],
     "child_smirks": [
-      "[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[*:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[*:4]-[O;H1;D1;+0:5]"
+      "[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[*:4]>>[C;H0;D3;+0](=[O;H0;D1;+0])[O;D2;+0][C;H0;D3;+0](=[O;H0;D1;+0]).[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[*:4]-[O;H1;D1;+0:5]"
     ],
     "class_str": "2.4.2"
   },
@@ -83560,7 +83560,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H2;D2;+0:4]-[OH;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H2;D2;+0:4]",
+    "smirks": "n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H2;D2;+0:4]-[OH;D1;+0:5]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H2;D2;+0:4]",
     "subclass_id": 2,
     "subsubclass_id": null,
     "superclass_id": 2,
@@ -83572,7 +83572,7 @@
       }
     ],
     "child_smirks": [
-      "[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H2;D2;+0:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H2;D2;+0:4]-[OH;D1;+0:5]"
+      "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H2;D2;+0:4]>>n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H2;D2;+0:4]-[OH;D1;+0:5]"
     ],
     "class_str": "2.4.2"
   },
@@ -83583,7 +83583,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H1;D3;+0:4]-[OH;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H1;D3;+0:4]",
+    "smirks": "n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H1;D3;+0:4]-[OH;D1;+0:5]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H1;D3;+0:4]",
     "subclass_id": 2,
     "subsubclass_id": null,
     "superclass_id": 2,
@@ -83595,7 +83595,7 @@
       }
     ],
     "child_smirks": [
-      "[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H1;D3;+0:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H1;D3;+0:4]-[OH;D1;+0:5]"
+      "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H1;D3;+0:4]>>n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H1;D3;+0:4]-[OH;D1;+0:5]"
     ],
     "class_str": "2.4.2"
   },
@@ -83606,7 +83606,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H0;D4;+0:4]-[OH;D1;+0:5]>>[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H0;D4;+0:4]",
+    "smirks": "n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H0;D4;+0:4]-[OH;D1;+0:5]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H0;D4;+0:4]",
     "subclass_id": 2,
     "subsubclass_id": null,
     "superclass_id": 2,
@@ -83618,7 +83618,7 @@
       }
     ],
     "child_smirks": [
-      "[*:3]-[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H0;D4;+0:4]>>[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0])-[*:3].[C;H0;D4;+0:4]-[OH;D1;+0:5]"
+      "[C;H0;D3;+0:1](=[O;D1;H0;+0:2])-[O;H0;D2;+0:5]-[C;H0;D4;+0:4]>>n1ccc(N(C)C)cc1.[C;H0;D3;+0:1](=[O;D1;H0;+0:2])(-[O;H1;D1;+0]).[C;H0;D4;+0:4]-[OH;D1;+0:5]"
     ],
     "class_str": "2.4.2"
   },
@@ -84704,29 +84704,6 @@
       "[C:2][N+0:3]>>[C;$(C=O):2][OH1].[N;$(N[#6]);!$(N=*);!$([N-]);!$(N#*);!$([ND3]);!$([ND4]);!$(N[N]);!$(N[S]=[S]):3]",
       "[C:2][N+0:3]>>[C;$(C=O):2][OH1].[N;$(N[#6]);!$(N=*);!$([N-]);!$(N#*);!$([ND3]);!$([ND4]);!$(N[N]);!$(N[S]=[O]):3]",
       "[C:2][N+0:3]>>[C;$(C=O):2][OH1].[N;$(N[#6]);!$(N=*);!$([N-]);!$(N#*);!$([ND3]);!$([ND4]);!$(N[N]);!$(N[S]=[N]):3]"
-    ],
-    "class_str": "2.5.3"
-  },
-  {
-    "class_id": 5,
-    "name": "Lehn Cryptand Synthesis; Step 1 only: diacid chloride + diamine to dilactam (Schotten-Baumann amidation)",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[Cl]-[C;H0;D3;+0:1](=[O;D1;H0;+0:5])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:3]-[NH;D2;+0:4]-[C;H0;D3;+0:1](=[O;D1;H0;+0:5])-[*:2]",
-    "subclass_id": 3,
-    "subsubclass_id": null,
-    "superclass_id": 2,
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000165",
-        "rxno_label": "Schotten-Baumann reaction",
-        "rxno_definition": "The coupling of an alcohol or amine with an acyl chloride to give an ester or amide. A two-phase solvent system is often used, to enable the acid generated during the reaction to be neutralised by the aqueous base, while the starting materials and products remain in the organic phase."
-      }
-    ],
-    "child_smirks": [
-      "[*:3]-[NH;D2;+0:4]-[C;H0;D3;+0:1](=[O;D1;H0;+0:5])-[*:2]>>[Cl]-[C;H0;D3;+0:1](=[O;D1;H0;+0:5])-[*:2].[*:3]-[NH2;D1;+0:4]"
     ],
     "class_str": "2.5.3"
   },
@@ -104059,7 +104036,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;D1:1]#[O;D1]>>[C;H4:1]",
+    "smirks": "[Ni].[C;D1:1]#[O;D1]>>[C;H4:1]",
     "subclass_id": 0,
     "subsubclass_id": null,
     "superclass_id": 6,
@@ -104069,7 +104046,7 @@
       }
     ],
     "child_smirks": [
-      "[C;H4:1]>>[C;D1:1]#[O;D1]"
+      "[C;H4:1]>>[Ni].[C;D1:1]#[O;D1]"
     ],
     "class_str": "6.0.0"
   },
@@ -104080,7 +104057,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0:2])(-[#6:3])-[#6:4]>>[C;H1;D3;+0:1](-[O;H1;D1:2])(-[#6:3])-[#6:4]",
+    "smirks": "[Ni].[C;H0;D3;+0:1](=[O;D1;H0:2])(-[#6:3])-[#6:4]>>[C;H1;D3;+0:1](-[O;H1;D1:2])(-[#6:3])-[#6:4]",
     "subclass_id": 0,
     "subsubclass_id": null,
     "superclass_id": 6,
@@ -104092,7 +104069,7 @@
       }
     ],
     "child_smirks": [
-      "[C;H1;D3;+0:1](-[O;H1;D1:2])(-[#6:3])-[#6:4]>>[C;H0;D3;+0:1](=[O;D1;H0:2])(-[#6:3])-[#6:4]"
+      "[C;H1;D3;+0:1](-[O;H1;D1:2])(-[#6:3])-[#6:4]>>[Ni].[C;H0;D3;+0:1](=[O;D1;H0:2])(-[#6:3])-[#6:4]"
     ],
     "class_str": "6.0.0"
   },
@@ -104103,7 +104080,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1>>[C;H2:1]1[C;H2:2][C;H2:3][C;H2:4][C;H2:5][C;H2:6]1",
+    "smirks": "[Ni].[c:1]1[c:2][c:3][c:4][c:5][c:6]1>>[C;H2:1]1[C;H2:2][C;H2:3][C;H2:4][C;H2:5][C;H2:6]1",
     "subclass_id": 0,
     "subsubclass_id": null,
     "superclass_id": 6,
@@ -104115,7 +104092,7 @@
       }
     ],
     "child_smirks": [
-      "[C;H2:1]1[C;H2:2][C;H2:3][C;H2:4][C;H2:5][C;H2:6]1>>[c:1]1[c:2][c:3][c:4][c:5][c:6]1"
+      "[C;H2:1]1[C;H2:2][C;H2:3][C;H2:4][C;H2:5][C;H2:6]1>>[Ni].[c:1]1[c:2][c:3][c:4][c:5][c:6]1"
     ],
     "class_str": "6.0.0"
   },
@@ -104814,7 +104791,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[#6:4]>>[#6:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[#6:4]",
+    "smirks": "*B1OC(C2CCCN12)(c3ccccc3)c4ccccc4.[#6:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[#6:4]>>[#6:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[#6:4]",
     "subclass_id": 4,
     "subsubclass_id": null,
     "superclass_id": 6,
@@ -104826,7 +104803,7 @@
       }
     ],
     "child_smirks": [
-      "[#6:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[#6:4]>>[#6:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[#6:4]"
+      "[#6:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[#6:4]>>*B1OC(C2CCCN12)(c3ccccc3)c4ccccc4.[#6:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[#6:4]"
     ],
     "class_str": "6.1.4"
   },
@@ -105423,29 +105400,6 @@
     ],
     "child_smirks": [
       "[NH2;D1;+0:2]>>O=C-[NH;D2;+0:2]"
-    ],
-    "class_str": "6.6.0"
-  },
-  {
-    "class_id": 6,
-    "name": "Lehn Cryptand Synthesis; Step 2 only: diborane reduction of lactam to cyclic amine",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[*:3]-[NH;D2;+0:4]-[C;H0;D3;+0:1](=[O;D1;H0;+0])-[*:2]>>[*:3]-[NH;D2;+0:4]-[CH2;D2;+0:1]-[*:2]",
-    "subclass_id": 0,
-    "subsubclass_id": null,
-    "superclass_id": 6,
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000338",
-        "rxno_label": "amide reduction to amine",
-        "rxno_definition": "A reduction process where an amide is transformed into an amine."
-      }
-    ],
-    "child_smirks": [
-      "[*:3]-[NH;D2;+0:4]-[CH2;D2;+0:1]-[*:2]>>[*:3]-[NH;D2;+0:4]-[C;H0;D3;+0:1](=[O;D1;H0;+0])-[*:2]"
     ],
     "class_str": "6.6.0"
   },
@@ -116086,7 +116040,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]>>[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]",
+    "smirks": "[Ag]OC(=O)O[Ag].[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]>>[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]",
     "subclass_id": 0,
     "subsubclass_id": null,
     "superclass_id": 10,
@@ -116098,7 +116052,30 @@
       }
     ],
     "child_smirks": [
-      "[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]>>[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]"
+      "[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]>>[Ag]OC(=O)O[Ag].[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]"
+    ],
+    "class_str": "10.1.0"
+  },
+  {
+    "class_id": 1,
+    "name": "Fétizon Oxidation; Primary alcohol oxidation to aldehyde",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "C(=O)([O-])[O-].[Ag+].[Ag+].[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]>>[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]",
+    "subclass_id": 0,
+    "subsubclass_id": null,
+    "superclass_id": 10,
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000298",
+        "rxno_label": "Fetizon oxidation",
+        "rxno_definition": "The oxidation of a primary alcohol to an aldehyde or a secondary alcohol to a ketone using Fetizon's reagent."
+      }
+    ],
+    "child_smirks": [
+      "[C;H1;D2;+0:1](-[*:2])=[O;H0;D1;+0:3]>>C(=O)([O-])[O-].[Ag+].[Ag+].[C;H2;D2;+0:1](-[*:2])-[OH;D1;+0:3]"
     ],
     "class_str": "10.1.0"
   },
@@ -116109,7 +116086,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]>>[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]",
+    "smirks": "[Ag]OC(=O)O[Ag].[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]>>[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]",
     "subclass_id": 0,
     "subsubclass_id": null,
     "superclass_id": 10,
@@ -116121,7 +116098,30 @@
       }
     ],
     "child_smirks": [
-      "[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]>>[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]"
+      "[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]>>[Ag]OC(=O)O[Ag].[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]"
+    ],
+    "class_str": "10.1.0"
+  },
+  {
+    "class_id": 1,
+    "name": "Fétizon Oxidation; Secondary alcohol oxidation to ketone",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "C(=O)([O-])[O-].[Ag+].[Ag+].[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]>>[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]",
+    "subclass_id": 0,
+    "subsubclass_id": null,
+    "superclass_id": 10,
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000298",
+        "rxno_label": "Fetizon oxidation",
+        "rxno_definition": "The oxidation of a primary alcohol to an aldehyde or a secondary alcohol to a ketone using Fetizon's reagent."
+      }
+    ],
+    "child_smirks": [
+      "[C;H0;D3;+0:1](-[*:2])(-[*:4])=[O;H0;D1;+0:3]>>C(=O)([O-])[O-].[Ag+].[Ag+].[C;H1;D3;+0:1](-[*:2])(-[*:4])-[OH;D1;+0:3]"
     ],
     "class_str": "10.1.0"
   },
@@ -121050,27 +121050,6 @@
     ],
     "child_smirks": [
       "[C:1]-[S;H1;D1;+0:2]>>[C:1]-[O;H1;D1;+0].S=P1(SP(=S)([S:2]1)c2ccc(OC)cc2)c3ccc(OC)cc3"
-    ],
-    "class_str": "12.0.0"
-  },
-  {
-    "class_id": 0,
-    "name": "Lehn Cryptand Synthesis; Diacid chloride + diamine macrocyclization to dilactam, then B2H6 reduction (overall acyl chloride + amine to CH2-N)",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[Cl]-[C;H0;D3;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:3]-[NH;D2;+0:4]-[CH2;D2;+0:1]-[*:2]",
-    "subclass_id": 0,
-    "subsubclass_id": null,
-    "superclass_id": 12,
-    "rxno_classification": [
-      {
-        "rxno_id": ""
-      }
-    ],
-    "child_smirks": [
-      "[*:3]-[NH;D2;+0:4]-[CH2;D2;+0:1]-[*:2]>>[Cl]-[C;H0;D3;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH2;D1;+0:4]"
     ],
     "class_str": "12.0.0"
   },
