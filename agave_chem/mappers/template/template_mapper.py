@@ -194,7 +194,7 @@ def _make_composite_smirks_pattern(
     (e.g. "Esterification + Boc Deprotection") while forwarding the priority,
     superclass_id, and SMIRKS/RDChiral data from the highest-priority pattern.
     All SMARTS fragments and fingerprints are concatenated so that atom-count
-    tiebreaking in _rank_mappings reflects the full template set.
+    tiebreaking in _select_preferred_mapping reflects the full template set.
 
     Args:
         patterns (List[InitializedSmirksPattern]): The constituent single-island
@@ -1553,71 +1553,96 @@ class TemplateReactionMapper(ReactionMapper):
 
         return islands
 
-    @staticmethod
-    def _compute_mapping_score(
-        patterns: List[InitializedSmirksPattern],
-    ) -> Tuple[Tuple[int, int], int]:
-        """
-        Compute the ranking score for a single mapping candidate.
-
-        The score has two components, compared lexicographically (higher is
-        better):
-
-        1. **Priority** — the maximum ``priority`` tuple ``(priority_class,
-           priority)`` across all patterns matching this mapping.
-        2. **Atom count** — the maximum total atom/fragment count across all
-           patterns, calculated as the number of reactant SMARTS fragments
-           plus the total atom count in both reactant and product SMARTS.
-
-        Args:
-            patterns (List[InitializedSmirksPattern]): The list of initialized
-                SMIRKS patterns that produced this mapping.
-
-        Returns:
-            Tuple[Tuple[int, int], int]: A ``(priority_tuple, atom_count)``
-            pair suitable for use as a sort key (higher values rank first).
-        """
-        max_priority: Tuple[int, int] = (0, 0)
-        max_atom_count: int = 0
-        for p in patterns:
-            priority = p.get("priority", (0, 0))
-            max_priority = max(max_priority, priority)
-
-            num_fragments = len(p["reactants_smarts"])
-            atom_count = num_fragments
-            for mol in p["reactants_smarts"]:
-                atom_count += len(list(mol.GetAtoms()))
-            for mol in p["products_smarts"]:
-                atom_count += len(list(mol.GetAtoms()))
-            max_atom_count = max(max_atom_count, atom_count)
-
-        return max_priority, max_atom_count
-
-    def _rank_mappings(
+    def _select_preferred_mapping(
         self, possible_outcomes: Dict[str, List[InitializedSmirksPattern]]
-    ) -> List[str]:
+    ) -> str:
         """
-        Rank all possible mappings by preference and return them in order.
-
-        Mappings are sorted by ``(priority, atom_count)`` descending — the
-        same criteria used by the former ``_select_preferred_mapping``.  The
-        first element is the preferred mapping.
+        Select the preferred mapping from a list of mappings.
 
         Args:
-            possible_outcomes (Dict[str, List[InitializedSmirksPattern]]):
-                Dictionary mapping canonicalized mapped SMILES to the list of
-                SMIRKS patterns that produced each mapping.
+            possible_outcomes (Dict[str, List[InitializedSmirksPattern]]): Dictionary of possible mappings.
 
         Returns:
-            List[str]: Mapped SMILES strings in preference order (best first).
-            Empty when ``possible_outcomes`` is empty.
+            str: The selected preferred mapping.
         """
-        scored = [
-            (self._compute_mapping_score(patterns), mapping)
-            for mapping, patterns in possible_outcomes.items()
-        ]
-        scored.sort(key=lambda item: item[0], reverse=True)
-        return [mapping for _, mapping in scored]
+        selected_mapping = ""
+        max_num_mapped_product_atoms = 0
+        highest_priority_class = (0, 0)
+        for canonicalized_mapping, possible_mappings in possible_outcomes.items():
+            for possible_mapping in possible_mappings:
+                mapping_priority = possible_mapping.get("priority", (0, 0))
+
+                if highest_priority_class[0] != 0 or mapping_priority[0] != 0:
+                    if highest_priority_class[0] > mapping_priority[0]:
+                        continue
+                    if (
+                        highest_priority_class[0] == mapping_priority[0]
+                        and highest_priority_class[1] > mapping_priority[1]
+                    ):
+                        continue
+                    if highest_priority_class[0] < mapping_priority[0]:
+                        highest_priority_class = mapping_priority
+                        selected_mapping = canonicalized_mapping
+                        continue
+                    if (
+                        highest_priority_class[0] == mapping_priority[0]
+                        and mapping_priority[1] > highest_priority_class[1]
+                    ):
+                        highest_priority_class = mapping_priority
+                        selected_mapping = canonicalized_mapping
+                        continue
+
+                mapping_num_fragments = len(possible_mapping["reactants_smarts"])
+                mapping_num_atoms = mapping_num_fragments
+                for mol in possible_mapping["reactants_smarts"]:
+                    mapping_num_atoms += len(list(mol.GetAtoms()))
+                for mol in possible_mapping["products_smarts"]:
+                    mapping_num_atoms += len(list(mol.GetAtoms()))
+                if max_num_mapped_product_atoms < mapping_num_atoms:
+                    selected_mapping = canonicalized_mapping
+                    max_num_mapped_product_atoms = mapping_num_atoms
+
+        return selected_mapping
+
+    @staticmethod
+    def _sort_patterns_by_priority(
+        patterns: List[InitializedSmirksPattern],
+    ) -> List[InitializedSmirksPattern]:
+        """
+        Sort SMIRKS patterns by preference (highest first).
+
+        Sorting criteria, in order:
+
+        1. **Priority** — the ``priority`` tuple ``(priority_class,
+           priority)``; higher is better.
+        2. **Atom count** — when priorities are equal, the total number of
+           reactant SMARTS fragments plus atoms in both reactant and product
+           SMARTS; higher is better.
+
+        Patterns with equal priority and atom count preserve their original
+        relative order (Python's sort is stable).
+
+        Args:
+            patterns (List[InitializedSmirksPattern]): Patterns to sort.
+
+        Returns:
+            List[InitializedSmirksPattern]: A new list sorted by ``priority``
+            then atom count, both descending.
+        """
+
+        def _atom_count(p: InitializedSmirksPattern) -> int:
+            count = len(p["reactants_smarts"])
+            for mol in p["reactants_smarts"]:
+                count += len(list(mol.GetAtoms()))
+            for mol in p["products_smarts"]:
+                count += len(list(mol.GetAtoms()))
+            return count
+
+        return sorted(
+            patterns,
+            key=lambda p: (p.get("priority", (0, 0)), _atom_count(p)),
+            reverse=True,
+        )
 
     def _lookup_class_names(
         self,
@@ -1724,15 +1749,20 @@ class TemplateReactionMapper(ReactionMapper):
             return None
         if len(deduplicated_mapped_outcomes) > 1:
             logger.warning("Multiple possible mappings")
-            ranked_mappings = self._rank_mappings(deduplicated_mapped_outcomes)
-            selected_mapping = ranked_mappings[0]
+            selected_mapping = self._select_preferred_mapping(
+                deduplicated_mapped_outcomes
+            )
         else:
             selected_mapping = next(iter(deduplicated_mapped_outcomes))
-            ranked_mappings = [selected_mapping]
+
+        sorted_outcomes: Dict[str, List[InitializedSmirksPattern]] = {
+            mapping: self._sort_patterns_by_priority(patterns)
+            for mapping, patterns in deduplicated_mapped_outcomes.items()
+        }
 
         possible_mappings_template_names: Dict[str, List[str]] = {
             mapping: [p["template_name"] for p in patterns]
-            for mapping, patterns in deduplicated_mapped_outcomes.items()
+            for mapping, patterns in sorted_outcomes.items()
         }
 
         classification_info: Dict[str, List[Dict[str, Any]]] = {
@@ -1769,14 +1799,13 @@ class TemplateReactionMapper(ReactionMapper):
                     for p in patterns
                 }.values()
             )
-            for mapping, patterns in deduplicated_mapped_outcomes.items()
+            for mapping, patterns in sorted_outcomes.items()
         }
 
         return ReactionMapperResult(
             original_smiles=original_smiles,
             selected_mapping=selected_mapping,
             possible_mappings=possible_mappings_template_names,
-            ranked_mappings=ranked_mappings,
             mapping_type=self._mapper_type,
             mapping_score=None,
             additional_info=[],

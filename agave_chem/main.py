@@ -226,30 +226,6 @@ def _extract_confidence(
     return None
 
 
-def _extract_ranked_mappings(
-    mapper_results: List[ReactionMapperResult],
-) -> List[str]:
-    """
-    Extract ranked mappings from the template mapper's result.
-
-    Scans all mapper results for the one whose ``mapping_type`` is
-    ``"template"`` and returns its ``ranked_mappings`` list.
-
-    Args:
-        mapper_results (List[ReactionMapperResult]): Per-mapper results for a
-            single reaction.
-
-    Returns:
-        List[str]: The template mapper's ranked mappings in preference order
-        (best first), or an empty list when no template mapper result is
-        present or its ``ranked_mappings`` is empty.
-    """
-    for mr in mapper_results:
-        if mr.mapping_type == "template" and mr.ranked_mappings:
-            return list(mr.ranked_mappings)
-    return []
-
-
 def map_reactions_using_mappers(
     reaction_list: Union[str, List[str]],
     mappers_list: List[ReactionMapper],
@@ -279,17 +255,15 @@ def map_reactions_using_mappers(
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
             order as the input.  Each result always contains ``final_mapping``,
-            ``original_reaction``, ``confidence``, ``ranked_mappings``,
-            ``class_str``, ``rxno_classifications``, and ``classification_info``.
+            ``original_reaction``, ``confidence``, ``class_str``,
+            ``rxno_classifications``, and ``classification_info``.
             ``confidence`` is populated from the neural mapper's
             ``mapping_score`` when a neural mapper is present; ``None``
-            otherwise.  ``ranked_mappings`` is populated from the template
-            mapper's ``ReactionMapperResult.ranked_mappings`` when a template
-            mapper is present; empty otherwise.  ``class_str``,
-            ``rxno_classifications``, and ``classification_info`` are populated
-            when a template mapper matches ``final_mapping``; empty otherwise.
-            When ``return_detailed_mapper_info`` is True, ``mapper_results``
-            also contains per-mapper ``ReactionMapperResult`` objects.
+            otherwise.  ``class_str``, ``rxno_classifications``, and
+            ``classification_info`` are populated when a template mapper matches
+            ``final_mapping``; empty otherwise.  When
+            ``return_detailed_mapper_info`` is True, ``mapper_results`` also
+            contains per-mapper ``ReactionMapperResult`` objects.
     """
     reaction_list, mappers_list, batch_size = _validate_and_normalize_input(
         reaction_list, mappers_list, batch_size
@@ -340,9 +314,6 @@ def map_reactions_using_mappers(
         confidence = _extract_confidence(mapper_results)
         if confidence is not None:
             result_kwargs["confidence"] = confidence
-        ranked_mappings = _extract_ranked_mappings(mapper_results)
-        if ranked_mappings:
-            result_kwargs["ranked_mappings"] = ranked_mappings
         if return_detailed_mapper_info:
             result_kwargs["mapper_results"] = mapper_results
         results.append(AgaveChemMapperResult(**result_kwargs))
@@ -386,16 +357,14 @@ def map_reactions(
         List[AgaveChemMapperResult]: One result per input reaction, in the same
             order as the (deduplicated) input.  Each result always contains
             ``final_mapping``, ``original_reaction``, ``confidence``,
-            ``ranked_mappings``, ``class_str``, ``rxno_classifications``, and
-            ``classification_info``.  ``confidence`` is populated from the
-            neural mapper's ``mapping_score`` when a neural mapper is present;
-            ``None`` otherwise.  ``ranked_mappings`` is populated from the
-            template mapper's ``ReactionMapperResult.ranked_mappings`` when a
-            template mapper is present; empty otherwise.  ``class_str``,
-            ``rxno_classifications``, and ``classification_info`` are populated
-            when a template mapper matches ``final_mapping``; empty otherwise.
-            When ``return_detailed_mapper_info`` is True, ``mapper_results``
-            also contains per-mapper ``ReactionMapperResult`` objects.
+            ``class_str``, ``rxno_classifications``, and ``classification_info``.
+            ``confidence`` is populated from the neural mapper's
+            ``mapping_score`` when a neural mapper is present; ``None``
+            otherwise.  ``class_str``, ``rxno_classifications``, and
+            ``classification_info`` are populated when a template mapper matches
+            ``final_mapping``; empty otherwise.  When
+            ``return_detailed_mapper_info`` is True, ``mapper_results`` also
+            contains per-mapper ``ReactionMapperResult`` objects.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
