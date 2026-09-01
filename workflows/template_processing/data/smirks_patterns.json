@@ -3019,25 +3019,6 @@
     },
     {
         "class_id": 5,
-        "name": "Carboxylic acid with primary amine to amide",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[CX3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[#7;H2;D1;+0:6]>>[CX3;+0:3](=[O;H0;D1;+0:4])-[#7;H1;D2;+0:6]",
-        "subclass_id": 1,
-        "subsubclass_id": null,
-        "superclass_id": 2,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000357",
-                "rxno_label": "N-acylation to amide",
-                "rxno_definition": "An acylation reaction where a nitrogen atom is acylated to form an amide."
-            }
-        ]
-    },
-    {
-        "class_id": 5,
         "name": "Ester with ammonia to amide",
         "priority": {
             "priority_class": null,
@@ -10889,7 +10870,7 @@
     },
     {
         "class_id": 5,
-        "name": "Carboxylic acid to amide conversion",
+        "name": "Carboxylic acid to primary amide conversion",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -10908,7 +10889,7 @@
     },
     {
         "class_id": 5,
-        "name": "Carboxylic acid to amide conversion",
+        "name": "Carboxylic acid to primary amide conversion",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -10927,7 +10908,7 @@
     },
     {
         "class_id": 5,
-        "name": "Carboxylic acid to amide conversion",
+        "name": "Carboxylic acid to secondary amide conversion",
         "priority": {
             "priority_class": null,
             "priority": null
@@ -10946,7 +10927,7 @@
     },
     {
         "class_id": 5,
-        "name": "Carboxylic acid to amide conversion",
+        "name": "Carboxylic acid to tertiary amide conversion",
         "priority": {
             "priority_class": null,
             "priority": null

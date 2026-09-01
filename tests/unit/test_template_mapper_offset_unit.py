@@ -45,9 +45,7 @@ class TestOffsetMapNums:
 
     def test_fused_ring_closures_not_offset(self):
         """Fused-ring closure digits (:1:2) must not be touched."""
-        smirks = (
-            "[c:11]1:[c:12]:[c:13]2:[c:14]:[c:15]:[c:16]:[c:17]:[c:18]:1:2"
-        )
+        smirks = "[c:11]1:[c:12]:[c:13]2:[c:14]:[c:15]:[c:16]:[c:17]:[c:18]:1:2"
         expected = (
             "[c:111]1:[c:112]:[c:113]2:[c:114]:[c:115]:[c:116]:[c:117]:[c:118]:1:2"
         )

@@ -57,6 +57,7 @@ class TestReactionMapperResult:
         assert result.original_smiles == ""
         assert result.selected_mapping == ""
         assert result.possible_mappings == {}
+        assert result.ranked_mappings == []
         assert result.mapping_type == "test"
         assert result.mapping_score is None
         assert result.additional_info == [{}]
@@ -66,6 +67,7 @@ class TestReactionMapperResult:
             original_smiles="CC>>CC",
             selected_mapping="[C:1][C:2]>>[C:1][C:2]",
             possible_mappings={"[C:1][C:2]>>[C:1][C:2]": ["alkylation"]},
+            ranked_mappings=["[C:1][C:2]>>[C:1][C:2]"],
             mapping_type="template",
             mapping_score=0.95,
             additional_info=[{"key": "value"}],
@@ -73,6 +75,7 @@ class TestReactionMapperResult:
         assert result.original_smiles == "CC>>CC"
         assert result.selected_mapping == "[C:1][C:2]>>[C:1][C:2]"
         assert result.possible_mappings == {"[C:1][C:2]>>[C:1][C:2]": ["alkylation"]}
+        assert result.ranked_mappings == ["[C:1][C:2]>>[C:1][C:2]"]
         assert result.mapping_score == 0.95
 
     def test_model_copy_preserves_original(self):
@@ -105,6 +108,11 @@ class TestAgaveChemMapperResult:
         assert result.final_mapping == ""
         assert result.original_reaction == ""
         assert result.mapper_results == []
+        assert result.confidence is None
+        assert result.ranked_mappings == []
+        assert result.class_str == ""
+        assert result.rxno_classifications == ""
+        assert result.classification_info == {}
 
     def test_with_mapper_results(self):
         mapper_result = ReactionMapperResult(mapping_type="mcs")
@@ -112,10 +120,14 @@ class TestAgaveChemMapperResult:
             final_mapping="[C:1]>>[C:1]",
             original_reaction="C>>C",
             mapper_results=[mapper_result],
+            confidence=0.92,
+            ranked_mappings=["[C:1]>>[C:1]", "[C:2]>>[C:2]"],
         )
         assert result.final_mapping == "[C:1]>>[C:1]"
         assert len(result.mapper_results) == 1
         assert result.mapper_results[0].mapping_type == "mcs"
+        assert result.confidence == 0.92
+        assert result.ranked_mappings == ["[C:1]>>[C:1]", "[C:2]>>[C:2]"]
 
 
 class TestAtomMapping:

@@ -288,6 +288,16 @@ class TestMapReactionClassificationInfo:
                         assert isinstance(rxno, dict)
                         assert "rxno_id" in rxno
 
+    def test_ranked_mappings_populated_and_consistent(self, mapper):
+        """ranked_mappings should be non-empty and selected_mapping should be first."""
+        result = mapper.map_reaction(
+            "[CH2:0]([Cl])[c:1]1ccccc1.[CH2:2]([O:3][H])>>[CH2:0]([O:3])[c:1]1ccccc1.[Cl][H]"
+        )
+        if result.selected_mapping:
+            assert len(result.ranked_mappings) > 0
+            assert result.ranked_mappings[0] == result.selected_mapping
+            assert set(result.ranked_mappings) == set(result.possible_mappings.keys())
+
 
 # ---------------------------------------------------------------------------
 # Non-template mappers: classification_info defaults to {}
@@ -431,3 +441,188 @@ class TestBuildClassHierarchyLookup:
         data = {"superclasses": []}
         lookup = _build_class_hierarchy_lookup(data)
         assert "1.1.1." not in lookup
+
+
+# ---------------------------------------------------------------------------
+# _compute_mapping_score
+# ---------------------------------------------------------------------------
+
+
+def _make_pattern_with_smarts(
+    name: str = "Test Pattern",
+    priority: tuple[int, int] = (0, 0),
+    reactants_smarts: list[str] | None = None,
+    products_smarts: list[str] | None = None,
+) -> InitializedSmirksPattern:
+    """Build an InitializedSmirksPattern with real RDKit Mol SMARTS objects."""
+    from rdkit import Chem
+
+    rs = reactants_smarts or ["[C:1]"]
+    ps = products_smarts or ["[C:1]"]
+    return InitializedSmirksPattern(
+        name=name,
+        superclass_id="1",
+        class_id="0",
+        subclass_id="0",
+        subsubclass_id="",
+        class_str="1.0.0",
+        products_smarts=[Chem.MolFromSmarts(s) for s in ps],
+        reactants_smarts=[Chem.MolFromSmarts(s) for s in rs],
+        products_fps=[],
+        reactants_fps=[],
+        rdc_rxn=None,  # type: ignore[arg-type]
+        parent_smirks=">>".join([".".join(rs), ".".join(ps)]),
+        child_smirks=">>".join([".".join(rs), ".".join(ps)]),
+        template_name=name,
+        priority=priority,
+        rxno_classification=[],
+    )
+
+
+class TestComputeMappingScore:
+    """Tests for TemplateReactionMapper._compute_mapping_score."""
+
+    def test_empty_patterns_returns_zero_score(self):
+        score = TemplateReactionMapper._compute_mapping_score([])
+        assert score == ((0, 0), 0)
+
+    def test_priority_is_max_across_patterns(self):
+        p1 = _make_pattern_with_smarts(priority=(1, 5))
+        p2 = _make_pattern_with_smarts(priority=(2, 3))
+        score = TemplateReactionMapper._compute_mapping_score([p1, p2])
+        assert score[0] == (2, 3)
+
+    def test_atom_count_includes_fragments_and_atoms(self):
+        p = _make_pattern_with_smarts(
+            reactants_smarts=["[C:1]", "[N:2]"],
+            products_smarts=["[C:1][N:2]"],
+        )
+        score = TemplateReactionMapper._compute_mapping_score([p])
+        expected_atoms = 2 + 1 + 1 + 2
+        assert score[1] == expected_atoms
+
+    def test_atom_count_is_max_across_patterns(self):
+        p_small = _make_pattern_with_smarts(
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        p_large = _make_pattern_with_smarts(
+            reactants_smarts=["[C:1]", "[N:2]", "[O:3]"],
+            products_smarts=["[C:1][N:2][O:3]"],
+        )
+        score = TemplateReactionMapper._compute_mapping_score([p_small, p_large])
+        expected_atoms = 3 + 3 + 3
+        assert score[1] == expected_atoms
+
+
+# ---------------------------------------------------------------------------
+# _rank_mappings
+# ---------------------------------------------------------------------------
+
+
+class TestRankMappings:
+    """Tests for TemplateReactionMapper._rank_mappings."""
+
+    def _get_mapper(self) -> TemplateReactionMapper:
+        """Get a TemplateReactionMapper instance without loading SMIRKS patterns."""
+        mapper = TemplateReactionMapper.__new__(TemplateReactionMapper)
+        return mapper
+
+    def test_empty_input_returns_empty_list(self):
+        mapper = self._get_mapper()
+        assert mapper._rank_mappings({}) == []
+
+    def test_single_mapping_returns_single_element_list(self):
+        mapper = self._get_mapper()
+        p = _make_pattern_with_smarts()
+        result = mapper._rank_mappings({"mapping_a": [p]})
+        assert result == ["mapping_a"]
+
+    def test_priority_class_takes_precedence_over_atom_count(self):
+        mapper = self._get_mapper()
+        p_low_pri = _make_pattern_with_smarts(
+            priority=(0, 0),
+            reactants_smarts=["[C:1]", "[N:2]", "[O:3]"],
+            products_smarts=["[C:1][N:2][O:3]"],
+        )
+        p_high_pri = _make_pattern_with_smarts(
+            priority=(1, 0),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        result = mapper._rank_mappings(
+            {
+                "low_pri_high_atoms": [p_low_pri],
+                "high_pri_low_atoms": [p_high_pri],
+            }
+        )
+        assert result[0] == "high_pri_low_atoms"
+        assert result[1] == "low_pri_high_atoms"
+
+    def test_atom_count_tiebreaker_when_priority_equal(self):
+        mapper = self._get_mapper()
+        p_few = _make_pattern_with_smarts(
+            priority=(0, 0),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        p_many = _make_pattern_with_smarts(
+            priority=(0, 0),
+            reactants_smarts=["[C:1]", "[N:2]"],
+            products_smarts=["[C:1][N:2]"],
+        )
+        result = mapper._rank_mappings(
+            {
+                "few_atoms": [p_few],
+                "many_atoms": [p_many],
+            }
+        )
+        assert result[0] == "many_atoms"
+        assert result[1] == "few_atoms"
+
+    def test_priority_subclass_tiebreaker(self):
+        mapper = self._get_mapper()
+        p_pri_1 = _make_pattern_with_smarts(
+            priority=(1, 1),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        p_pri_5 = _make_pattern_with_smarts(
+            priority=(1, 5),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        result = mapper._rank_mappings(
+            {
+                "pri_1": [p_pri_1],
+                "pri_5": [p_pri_5],
+            }
+        )
+        assert result[0] == "pri_5"
+        assert result[1] == "pri_1"
+
+    def test_three_mappings_ordered_correctly(self):
+        mapper = self._get_mapper()
+        p_a = _make_pattern_with_smarts(
+            priority=(0, 0),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        p_b = _make_pattern_with_smarts(
+            priority=(1, 0),
+            reactants_smarts=["[C:1]"],
+            products_smarts=["[C:1]"],
+        )
+        p_c = _make_pattern_with_smarts(
+            priority=(0, 0),
+            reactants_smarts=["[C:1]", "[N:2]"],
+            products_smarts=["[C:1][N:2]"],
+        )
+        result = mapper._rank_mappings(
+            {
+                "a": [p_a],
+                "b": [p_b],
+                "c": [p_c],
+            }
+        )
+        assert result == ["b", "c", "a"]

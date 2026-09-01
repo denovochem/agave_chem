@@ -38,10 +38,14 @@ class _StubMapper(ReactionMapper):
         mapper_weight: float = 1.0,
         mappings: list[str] | None = None,
         classification_info: dict[str, list[dict]] | None = None,
+        mapping_score: float | None = None,
+        ranked_mappings: list[str] | None = None,
     ):
         super().__init__(mapper_type, mapper_name, mapper_weight)
         self._mappings = mappings or []
         self._classification_info = classification_info or {}
+        self._mapping_score = mapping_score
+        self._ranked_mappings = ranked_mappings or []
 
     def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
         return self.map_reactions([reaction_smiles])[0]
@@ -57,7 +61,9 @@ class _StubMapper(ReactionMapper):
                     original_smiles=rxn,
                     selected_mapping=mapping,
                     mapping_type=self._mapper_type,
+                    mapping_score=self._mapping_score,
                     classification_info=self._classification_info,
+                    ranked_mappings=self._ranked_mappings,
                 )
             )
         return results
@@ -467,3 +473,103 @@ class TestMapReactions:
         assert results[0].class_str == "2.1.1"
         assert results[0].rxno_classifications == "RXNO:0000165"
         assert results[0].mapper_results == []
+
+    def test_confidence_populated_from_neural_mapper(self):
+        mapping = "[C:1]>>[C:1]"
+        neural = _StubMapper(
+            mapper_name="neural",
+            mapper_type="neural",
+            mappings=[mapping],
+            mapping_score=0.95,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[neural])
+        assert results[0].confidence == 0.95
+
+    def test_confidence_none_without_neural_mapper(self):
+        mapping = "[C:1]>>[C:1]"
+        template = _StubMapper(
+            mapper_name="template",
+            mapper_type="template",
+            mappings=[mapping],
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[template])
+        assert results[0].confidence is None
+
+    def test_confidence_none_when_neural_mapping_score_is_none(self):
+        mapping = "[C:1]>>[C:1]"
+        neural = _StubMapper(
+            mapper_name="neural",
+            mapper_type="neural",
+            mappings=[mapping],
+            mapping_score=None,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[neural])
+        assert results[0].confidence is None
+
+    def test_confidence_populated_with_multiple_mappers(self):
+        mapping = "[C:1]>>[C:1]"
+        template = _StubMapper(
+            mapper_name="template",
+            mapper_type="template",
+            mappings=[mapping],
+        )
+        neural = _StubMapper(
+            mapper_name="neural",
+            mapper_type="neural",
+            mappings=[mapping],
+            mapping_score=0.87,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[template, neural])
+        assert results[0].confidence == 0.87
+
+    def test_ranked_mappings_populated_from_template_mapper(self):
+        mapping = "[C:1]>>[C:1]"
+        alt_mapping = "[C:2]>>[C:2]"
+        template = _StubMapper(
+            mapper_name="template",
+            mapper_type="template",
+            mappings=[mapping],
+            ranked_mappings=[mapping, alt_mapping],
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[template])
+        assert results[0].ranked_mappings == [mapping, alt_mapping]
+
+    def test_ranked_mappings_empty_without_template_mapper(self):
+        mapping = "[C:1]>>[C:1]"
+        neural = _StubMapper(
+            mapper_name="neural",
+            mapper_type="neural",
+            mappings=[mapping],
+            mapping_score=0.9,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[neural])
+        assert results[0].ranked_mappings == []
+
+    def test_ranked_mappings_empty_when_template_has_no_ranked_mappings(self):
+        mapping = "[C:1]>>[C:1]"
+        template = _StubMapper(
+            mapper_name="template",
+            mapper_type="template",
+            mappings=[mapping],
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[template])
+        assert results[0].ranked_mappings == []
+
+    def test_ranked_mappings_populated_with_multiple_mappers(self):
+        mapping = "[C:1]>>[C:1]"
+        alt_mapping = "[C:2]>>[C:2]"
+        template = _StubMapper(
+            mapper_name="template",
+            mapper_type="template",
+            mappings=[mapping],
+            ranked_mappings=[mapping, alt_mapping],
+        )
+        neural = _StubMapper(
+            mapper_name="neural",
+            mapper_type="neural",
+            mappings=[mapping],
+            mapping_score=0.87,
+        )
+        results = map_reactions(["CC>>CC"], mappers_list=[template, neural])
+        assert results[0].ranked_mappings == [mapping, alt_mapping]
+        assert results[0].confidence == 0.87

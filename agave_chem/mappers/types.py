@@ -80,6 +80,11 @@ class ReactionMapperResult(BaseModel):
         original_smiles (str): The original unmapped reaction SMILES.
         selected_mapping (str): The selected atom-mapped reaction SMILES, or empty string on failure.
         possible_mappings (Dict[str, List[str]]): Mapping from mapped SMILES to list of template names.
+        ranked_mappings (List[str]): Ordered list of mapped SMILES strings in
+            preference order (best first).  Populated by the template mapper
+            when multiple valid mappings exist; contains a single element when
+            only one mapping is found; empty for non-template mappers or on
+            failure.
         mapping_type (str): The type of mapper that produced this result (e.g. "mcs", "template", "neural").
         mapping_score (Any): Optional score or scoring object for the selected mapping.
         additional_info (List[Dict[str, Any]]): Additional metadata about the mapping.
@@ -99,6 +104,7 @@ class ReactionMapperResult(BaseModel):
     original_smiles: str = ""
     selected_mapping: str = ""
     possible_mappings: Dict[str, List[str]] = Field(default_factory=dict)
+    ranked_mappings: List[str] = Field(default_factory=list)
     mapping_type: str = ""
     mapping_score: Any = None
     additional_info: List[Dict[str, Any]] = Field(
@@ -119,6 +125,15 @@ class AgaveChemMapperResult(BaseModel):
             ``return_detailed_mapper_info=True`` to ``map_reactions`` or
             ``map_reactions_using_mappers``; otherwise left empty to reduce
             result size.
+        confidence (Optional[float]): Confidence score from the neural mapper
+            for the ``final_mapping``, computed as the product of per-atom
+            assignment probabilities.  ``None`` when no neural mapper is used
+            or the neural mapper fails to produce a mapping.
+        ranked_mappings (List[str]): Ordered list of mapped SMILES strings in
+            preference order (best first), propagated from the template
+            mapper's ``ReactionMapperResult.ranked_mappings``.  Empty when no
+            template mapper is used or the template mapper produces no
+            mappings.
         class_str (str): Pipe-delimited string of unique classification paths
             (e.g. ``"1.1.1|2.5.1|2.5.3"``) for all templates matching the
             ``final_mapping``.  Empty when no template mapper is used or no
@@ -143,6 +158,8 @@ class AgaveChemMapperResult(BaseModel):
     final_mapping: str = ""
     original_reaction: str = ""
     mapper_results: List[ReactionMapperResult] = Field(default_factory=list)
+    confidence: Optional[float] = None
+    ranked_mappings: List[str] = Field(default_factory=list)
     class_str: str = ""
     rxno_classifications: str = ""
     classification_info: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
