@@ -855,14 +855,66 @@ def generate_name(
     Returns:
         str: A descriptive reaction name.
     """
-    return f"NucSub {nu.name} at {center.name} ({lg.name} LG)"
+    return f"Nucleophilic substitution {nu.name} at {center.name} ({lg.name} leaving group)"
+
+
+RXNO_TERMS: Dict[str, Dict[str, str]] = {
+    "RXNO:0000332": {
+        "label": "aromatic substitution step",
+        "definition": "A substitution step where one singly-bonded substituent on an aromatic skeleton is replaced by another singly-bonded substituent.",
+    },
+    "RXNO:0000357": {
+        "label": "N-acylation to amide",
+        "definition": "An acylation reaction where a nitrogen atom is acylated to form an amide.",
+    },
+    "RXNO:0000360": {
+        "label": "O-acylation to ester",
+        "definition": "An O-acylation reaction where an oxygen centre is acylated to result in an ester.",
+    },
+    "RXNO:0000359": {
+        "label": "N-acylation to carbamate",
+        "definition": "An N-acylation reaction where a nitrogen centre is acylated to form a carbamate.",
+    },
+    "RXNO:0000155": {
+        "label": "Finkelstein reaction",
+        "definition": "The conversion of an alkyl chloride, alkyl bromide or alkyl sulfonate ester to an alkyl iodide by SN2 substitution. The reaction relies upon the equilibrium being pushed to completion by the precipitation.",
+    },
+    "RXNO:0000060": {
+        "label": "Arbuzov reaction",
+        "definition": "The alkylation of a trialkyl phosphite with an alkyl halide or acyl halide to give an alkyl phosphonate.",
+    },
+    "RXNO:0000103": {
+        "label": "Gabriel synthesis",
+        "definition": "The reaction of primary alkyl halides with sodium or potassium phthalimide, followed by hydrolysis, to give the corresponding primary amine.",
+    },
+    "RXNO:0000090": {
+        "label": "Williamson ether synthesis",
+        "definition": "The reaction between an alkyl halide or alkyl sulfate and a metal alkoxide to give an ether.",
+    },
+    "RXNO:0000341": {
+        "label": "aniline N-alkylation",
+        "definition": "An N-alkylation where the reactive centre is an aniline nitrogen.",
+    },
+    "RXNO:0000340": {
+        "label": "amide N-alkylation",
+        "definition": "An N-alkylation where the reactive centre is an amide nitrogen.",
+    },
+    "RXNO:0000345": {
+        "label": "heteroaryl N-alkylation",
+        "definition": "An N-alkylation reaction where the reactive centre is an azacycle ring nitrogen.",
+    },
+    "RXNO:0000331": {
+        "label": "substitution step",
+        "definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent.",
+    },
+}
 
 
 def classify_rxno(
     center: ElectrophilicCenter,
     lg: LeavingGroup,
     nu: Nucleophile,
-) -> str:
+) -> Dict[str, str]:
     """
     Assign the most specific RXNO ontology term for a nucleophilic substitution
     pattern based on the electrophilic center, leaving group, and nucleophile.
@@ -880,54 +932,208 @@ def classify_rxno(
         nu (Nucleophile): The nucleophile definition.
 
     Returns:
-        str: An RXNO term identifier string (e.g. ``"RXNO:0000331"``),
-            representing the most specific applicable classification.
+        Dict[str, str]: A dict with keys ``rxno_id``, ``rxno_label``, and
+            ``rxno_definition`` for the most specific applicable RXNO term.
     """
     # SNAr — aromatic substitution step
     if center.name == "SNAr aromatic":
-        return "RXNO:0000332"
+        rxno_id = "RXNO:0000332"
 
     # Nucleophilic acyl substitution
-    if center.name == "acyl (carbonyl)":
+    elif center.name == "acyl (carbonyl)":
         if "N_nuc" in nu.tags:
-            return "RXNO:0000357"  # N-acylation to amide
-        if "O_nuc" in nu.tags:
-            return "RXNO:0000360"  # O-acylation to ester
+            rxno_id = "RXNO:0000357"  # N-acylation to amide
+        elif "O_nuc" in nu.tags:
+            rxno_id = "RXNO:0000360"  # O-acylation to ester
+        else:
+            rxno_id = "RXNO:0000331"
 
     # Chloroformate/carbonate — carbamate and carbonate synthesis
-    if center.name == "chloroformate/carbonate":
+    elif center.name == "chloroformate/carbonate":
         if "N_nuc" in nu.tags:
-            return "RXNO:0000359"  # N-acylation to carbamate
-        if "O_nuc" in nu.tags:
-            return "RXNO:0000360"  # O-acylation to ester
+            rxno_id = "RXNO:0000359"  # N-acylation to carbamate
+        elif "O_nuc" in nu.tags:
+            rxno_id = "RXNO:0000360"  # O-acylation to ester
+        else:
+            rxno_id = "RXNO:0000331"
 
     # Finkelstein: halide ↔ halide exchange
-    if "halide_nuc" in nu.tags and "halide" in lg.tags:
-        return "RXNO:0000155"
+    elif "halide_nuc" in nu.tags and "halide" in lg.tags:
+        rxno_id = "RXNO:0000155"
 
     # Arbuzov: P nucleophile + alkyl halide or sulfonate
-    if "P_nuc" in nu.tags:
-        return "RXNO:0000060"
+    elif "P_nuc" in nu.tags:
+        rxno_id = "RXNO:0000060"
 
     # Gabriel synthesis: phthalimide anion
-    if "phthalimide" in nu.name:
-        return "RXNO:0000103"
+    elif "phthalimide" in nu.name:
+        rxno_id = "RXNO:0000103"
 
     # Williamson ether synthesis: O nucleophile + alkyl halide/sulfonate
-    if "O_nuc" in nu.tags and ("halide" in lg.tags or "sulfonate" in lg.tags):
-        return "RXNO:0000090"
+    elif "O_nuc" in nu.tags and ("halide" in lg.tags or "sulfonate" in lg.tags):
+        rxno_id = "RXNO:0000090"
 
     # N-alkylation specifics at sp3/benzylic/allylic/propargylic centres
-    if "N_nuc" in nu.tags:
+    elif "N_nuc" in nu.tags:
         if "aniline" in nu.name:
-            return "RXNO:0000341"  # aniline N-alkylation
-        if "amide" in nu.name or "sulfonamide" in nu.name:
-            return "RXNO:0000340"  # amide N-alkylation
-        if "heterocyclic_N" in nu.tags:
-            return "RXNO:0000345"  # heteroaryl N-alkylation
+            rxno_id = "RXNO:0000341"  # aniline N-alkylation
+        elif "amide" in nu.name or "sulfonamide" in nu.name:
+            rxno_id = "RXNO:0000340"  # amide N-alkylation
+        elif "heterocyclic_N" in nu.tags:
+            rxno_id = "RXNO:0000345"  # heteroaryl N-alkylation
+        else:
+            rxno_id = "RXNO:0000331"
 
     # Generic fallback: sp3 SN2, epoxide/aziridine opening, sulfonylation, etc.
-    return "RXNO:0000331"
+    else:
+        rxno_id = "RXNO:0000331"
+
+    term = RXNO_TERMS[rxno_id]
+    return {
+        "rxno_id": rxno_id,
+        "rxno_label": term["label"],
+        "rxno_definition": term["definition"],
+    }
+
+
+def classify_reaction_class(
+    center: ElectrophilicCenter,
+    lg: LeavingGroup,
+    nu: Nucleophile,
+) -> Dict[str, Optional[int]]:
+    """
+    Assign the reaction class taxonomy (superclass/class/subclass/subsubclass)
+    for a nucleophilic substitution pattern based on the electrophilic center,
+    leaving group, and nucleophile.
+
+    The taxonomy follows the hierarchy defined in ``reaction_classes.json``,
+    mapping ``center.name``, ``nu.tags``, and ``lg.tags`` onto the appropriate
+    superclass, class, and subclass IDs.
+
+    Args:
+        center (ElectrophilicCenter): The electrophilic center template.
+        lg (LeavingGroup): The leaving group fragment.
+        nu (Nucleophile): The nucleophile definition.
+
+    Returns:
+        Dict[str, Optional[int]]: A dict with keys ``superclass_id``,
+            ``class_id``, ``subclass_id``, and ``subsubclass_id``.
+    """
+    subsubclass_id: Optional[int] = None
+
+    # --- Superclass 2: Acylation and Related Processes ---
+    if center.name == "acyl (carbonyl)":
+        superclass_id = 2
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            if "halide" in lg.tags:
+                class_id = 1  # N-acylation
+                subclass_id = 1  # Acyl chloride aminolysis
+            elif "acyloxy" in lg.tags or "anhydride" in lg.tags:
+                class_id = 1  # N-acylation
+                subclass_id = 2  # Anhydride aminolysis
+            elif "activated_ester" in lg.tags:
+                class_id = 5  # Amide formation
+                subclass_id = 2  # Aminolysis of activated esters
+            else:
+                class_id = 0
+                subclass_id = 0
+        elif "O_nuc" in nu.tags:
+            class_id = 2  # O-acylation
+            if "halide" in lg.tags:
+                subclass_id = 1  # Acyl chloride esterification
+            elif "acyloxy" in lg.tags or "anhydride" in lg.tags:
+                subclass_id = 2  # Anhydride esterification
+            else:
+                subclass_id = 0
+        else:
+            class_id = 0
+            subclass_id = 0
+
+    elif center.name == "chloroformate/carbonate":
+        superclass_id = 2
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            class_id = 1  # N-acylation
+            subclass_id = 3  # Carbamate formation
+        elif "O_nuc" in nu.tags:
+            class_id = 2  # O-acylation
+            subclass_id = 3  # Carbonate formation
+        else:
+            class_id = 0
+            subclass_id = 0
+
+    elif center.name == "sulfonyl":
+        superclass_id = 2
+        class_id = 0  # Other — no specific sulfonylation class
+        subclass_id = 0
+
+    # --- Superclass 1: Heteroatom Alkylation and Arylation ---
+    elif center.name == "SNAr aromatic":
+        superclass_id = 1
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            class_id = 4  # N-arylation
+            subclass_id = 3  # SNAr with N-nucleophiles
+        elif "O_nuc" in nu.tags:
+            class_id = 5  # O-arylation
+            subclass_id = 3  # SNAr with O-nucleophiles
+        else:
+            class_id = 0
+            subclass_id = 0
+
+    elif center.name == "epoxide":
+        superclass_id = 1
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            class_id = 1  # N-alkylation
+            subclass_id = 4  # Epoxide ring opening with amines
+        elif "O_nuc" in nu.tags:
+            class_id = 2  # O-alkylation
+            subclass_id = 3  # Epoxide ring opening with alcohols/phenols
+        elif "S_nuc" in nu.tags:
+            class_id = 3  # S-alkylation
+            subclass_id = 2  # Epoxide ring opening with thiols
+        else:
+            class_id = 0
+            subclass_id = 0
+
+    elif center.name == "aziridine":
+        superclass_id = 1
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            class_id = 1  # N-alkylation
+            subclass_id = 0  # Other — no aziridine-specific subclass
+        elif "O_nuc" in nu.tags:
+            class_id = 2  # O-alkylation
+            subclass_id = 0
+        elif "S_nuc" in nu.tags:
+            class_id = 3  # S-alkylation
+            subclass_id = 0
+        else:
+            class_id = 0
+            subclass_id = 0
+
+    else:
+        # sp3 centres: alkyl, benzylic, allylic, propargylic, alpha to EWG
+        superclass_id = 1
+        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
+            class_id = 1  # N-alkylation
+            subclass_id = 2  # SN2 N-alkylation
+        elif "O_nuc" in nu.tags and ("halide" in lg.tags or "sulfonate" in lg.tags):
+            class_id = 6  # Williamson ether synthesis
+            subclass_id = None  # No subclasses in class 6
+        elif "O_nuc" in nu.tags:
+            class_id = 2  # O-alkylation
+            subclass_id = 1  # SN2 O-alkylation
+        elif "S_nuc" in nu.tags:
+            class_id = 3  # S-alkylation
+            subclass_id = 1  # SN2 S-alkylation
+        else:
+            class_id = 0  # Other
+            subclass_id = 0
+
+    return {
+        "superclass_id": superclass_id,
+        "class_id": class_id,
+        "subclass_id": subclass_id,
+        "subsubclass_id": subsubclass_id,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -963,13 +1169,11 @@ def enumerate_nuc_sub_smirks() -> List[Dict]:
         seen_smirks.add(smirks)
         patterns.append(
             {
-                "rxno_classification": [{"rxno_id": classify_rxno(center, lg, nu)}],
+                "rxno_classification": [classify_rxno(center, lg, nu)],
                 "name": generate_name(center, lg, nu),
                 "priority": {"priority_class": None, "priority": None},
                 "smirks": smirks,
-                "subclass_id": None,
-                "subsubclass_id": None,
-                "superclass_id": 1,  # Heteroatom Alkylation and Arylation
+                **classify_reaction_class(center, lg, nu),
             }
         )
 
