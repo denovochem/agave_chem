@@ -3131,25 +3131,6 @@
     },
     {
         "class_id": 4,
-        "name": "Goldberg coupling aryl amine-aryl chloride",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[c;D3;H0;+0:2]-[Cl].[N;H2;D1;+0:3]-[c;H0;D3;+0:4]>>[c;D3;H0;+0:2]-[N;H1;D2;+0:3]-[c;H0;D3;+0:4]",
-        "subclass_id": 2,
-        "subsubclass_id": null,
-        "superclass_id": 1,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000082",
-                "rxno_label": "Goldberg reaction",
-                "rxno_definition": "A coupling reaction in which an acetanilide is coupled to an aryl halide to give an N-acetyl diaryl amine in the presence of a copper compound."
-            }
-        ]
-    },
-    {
-        "class_id": 4,
         "name": "Goldberg coupling aryl amide-aryl chloride",
         "priority": {
             "priority_class": null,
@@ -3175,25 +3156,6 @@
             "priority": null
         },
         "smirks": "[#6:2]-[Cl,Br,I].[N;H1,H2;+0:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])>>[#6:2]-[N;+0:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])",
-        "subclass_id": 2,
-        "subsubclass_id": null,
-        "superclass_id": 1,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000082",
-                "rxno_label": "Goldberg reaction",
-                "rxno_definition": "A coupling reaction in which an acetanilide is coupled to an aryl halide to give an N-acetyl diaryl amine in the presence of a copper compound."
-            }
-        ]
-    },
-    {
-        "class_id": 4,
-        "name": "Ullmann-Goldberg Substitution amine",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[c;D3;H0;+0:2]-[Cl,Br,I].[*:4]-[N;H1;D2;+0:3]-[*:5]>>[c;D3;H0;+0:2]-[N;H0;D3;+0:3](-[*:5])-[*:4]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 1,
@@ -11474,25 +11436,6 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:1]-[Cl,Br,I]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;+0:2]",
-        "subclass_id": 1,
-        "subsubclass_id": null,
-        "superclass_id": 4,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000140",
-                "rxno_label": "Suzuki-Miyaura coupling",
-                "rxno_definition": "The coupling of a boronic acid or boronic ester with an unsaturated halide, triflate or sulfonate catalysed by a palladium(0) complex."
-            }
-        ]
-    },
-    {
-        "class_id": 2,
-        "name": "Suzuki coupling with boronic acids",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:1]-[O;H1;D1;+0]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;+0:2]",
         "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 4,
