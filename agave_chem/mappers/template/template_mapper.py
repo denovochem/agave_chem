@@ -840,7 +840,11 @@ class TemplateReactionMapper(ReactionMapper):
         outcomes: List[AppliedSmirkData] = []
         try:
             _, outcomes_dict = rdc.rdchiralRun(
-                rdc_rxn, rdc_products, return_mapped=True, combine_enantiomers=False, enforce_reactants_smarts_constraints=True
+                rdc_rxn,
+                rdc_products,
+                return_mapped=True,
+                combine_enantiomers=False,
+                enforce_reactants_smarts_constraints=True,
             )
 
             for k, v in outcomes_dict.items():
