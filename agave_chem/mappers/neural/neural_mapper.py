@@ -516,21 +516,23 @@ class NeuralReactionMapper(ReactionMapper):
         ranks = []
         seen_smiles_and_symmetry_classes: Dict[str, List[int]] = {}
         for i, mol in enumerate(mols):
-            if Chem.MolToSmiles(mol) in seen_smiles_and_symmetry_classes:
+            mol_smiles = Chem.MolToSmiles(mol)
+            if mol_smiles in seen_smiles_and_symmetry_classes:
                 mol_symmetry_classes = seen_smiles_and_symmetry_classes[
-                    Chem.MolToSmiles(mol)
+                    mol_smiles
                 ]
             else:
-                mol_symmetry_classes = get_symmetry_class_from_mol(mol)
+                raw_classes = get_symmetry_class_from_mol(mol)
                 mol_symmetry_classes = [
-                    ele + (i + 1) * 1000 for ele in mol_symmetry_classes
+                    ele + (i + 1) * 1000 for ele in raw_classes
                 ]
-                seen_smiles_and_symmetry_classes[Chem.MolToSmiles(mol)] = (
+                seen_smiles_and_symmetry_classes[mol_smiles] = (
                     mol_symmetry_classes
                 )
 
             ranks.extend(mol_symmetry_classes)
-        return self.get_duplicate_indices([ranks])
+        result = self.get_duplicate_indices([ranks])
+        return result
 
     def _apply_symmetric_attention(
         self,
@@ -587,6 +589,123 @@ class NeuralReactionMapper(ReactionMapper):
 
         return result
 
+    def _apply_noisy_or(
+        self,
+        attn: np.ndarray,
+        symmetric_indices: Dict[int, List[int]],
+        axis: int,
+    ) -> np.ndarray:
+        """
+        Combine attention scores for symmetric atoms using noisy-OR.
+
+        For each group of symmetric atoms, replaces each member's attention
+        slice (row or column) with the noisy-OR combination across the group:
+        ``1 - prod(1 - p_i)``. This treats each symmetric atom's attention as
+        an independent opinion about the same event, combining them so that
+        multiple moderate confidences yield a higher combined confidence
+        without reaching certainty unless at least one source is certain.
+
+        Values are computed from the input array before any modifications are
+        applied, ensuring groups do not influence one another.
+
+        Args:
+            attn (np.ndarray): Attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            symmetric_indices (Dict[int, List[int]]): Output of
+                _get_symmetric_atom_indices — maps each atom index to its
+                symmetric partners.
+            axis (int): Axis along which to aggregate. Use 1 for reactant
+                atoms (columns) and 0 for product atoms (rows).
+
+        Returns:
+            np.ndarray: A copy of attn with symmetric atom slices replaced by
+                their group noisy-OR combination. The original array is not
+                modified.
+        """
+        identical_groups: List[Tuple[int, ...]] = list(
+            {tuple(sorted([k] + v)) for k, v in symmetric_indices.items()}
+        )
+
+        result = attn.copy()
+        new_val_mapping: Dict[int, np.ndarray] = {}
+        for group in identical_groups:
+            idx = list(group)
+            if axis == 1:
+                combined = 1.0 - np.prod(1.0 - attn[:, idx], axis=1)
+                for i in idx:
+                    new_val_mapping[i] = combined
+            else:
+                combined = 1.0 - np.prod(1.0 - attn[idx, :], axis=0)
+                for i in idx:
+                    new_val_mapping[i] = combined
+
+        for i, val in new_val_mapping.items():
+            if axis == 1:
+                result[:, i] = val
+            else:
+                result[i, :] = val
+
+        return result
+
+    def _symmetry_aware_confidence(
+        self,
+        p2r: np.ndarray,
+        r2p: np.ndarray,
+        r_sym: Dict[int, List[int]],
+        p_sym: Dict[int, List[int]],
+        one_to_one_correspondence: bool = True,
+    ) -> np.ndarray:
+        """
+        Compute symmetry-corrected confidence matrix from bidirectional attention.
+
+        Applies two types of symmetry correction to both attention matrices:
+
+        1. **Opposite-side sum** (via _apply_symmetric_attention): When a
+           product atom could map to any of several symmetric reactant atoms
+           (or vice-versa), the attention is split across them. Summing
+           recovers the total probability that the atom maps to *some* member
+           of the symmetric group.
+
+        2. **Same-side noisy-OR** (via _apply_noisy_or): When several
+           symmetric source atoms each have an opinion about the same
+           destination atom, their confidences are combined using noisy-OR
+           (``1 - prod(1 - p_i)``). This treats each symmetric atom as an
+           independent observer and correctly combines moderate confidences
+           into a higher combined confidence.
+
+        Both ``p2r`` and ``r2p`` are (n_products, n_reactants) shaped.
+        For ``p2r``: axis=1 corresponds to reactant atoms (r_sym) and
+        axis=0 corresponds to product atoms (p_sym). The same axis mapping
+        applies to ``r2p`` since it shares the same shape.
+
+        Args:
+            p2r (np.ndarray): Products-to-reactants attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            r2p (np.ndarray): Reactants-to-products attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            r_sym (Dict[int, List[int]]): Symmetric atom indices for
+                reactants.
+            p_sym (Dict[int, List[int]]): Symmetric atom indices for
+                products.
+            one_to_one_correspondence (bool): If True, average both
+                directions. If False, use only p2r (products-to-reactants).
+
+        Returns:
+            np.ndarray: Symmetry-corrected confidence matrix of shape
+                (n_product_atoms, n_reactant_atoms) with values in [0, 1].
+        """
+        p2r_corrected = self._apply_symmetric_attention(p2r, r_sym, axis=1)
+        p2r_corrected = np.clip(p2r_corrected, 0.0, 1.0)
+        p2r_corrected = self._apply_noisy_or(p2r_corrected, p_sym, axis=0)
+
+        if one_to_one_correspondence:
+            r2p_corrected = self._apply_symmetric_attention(r2p, p_sym, axis=0)
+            r2p_corrected = np.clip(r2p_corrected, 0.0, 1.0)
+            r2p_corrected = self._apply_noisy_or(r2p_corrected, r_sym, axis=1)
+            return (p2r_corrected + r2p_corrected) / 2
+        else:
+            return p2r_corrected
+
     def assign_atom_maps(
         self,
         rxn_smiles: str,
@@ -599,9 +718,16 @@ class NeuralReactionMapper(ReactionMapper):
         Assign atom-to-atom map numbers to a reaction SMILES using a pre-computed
         attention matrix.
 
-        Handles symmetric atoms in both reactants and products by summing their
-        attention contributions, preventing artificially low confidence scores
-        caused by equivalent atoms splitting probability mass.
+        Handles symmetric atoms in both reactants and products via
+        ``_symmetry_aware_confidence``, which applies opposite-side sum to
+        recover split probability mass and same-side noisy-OR to combine
+        independent opinions from symmetric source atoms. This prevents
+        artificially low confidence scores caused by equivalent atoms
+        splitting probability mass.
+
+        Greedy assignment uses the raw averaged attention (without symmetry
+        correction) to select the best individual atom pair, while confidence
+        scores are read from the symmetry-corrected matrix.
 
         Uses the scoring heuristic parameters (adjacent_atom_multiplier,
         identical_adjacent_atom_multiplier, used_atom_divisor) configured on the
@@ -672,26 +798,19 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
         products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
 
-        orig_products_to_reactants_attn = self._apply_symmetric_attention(
-            orig_products_to_reactants_attn, reactants_symmetric_indices, axis=1
-        )
-        orig_reactants_to_products_attn = self._apply_symmetric_attention(
-            orig_reactants_to_products_attn, products_symmetric_indices, axis=0
+        orig_attn = self._symmetry_aware_confidence(
+            orig_products_to_reactants_attn,
+            orig_reactants_to_products_attn,
+            reactants_symmetric_indices,
+            products_symmetric_indices,
+            one_to_one_correspondence=one_to_one_correspondence,
         )
 
-        ## If not a one-to-one correspondence, multiple product atoms could map to the same
-        ## reactant atom. That reactant atom signal would be split, producing inaccurate
-        ## assignment probabilities. So we use only product to reactant attention
         if one_to_one_correspondence:
-            orig_attn = (
-                orig_reactants_to_products_attn.copy()
-                + orig_products_to_reactants_attn.copy()
-            ) / 2
             attn = (
                 reactants_to_products_attn.copy() + products_to_reactants_attn.copy()
             ) / 2
         else:
-            orig_attn = orig_products_to_reactants_attn.copy()
             attn = products_to_reactants_attn.copy()
 
         assignment_probs = []
@@ -744,6 +863,8 @@ class NeuralReactionMapper(ReactionMapper):
                 products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
                 reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
 
+                conf_val = orig_attn[row_highest_attn, col_highest_attn]
+
                 if one_to_one_correspondence:
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
@@ -751,7 +872,7 @@ class NeuralReactionMapper(ReactionMapper):
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] /= self._used_atom_divisor
 
-                assignment_probs.append(orig_attn[row_highest_attn, col_highest_attn])
+                assignment_probs.append(conf_val)
 
             for (
                 product_atom_idx,

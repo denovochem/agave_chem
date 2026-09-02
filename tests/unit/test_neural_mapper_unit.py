@@ -191,3 +191,182 @@ class TestResultOrderPreservation:
     def test_single_reaction_returns_single_result(self, mapper):
         results = mapper.map_reactions(["CC>>CC"])
         assert len(results) == 1
+
+
+# ---------------------------------------------------------------------------
+# _apply_noisy_or
+# ---------------------------------------------------------------------------
+
+
+class TestApplyNoisyOr:
+    """Tests for the _apply_noisy_or symmetry aggregation method."""
+
+    def test_noisy_or_two_atoms_both_confident(self, mapper):
+        """Two atoms both at 0.99 → noisy-OR ≈ 0.9901."""
+        attn = np.array([[0.99, 0.01], [0.01, 0.99]])
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        # Column 0: 1 - (1-0.99)(1-0.01) = 1 - 0.0099 = 0.9901
+        assert result[0, 0] == pytest.approx(0.9901, abs=1e-4)
+        assert result[1, 0] == pytest.approx(0.9901, abs=1e-4)
+
+    def test_noisy_or_two_atoms_one_confident(self, mapper):
+        """One atom at 0.99, other at 0.01 → noisy-OR ≈ 0.99."""
+        attn = np.array([[0.99, 0.01], [0.99, 0.01]])
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        expected = 1 - (1 - 0.99) * (1 - 0.01)
+        assert result[0, 0] == pytest.approx(expected, abs=1e-6)
+        assert result[1, 0] == pytest.approx(expected, abs=1e-6)
+
+    def test_noisy_or_two_atoms_both_moderate(self, mapper):
+        """Two atoms both at 0.50 → noisy-OR = 0.75."""
+        attn = np.array([[0.50, 0.50], [0.50, 0.50]])
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        expected = 1 - (1 - 0.50) * (1 - 0.50)
+        assert result[0, 0] == pytest.approx(0.75, abs=1e-6)
+        assert result[1, 0] == pytest.approx(0.75, abs=1e-6)
+
+    def test_noisy_or_does_not_exceed_one(self, mapper):
+        """Two atoms both at 1.0 → noisy-OR = 1.0 (never exceeds 1)."""
+        attn = np.array([[1.0, 1.0], [1.0, 1.0]])
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        assert result.max() <= 1.0
+        assert result[0, 0] == pytest.approx(1.0, abs=1e-6)
+
+    def test_noisy_or_no_symmetry(self, mapper):
+        """Empty symmetric_indices → unchanged."""
+        attn = np.array([[0.3, 0.7], [0.6, 0.4]])
+        result = mapper._apply_noisy_or(attn, {}, axis=1)
+        np.testing.assert_array_equal(result, attn)
+
+    def test_noisy_or_axis_0(self, mapper):
+        """Axis 0 combines rows (product atoms)."""
+        attn = np.array([[0.50, 0.30], [0.50, 0.30]])
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=0)
+        # Row 0 and 1 both become: 1 - (1-0.5)(1-0.5) = 0.75 for col 0
+        # and 1 - (1-0.3)(1-0.3) = 0.51 for col 1
+        assert result[0, 0] == pytest.approx(0.75, abs=1e-6)
+        assert result[0, 1] == pytest.approx(0.51, abs=1e-6)
+        assert result[1, 0] == pytest.approx(0.75, abs=1e-6)
+        assert result[1, 1] == pytest.approx(0.51, abs=1e-6)
+
+    def test_noisy_or_preserves_non_symmetric_atoms(self, mapper):
+        """Atoms not in any symmetric group are unchanged."""
+        attn = np.array(
+            [[0.50, 0.50, 0.20], [0.50, 0.50, 0.20], [0.10, 0.10, 0.80]]
+        )
+        sym = {0: [1], 1: [0]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        # Column 2 (atom index 2) is not in any symmetric group
+        assert result[0, 2] == pytest.approx(0.20, abs=1e-6)
+        assert result[2, 2] == pytest.approx(0.80, abs=1e-6)
+
+    def test_noisy_or_three_atom_group(self, mapper):
+        """Three symmetric atoms at 0.5 each → noisy-OR = 1 - 0.5^3 = 0.875."""
+        attn = np.array([[0.5, 0.5, 0.5]])
+        sym = {0: [1, 2], 1: [0, 2], 2: [0, 1]}
+        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        expected = 1 - (1 - 0.5) ** 3
+        assert result[0, 0] == pytest.approx(expected, abs=1e-6)
+        assert result[0, 1] == pytest.approx(expected, abs=1e-6)
+        assert result[0, 2] == pytest.approx(expected, abs=1e-6)
+
+    def test_noisy_or_does_not_modify_input(self, mapper):
+        """The input array is not modified."""
+        attn = np.array([[0.50, 0.50], [0.50, 0.50]])
+        original = attn.copy()
+        sym = {0: [1], 1: [0]}
+        mapper._apply_noisy_or(attn, sym, axis=1)
+        np.testing.assert_array_equal(attn, original)
+
+
+# ---------------------------------------------------------------------------
+# _symmetry_aware_confidence
+# ---------------------------------------------------------------------------
+
+
+class TestSymmetryAwareConfidence:
+    """Tests for the _symmetry_aware_confidence method."""
+
+    def test_no_symmetry_returns_raw_average(self, mapper):
+        """No symmetric atoms → result equals raw average of p2r and r2p."""
+        p2r = np.array([[0.8, 0.2], [0.3, 0.7]])
+        r2p = np.array([[0.6, 0.4], [0.1, 0.9]])
+        result = mapper._symmetry_aware_confidence(p2r, r2p, {}, {})
+        expected = (p2r + r2p) / 2
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_reactant_symmetry_only(self, mapper):
+        """Only reactant symmetry: opposite-side sum + noisy-OR on both matrices."""
+        p2r = np.array([[0.50, 0.50], [0.30, 0.30]])
+        r2p = np.array([[0.50, 0.50], [0.30, 0.30]])
+        r_sym = {0: [1], 1: [0]}
+        p_sym = {}
+        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        # p2r: sum axis=1 → [[1.0, 1.0], [0.6, 0.6]], clamp → same, noisy-OR p_sym(empty) → same
+        # r2p: sum axis=0 p_sym(empty) → no change, noisy-OR r_sym axis=1:
+        #   row 0: 1-(1-0.5)(1-0.5)=0.75, row 1: 1-(1-0.3)(1-0.3)=0.51
+        # average: ([[1.0,1.0],[0.6,0.6]] + [[0.75,0.75],[0.51,0.51]]) / 2
+        assert result[0, 0] == pytest.approx(0.875, abs=1e-6)
+        assert result[0, 1] == pytest.approx(0.875, abs=1e-6)
+        assert result[1, 0] == pytest.approx(0.555, abs=1e-6)
+        assert result[1, 1] == pytest.approx(0.555, abs=1e-6)
+
+    def test_product_symmetry_only(self, mapper):
+        """Only product symmetry: opposite-side sum + noisy-OR on both matrices."""
+        p2r = np.array([[0.50, 0.30], [0.50, 0.30]])
+        r2p = np.array([[0.50, 0.30], [0.50, 0.30]])
+        r_sym = {}
+        p_sym = {0: [1], 1: [0]}
+        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        # p2r: sum r_sym(empty) → no change, noisy-OR p_sym axis=0:
+        #   col 0: 1-(1-0.5)(1-0.5)=0.75, col 1: 1-(1-0.3)(1-0.3)=0.51
+        # r2p: sum p_sym axis=0 → [[1.0,0.6],[1.0,0.6]], clamp → same, noisy-OR r_sym(empty) → same
+        # average: ([[0.75,0.51],[0.75,0.51]] + [[1.0,0.6],[1.0,0.6]]) / 2
+        assert result[0, 0] == pytest.approx(0.875, abs=1e-6)
+        assert result[0, 1] == pytest.approx(0.555, abs=1e-6)
+        assert result[1, 0] == pytest.approx(0.875, abs=1e-6)
+        assert result[1, 1] == pytest.approx(0.555, abs=1e-6)
+
+    def test_both_sides_symmetry(self, mapper):
+        """Both reactant and product symmetry present."""
+        p2r = np.array([[0.50, 0.50], [0.50, 0.50]])
+        r2p = np.array([[0.50, 0.50], [0.50, 0.50]])
+        r_sym = {0: [1], 1: [0]}
+        p_sym = {0: [1], 1: [0]}
+        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        # p2r: sum axis=1 → 1.0 everywhere, then noisy-OR axis=0 → 1.0
+        # r2p: sum axis=0 → 1.0 everywhere, then noisy-OR axis=1 → 1.0
+        # average = 1.0
+        assert result.max() <= 1.0
+        np.testing.assert_array_almost_equal(result, np.ones((2, 2)))
+
+    def test_values_in_zero_one(self, mapper):
+        """All output values are in [0, 1]."""
+        p2r = np.array([[0.99, 0.01], [0.50, 0.50], [0.30, 0.70]])
+        r2p = np.array([[0.80, 0.20], [0.60, 0.40], [0.10, 0.90]])
+        r_sym = {0: [1], 1: [0]}
+        p_sym = {0: [2], 2: [0]}
+        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        assert result.min() >= 0.0
+        assert result.max() <= 1.0
+
+    def test_one_to_one_false_uses_p2r_only(self, mapper):
+        """When one_to_one_correspondence=False, only p2r is used."""
+        p2r = np.array([[0.50, 0.50], [0.30, 0.30]])
+        r2p = np.array([[0.99, 0.01], [0.99, 0.01]])
+        r_sym = {0: [1], 1: [0]}
+        p_sym = {}
+        result = mapper._symmetry_aware_confidence(
+            p2r, r2p, r_sym, p_sym, one_to_one_correspondence=False
+        )
+        # Only p2r corrected: sum axis=1 → [[1.0,1.0],[0.6,0.6]], clamp, noisy-OR p_sym(empty)
+        assert result[0, 0] == pytest.approx(1.0, abs=1e-6)
+        assert result[1, 0] == pytest.approx(0.60, abs=1e-6)
+        # r2p should not influence the result at all
+        assert result[0, 1] == pytest.approx(1.0, abs=1e-6)
+        assert result[1, 1] == pytest.approx(0.60, abs=1e-6)
