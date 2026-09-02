@@ -25,7 +25,7 @@ AgaveChem is comprised of four mappers:
 These mappers can be used individually, or called as a pipeline using `map_reactions()`.
 
 
-<div align="center">
+
 
 | Mapper | Per-reaction mapping accuracy |
 | --- | :---: |
@@ -35,8 +35,6 @@ These mappers can be used individually, or called as a pipeline using `map_react
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
 | AgaveChem (neural only) | 91.87% |
 | AgaveChem (using `map_reactions()`) | 92.72% |
-
-</div>
 
 ## Requirements
 
