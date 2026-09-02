@@ -201,7 +201,8 @@ def normalize_mol(mol: Chem.Mol) -> Chem.Mol:
     normalized_mol = NORMALIZER.normalize(mol)
     normalized_smiles = Chem.MolToSmiles(normalized_mol, canonical=False)
     normalized_mol = Chem.MolFromSmiles(
-        normalized_smiles, sanitize=False,
+        normalized_smiles,
+        sanitize=False,
     )
     normalized_mol.UpdatePropertyCache(strict=False)
 

@@ -53,11 +53,7 @@ class _StubMapper(ReactionMapper):
     ) -> list[ReactionMapperResult]:
         results: list[ReactionMapperResult] = []
         for i, rxn in enumerate(reaction_smiles_list):
-            original = (
-                rxn.stripped_smiles
-                if isinstance(rxn, ReactionInput)
-                else rxn
-            )
+            original = rxn.stripped_smiles if isinstance(rxn, ReactionInput) else rxn
             mapping = self._mappings[i] if i < len(self._mappings) else original
             results.append(
                 ReactionMapperResult(

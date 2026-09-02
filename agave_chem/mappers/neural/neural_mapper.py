@@ -1,7 +1,7 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Set, Tuple, TypedDict, Union
+from typing import Dict, List, Literal, Optional, Set, Tuple, TypedDict, Union, cast
 
 import numpy as np
 import torch
@@ -518,17 +518,11 @@ class NeuralReactionMapper(ReactionMapper):
         for i, mol in enumerate(mols):
             mol_smiles = Chem.MolToSmiles(mol)
             if mol_smiles in seen_smiles_and_symmetry_classes:
-                mol_symmetry_classes = seen_smiles_and_symmetry_classes[
-                    mol_smiles
-                ]
+                mol_symmetry_classes = seen_smiles_and_symmetry_classes[mol_smiles]
             else:
                 raw_classes = get_symmetry_class_from_mol(mol)
-                mol_symmetry_classes = [
-                    ele + (i + 1) * 1000 for ele in raw_classes
-                ]
-                seen_smiles_and_symmetry_classes[mol_smiles] = (
-                    mol_symmetry_classes
-                )
+                mol_symmetry_classes = [ele + (i + 1) * 1000 for ele in raw_classes]
+                seen_smiles_and_symmetry_classes[mol_smiles] = mol_symmetry_classes
 
             ranks.extend(mol_symmetry_classes)
         result = self.get_duplicate_indices([ranks])
@@ -656,39 +650,43 @@ class NeuralReactionMapper(ReactionMapper):
         one_to_one_correspondence: bool = True,
     ) -> np.ndarray:
         """
-        Compute symmetry-corrected confidence matrix from bidirectional attention.
+        Compute symmetry-corrected confidence matrix from products-to-reactants attention.
 
-        Applies two types of symmetry correction to both attention matrices:
+        Uses only the products-to-reactants (p2r) attention matrix for
+        confidence scoring, applying two types of symmetry correction:
 
         1. **Opposite-side sum** (via _apply_symmetric_attention): When a
-           product atom could map to any of several symmetric reactant atoms
-           (or vice-versa), the attention is split across them. Summing
-           recovers the total probability that the atom maps to *some* member
-           of the symmetric group.
+           product atom could map to any of several symmetric reactant atoms,
+           the attention is split across them. Summing recovers the total
+           probability that the product atom maps to *some* member of the
+           symmetric reactant group.
 
         2. **Same-side noisy-OR** (via _apply_noisy_or): When several
-           symmetric source atoms each have an opinion about the same
-           destination atom, their confidences are combined using noisy-OR
-           (``1 - prod(1 - p_i)``). This treats each symmetric atom as an
-           independent observer and correctly combines moderate confidences
-           into a higher combined confidence.
+           symmetric product atoms each have an opinion about the same
+           reactant atom, their confidences are combined using noisy-OR
+           (``1 - prod(1 - p_i)``). This treats each symmetric product atom
+           as an independent observer and correctly combines moderate
+           confidences into a higher combined confidence.
 
-        Both ``p2r`` and ``r2p`` are (n_products, n_reactants) shaped.
-        For ``p2r``: axis=1 corresponds to reactant atoms (r_sym) and
-        axis=0 corresponds to product atoms (p_sym). The same axis mapping
-        applies to ``r2p`` since it shares the same shape.
+        The r2p matrix is accepted for interface compatibility but not used.
+        Empirically, including r2p in the confidence calculation dilutes
+        accuracy because the reverse-direction noisy-OR introduces different
+        values than the forward-direction sum, and r2p is more susceptible
+        to noise on complex molecules.
 
         Args:
             p2r (np.ndarray): Products-to-reactants attention matrix of shape
                 (n_product_atoms, n_reactant_atoms).
             r2p (np.ndarray): Reactants-to-products attention matrix of shape
-                (n_product_atoms, n_reactant_atoms).
+                (n_product_atoms, n_reactant_atoms). Not used; kept for
+                interface compatibility.
             r_sym (Dict[int, List[int]]): Symmetric atom indices for
                 reactants.
             p_sym (Dict[int, List[int]]): Symmetric atom indices for
                 products.
-            one_to_one_correspondence (bool): If True, average both
-                directions. If False, use only p2r (products-to-reactants).
+            one_to_one_correspondence (bool): Kept for interface
+                compatibility; does not affect the result since only p2r is
+                used regardless.
 
         Returns:
             np.ndarray: Symmetry-corrected confidence matrix of shape
@@ -697,14 +695,7 @@ class NeuralReactionMapper(ReactionMapper):
         p2r_corrected = self._apply_symmetric_attention(p2r, r_sym, axis=1)
         p2r_corrected = np.clip(p2r_corrected, 0.0, 1.0)
         p2r_corrected = self._apply_noisy_or(p2r_corrected, p_sym, axis=0)
-
-        if one_to_one_correspondence:
-            r2p_corrected = self._apply_symmetric_attention(r2p, p_sym, axis=0)
-            r2p_corrected = np.clip(r2p_corrected, 0.0, 1.0)
-            r2p_corrected = self._apply_noisy_or(r2p_corrected, r_sym, axis=1)
-            return (p2r_corrected + r2p_corrected) / 2
-        else:
-            return p2r_corrected
+        return p2r_corrected
 
     def assign_atom_maps(
         self,
@@ -1302,7 +1293,7 @@ class NeuralReactionMapper(ReactionMapper):
                 empty selected_mapping.
         """
         return self.map_reactions(
-            [rxn_smiles],
+            cast(Union[List[str], List[ReactionInput]], [rxn_smiles]),
             one_to_one_correspondence=one_to_one_correspondence,
             start_from_partial_map=start_from_partial_map,
         )[0]

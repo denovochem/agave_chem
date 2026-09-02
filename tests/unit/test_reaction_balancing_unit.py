@@ -106,9 +106,7 @@ class TestDetermineOneToOneCorrespondence:
 
     def test_atom_imbalance_overrides_islands(self) -> None:
         islands = {0: {0}}
-        assert (
-            determine_one_to_one_correspondence("CCO>>CCO.CCO", islands) is False
-        )
+        assert determine_one_to_one_correspondence("CCO>>CCO.CCO", islands) is False
 
     def test_empty_islands_balanced_returns_true(self) -> None:
         assert determine_one_to_one_correspondence("CC(=O)O.O>>CC(=O)O.O", {}) is True

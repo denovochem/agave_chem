@@ -1837,9 +1837,7 @@ class TemplateReactionMapper(ReactionMapper):
                 mapping_score=None,
                 additional_info=[{}],
             )
-            unmapped_product_atom_islands = (
-                reaction_input.unmapped_product_atom_islands
-            )
+            unmapped_product_atom_islands = reaction_input.unmapped_product_atom_islands
         elif self._mcs_mapper is not None:
             mcs_result = self._mcs_mapper.map_reaction(canonicalized_reaction_smiles)
 

@@ -76,9 +76,7 @@ def compute_unmapped_product_atom_islands(product_smiles: str) -> Dict[int, Set[
     if mol is None:
         raise ValueError(f"Could not parse SMILES: {product_smiles}")
 
-    unmapped = {
-        atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomMapNum() == 0
-    }
+    unmapped = {atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomMapNum() == 0}
 
     visited: Set[int] = set()
     islands: Dict[int, Set[int]] = {}

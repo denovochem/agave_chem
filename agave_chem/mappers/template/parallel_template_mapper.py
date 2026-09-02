@@ -8,11 +8,11 @@ module-level convenience wrapper around the same pool logic.
 """
 
 import multiprocessing as mp
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.template.template_mapper import TemplateReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.logging_config import disable_library_logging
 
 # ── Worker globals ───────────────────────────────────────────────────────────
@@ -117,7 +117,9 @@ class ParallelTemplateReactionMapper(ReactionMapper):
             self._inner_mapper = TemplateReactionMapper(f"{self._mapper_name}_inner")
         return self._inner_mapper
 
-    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
+    def map_reaction(
+        self, reaction_smiles: Union[str, ReactionInput]
+    ) -> ReactionMapperResult:
         """
         Atom-map a single reaction SMILES string in-process.
 
@@ -126,7 +128,8 @@ class ParallelTemplateReactionMapper(ReactionMapper):
         bulk workloads.
 
         Args:
-            reaction_smiles (str): Reaction SMILES string to map.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES string
+                or ``ReactionInput`` to map.
 
         Returns:
             ReactionMapperResult: Template-based mapping result. If the input
@@ -140,7 +143,7 @@ class ParallelTemplateReactionMapper(ReactionMapper):
         )
 
     def map_reactions(
-        self, reaction_smiles_list: List[str]
+        self, reaction_smiles_list: Union[List[str], List[ReactionInput]]
     ) -> List[ReactionMapperResult]:
         """
         Atom-map a list of reaction SMILES strings in parallel.
@@ -150,21 +153,21 @@ class ParallelTemplateReactionMapper(ReactionMapper):
         same order as ``reaction_smiles_list``.
 
         Args:
-            reaction_smiles_list (List[str]): Reaction SMILES strings to map.
+            reaction_smiles_list (Union[List[str], List[ReactionInput]]): Reaction
+                SMILES strings or ``ReactionInput`` objects to map.
 
         Returns:
             List[ReactionMapperResult]: Template-based mapping results in the
                 same order as ``reaction_smiles_list``. Reactions that fail to
                 map have an empty string for ``selected_mapping``.
         """
+        smiles_list = [self._get_smiles(item) for item in reaction_smiles_list]
         with mp.Pool(
             processes=self._workers,
             initializer=_init_worker,
             initargs=(self._apply_multiple_smirks, self._num_smirks_to_apply),
         ) as pool:
-            return list(
-                pool.imap(_map_one, reaction_smiles_list, chunksize=self._chunksize)
-            )
+            return list(pool.imap(_map_one, smiles_list, chunksize=self._chunksize))
 
 
 def map_reactions_parallel_template(

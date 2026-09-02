@@ -140,9 +140,7 @@ def _prepare_reaction_inputs(
               later re-addition.
     """
     stripped_rxns, identical_fragments_mapping_list = (
-        identical_fragment_mapper.create_identical_fragments_mapping_list(
-            reaction_list
-        )
+        identical_fragment_mapper.create_identical_fragments_mapping_list(reaction_list)
     )
 
     reaction_inputs: List[ReactionInput] = []
@@ -356,11 +354,13 @@ def map_reactions_using_mappers(
 
     # Pre-compute ReactionInput objects once per batch (not per mapper)
     # to avoid duplicate MCS and identical-fragment work.
-    batched_inputs: List[Tuple[List[ReactionInput], List[List[Tuple[str, str]]], int]] = []
+    batched_inputs: List[
+        Tuple[List[ReactionInput], List[List[Tuple[str, str]]], int]
+    ] = []
     for i in range(0, len(reaction_list), batch_size):
         chunk = reaction_list[i : i + batch_size]
-        reaction_inputs, identical_fragments_mapping_list = (
-            _prepare_reaction_inputs(chunk, identical_fragment_mapper, mcs_mapper)
+        reaction_inputs, identical_fragments_mapping_list = _prepare_reaction_inputs(
+            chunk, identical_fragment_mapper, mcs_mapper
         )
         batched_inputs.append((reaction_inputs, identical_fragments_mapping_list, i))
 
