@@ -20,10 +20,12 @@ AgaveChem is comprised of four mappers:
 
 - **Identical fragment mapper**: Fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents) are detected and atom-mapped before any other mapper is invoked.
 
-- **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and map ~90% of all product atoms in this dataset.
+- **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and ~90% of all product atoms in this dataset.
 
 These mappers can be used individually, or called as a pipeline using `map_reactions()`.
 
+
+<div align="center">
 
 | Mapper | Per-reaction mapping accuracy |
 | --- | :---: |
@@ -33,6 +35,8 @@ These mappers can be used individually, or called as a pipeline using `map_react
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
 | AgaveChem (neural only) | 91.87% |
 | AgaveChem (using `map_reactions()`) | 92.72% |
+
+</div>
 
 ## Requirements
 
@@ -90,7 +94,7 @@ result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl"
 print(result.selected_mapping)
 ```
 
-### MCS mapper
+### MCS-like mapper
 
 ```python
 from agave_chem import MCSReactionMapper

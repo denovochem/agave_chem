@@ -1,5 +1,5 @@
 rdkit
-rdchiral-plus @ git+https://github.com/denovochem/rdchiral_plus.git@carson-dev-branch
+rdchiral-plus>=0.6.0
 loguru
 torch
 transformers
