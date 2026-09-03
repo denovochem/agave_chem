@@ -58,6 +58,24 @@
                             "name": "N-alkynylation",
                             "description": "Formation of a bond between a nitrogen atom and an alkynyl group, typically via coupling of a terminal alkyne with an amine or amide",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "A3 coupling (aldehyde-amine-alkyne)",
+                            "description": "Three-component coupling of an aldehyde, an amine, and a terminal alkyne to form a propargylamine, typically catalyzed by copper or gold",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "N-alkylation with alcohols (borrowing hydrogen)",
+                            "description": "Direct N-alkylation using alcohols as alkylating agents under borrowing-hydrogen or hydrogen-auto-transfer catalysis (e.g., Ir, Ru catalysts)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 8,
+                            "name": "Aza-Michael addition",
+                            "description": "Conjugate addition of a nitrogen nucleophile to an alpha,beta-unsaturated carbonyl compound to form a beta-amino carbonyl",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -89,6 +107,18 @@
                             "name": "Epoxide ring opening with alcohols/phenols",
                             "description": "Ring opening of an epoxide by an oxygen nucleophile to form an ether or diol derivative",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Oxa-Michael addition",
+                            "description": "Conjugate addition of an oxygen nucleophile to an alpha,beta-unsaturated carbonyl compound to form a beta-alkoxy carbonyl",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "O-alkylation with diazo compounds",
+                            "description": "Ether formation via reaction of an alcohol with a diazo compound (e.g., diazomethane, trimethylsilyldiazomethane) to form an ether",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -113,6 +143,24 @@
                             "id": 2,
                             "name": "Epoxide ring opening with thiols",
                             "description": "Ring opening of an epoxide by a thiol nucleophile to form a \u03b2-hydroxy thioether",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Mitsunobu S-alkylation",
+                            "description": "S-alkylation of thiols with alcohols under Mitsunobu conditions (DIAD/PPh3)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Thia-Michael addition (thiol conjugate addition)",
+                            "description": "Conjugate addition of a thiol to an alpha,beta-unsaturated carbonyl compound to form a beta-thioether carbonyl",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Amine displacement with sulfur nucleophiles",
+                            "description": "Displacement of an amine leaving group by a thiolate nucleophile to form a thioether",
                             "subsubclasses": []
                         }
                     ]
@@ -277,6 +325,18 @@
                             "name": "Urea formation",
                             "description": "Reaction of an amine with an isocyanate or carbonyl diimidazole equivalent to form a urea",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Hydroxamic acid formation",
+                            "description": "Acylation of hydroxylamine with a carboxylic acid derivative (e.g., ester, acyl chloride) to form a hydroxamic acid",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Imidoyl halide aminolysis (amidine formation)",
+                            "description": "Reaction of an imidoyl halide with an amine to form an amidine",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -333,6 +393,18 @@
                             "name": "Friedel-Crafts acylation with anhydrides",
                             "description": "Lewis acid-catalyzed reaction of an arene with a carboxylic acid anhydride to form an aryl ketone",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Friedel-Crafts acylation with carboxylic acids and related O-acyl donors",
+                            "description": "Lewis acid-catalyzed Friedel-Crafts acylation using free carboxylic acids, esters, or other O-acyl donors directly",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Friedel-Crafts-type acylation of alkynes (chloroacylation)",
+                            "description": "Acylation of alkynes with acyl chlorides under Lewis acid catalysis to form beta-chloro enones",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -370,6 +442,18 @@
                             "name": "Transesterification",
                             "description": "Exchange of the alkoxy group of an ester with another alcohol under acid or base catalysis",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Thionyl chloride-mediated esterification",
+                            "description": "Conversion of a carboxylic acid and an alcohol to an ester using thionyl chloride (SOCl2) as both activant and acid chloride former",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Carbonylative esterification with formate esters",
+                            "description": "Palladium-catalyzed carbonylative coupling of an aryl halide with a formate ester to form an ester",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -400,6 +484,30 @@
                             "id": 3,
                             "name": "Schotten-Baumann reaction",
                             "description": "Amide (or ester) formation by reaction of an acyl chloride with an amine (or alcohol) under aqueous basic biphasic conditions",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Direct amidation of carboxylic acids with amines",
+                            "description": "Thermal or catalytic direct condensation of a carboxylic acid with an amine to form an amide without coupling reagents (e.g., heating, Dean-Stark, boric acid catalysis)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Ester aminolysis",
+                            "description": "Aminolysis of an ester by an amine (including ammonia) to form an amide",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Amide formation with ynol ethers (alkoxyalkynes)",
+                            "description": "Amidation via reaction of a carboxylic acid with an alkoxyalkyne (ynol ether) to form an amide",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "Transamidation",
+                            "description": "Exchange of the amine component between two amides, typically catalyzed by metal complexes or enzymes",
                             "subsubclasses": []
                         }
                     ]
@@ -527,6 +635,18 @@
                             "name": "Nosyl/Tosyl removal",
                             "description": "Removal of sulfonamide protecting groups (nosyl, tosyl) from nitrogen, typically using thiolate nucleophiles or dissolving metal conditions",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Methyl/alkyl carbamate removal",
+                            "description": "Removal of N-alkoxycarbonyl groups such as N-CO2Me or N-CO2Et (methyl or ethyl carbamates), typically using base or acid hydrolysis",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "Phosphoramidate (phosphoryl) removal",
+                            "description": "Removal of a phosphoramidate or phosphoryl protecting group from an amine",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -569,6 +689,18 @@
                             "id": 5,
                             "name": "Acetyl/ester removal from alcohols",
                             "description": "Hydrolysis or methanolysis of an acetate or other ester protecting group on an alcohol",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Methyl ether removal (O-demethylation)",
+                            "description": "Cleavage of a methyl ether to regenerate the free alcohol using reagents such as BBr3, TMSI, or HBr",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "tert-Butyl ether removal",
+                            "description": "Acid-mediated cleavage of a tert-butyl ether to regenerate the free alcohol",
                             "subsubclasses": []
                         }
                     ]
@@ -727,6 +859,12 @@
                             "name": "Knoevenagel condensation",
                             "description": "Condensation of an aldehyde or ketone with an active methylene compound in the presence of a base, with dehydration",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Henry (nitroaldol) reaction",
+                            "description": "Carbon-carbon bond formation between a nitroalkane and an aldehyde or ketone to form a beta-nitro alcohol",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -757,6 +895,24 @@
                             "id": 3,
                             "name": "Suzuki coupling with alkyl substrates",
                             "description": "Pd-catalyzed coupling involving sp3 alkyl boronates or alkyl halides (less common, specialized ligands)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Suzuki coupling with aryl/vinyl triflates",
+                            "description": "Pd-catalyzed coupling of an organoboron species with an aryl or vinyl triflate electrophile",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Suzuki coupling with sulfonate esters (pseudohalides)",
+                            "description": "Pd-catalyzed coupling of an organoboron species with mesylates, tosylates, or other sulfonate ester electrophiles",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Suzuki coupling with sulfonyl electrophiles (sulfones/sulfonates)",
+                            "description": "Pd-catalyzed coupling of an organoboron species with sulfones or sulfonates as electrophilic partners",
                             "subsubclasses": []
                         }
                     ]
@@ -794,6 +950,42 @@
                             "id": 4,
                             "name": "Barbier reaction",
                             "description": "One-pot reaction of an alkyl or aryl halide with a carbonyl compound in the presence of a metal (Mg, Zn, Sm, In, etc.) to form an alcohol, without prior preparation of the organometallic reagent",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Grignard addition to Weinreb amides",
+                            "description": "Addition of a Grignard reagent to a Weinreb amide (N-methoxy-N-methylamide) to give an aldehyde or ketone after workup",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Grignard addition to amides",
+                            "description": "Addition of a Grignard reagent to an amide, typically giving an amine or ketone depending on the amide and stoichiometry",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "Grignard addition to nitriles",
+                            "description": "Addition of a Grignard reagent to a nitrile to form an imine magnesium salt, which upon hydrolysis gives a ketone",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 8,
+                            "name": "Grignard olefination of aldehydes (addition-dehydration)",
+                            "description": "Addition of a Grignard reagent to an aldehyde followed by dehydration of the resulting alcohol to form an alkene",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 9,
+                            "name": "Grignard-mediated olefination of ketones",
+                            "description": "Addition of a Grignard reagent to a ketone followed by dehydration of the resulting tertiary alcohol to form an alkene",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 10,
+                            "name": "Double Grignard addition to CO2 (ketone formation)",
+                            "description": "Double addition of two equivalents of a Grignard reagent to CO2 to form a ketone after workup",
                             "subsubclasses": []
                         }
                     ]
@@ -850,6 +1042,12 @@
                             "id": 2,
                             "name": "Organocuprate conjugate addition",
                             "description": "1,4-Addition of an organocuprate (Gilman reagent) to an \u03b1,\u03b2-unsaturated carbonyl compound",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Michael-induced ring closure (MIRC) cyclopropanation",
+                            "description": "Michael addition followed by intramolecular SN2 displacement to form a cyclopropane ring",
                             "subsubclasses": []
                         }
                     ]
@@ -968,6 +1166,36 @@
                             "name": "Tsuji-Trost allylation",
                             "description": "Palladium-catalyzed allylic substitution where a nucleophile displaces a leaving group from a \u03c0-allylpalladium intermediate",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 9,
+                            "name": "Organolithium (halogen-metal exchange) cross-coupling",
+                            "description": "Cross-coupling via in-situ organolithium generated by halogen-metal exchange, followed by transmetalation and Pd-catalyzed coupling",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 10,
+                            "name": "Organolithium cross-coupling (Murahashi coupling)",
+                            "description": "Pd-catalyzed cross-coupling of an organolithium reagent with an organic halide",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 11,
+                            "name": "Meerwein arylation",
+                            "description": "Radical arylation of alkenes with diazonium salts, typically catalyzed by copper or other metal salts",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 12,
+                            "name": "Direct C-H arylation",
+                            "description": "Direct C-H activation and arylation of arenes or heterocycles with aryl halides or pseudohalides, without pre-functionalization",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 13,
+                            "name": "Hurtley reaction",
+                            "description": "Copper-mediated arylation of active methylene compounds (e.g., beta-ketoesters, malonates) with aryl halides",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -992,6 +1220,24 @@
                             "id": 2,
                             "name": "Alkyne alkylation (acetylide SN2)",
                             "description": "Alkylation of a metal acetylide with a primary alkyl halide to form an internal alkyne",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "C-methylation with dialkyl sulfates",
+                            "description": "C-methylation using dimethyl sulfate or related dialkyl sulfate reagents",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Methylation with dimethyl carbonate",
+                            "description": "C-methylation using dimethyl carbonate (DMC) as a methylating agent",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Organolithium/organosodium alkylation",
+                            "description": "C-alkylation using organolithium or organosodium reagents as carbon nucleophiles with alkyl electrophiles",
                             "subsubclasses": []
                         }
                     ]
@@ -1045,6 +1291,18 @@
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Organolithium addition to aldehydes",
+                            "description": "Nucleophilic addition of an organolithium reagent to an aldehyde to form a secondary alcohol",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 2,
+                            "name": "Organolithium addition to ketones",
+                            "description": "Nucleophilic addition of an organolithium reagent to a ketone to form a tertiary alcohol",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -1058,6 +1316,12 @@
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Arens-van Dorp synthesis",
+                            "description": "Synthesis of vinylacetylenes from acetylene and a carbonyl compound via an organoboron intermediate",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -1070,6 +1334,18 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Boronic ester addition to aldehydes",
+                            "description": "Addition of a boronic ester to an aldehyde, often catalyzed by a Lewis acid or diol, to form a secondary alcohol",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 2,
+                            "name": "Hydroarylation of alkynes with boronic acids",
+                            "description": "Addition of an arylboronic acid across an alkyne to form a vinyl arene, typically catalyzed by a transition metal",
                             "subsubclasses": []
                         }
                     ]
@@ -1097,6 +1373,18 @@
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Minisci decarboxylative alkylation",
+                            "description": "Radical alkylation of electron-deficient heteroarenes via decarboxylation of carboxylic acids using an oxidant and silver or persulfate catalyst",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 2,
+                            "name": "Minisci decarboxylative heteroarylation",
+                            "description": "Radical heteroarylation of electron-deficient heteroarenes via decarboxylation of heteroaryl carboxylic acids",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -1109,6 +1397,12 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Phenol hydroxymethylation (Lederer-Manasse reaction)",
+                            "description": "Addition of formaldehyde to a phenol at the ortho or para position to form a hydroxybenzyl alcohol (hydroxymethylphenol)",
                             "subsubclasses": []
                         }
                     ]
@@ -1154,6 +1448,12 @@
                             "id": 2,
                             "name": "SOCl2/HBr-mediated halide formation",
                             "description": "Treatment of an alcohol with SOCl2, PBr3, or HBr/HCl to form the corresponding alkyl halide",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Deoxyfluorination",
+                            "description": "Conversion of an alcohol to an alkyl fluoride using deoxyfluorination reagents (e.g., DAST, Deoxo-Fluor, Fluolead, XtalFluor)",
                             "subsubclasses": []
                         }
                     ]
@@ -1372,6 +1672,12 @@
                             "name": "Hydroxy(hetero)arene to aryl halide",
                             "description": "Conversion of a hydroxyl group on an aromatic or heteroaromatic ring to a halide (e.g., via diazonium chemistry or POCl3 for hydroxy-heterocycles)",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 8,
+                            "name": "Aryl halide to phenol",
+                            "description": "Hydrolysis of an aryl halide to a phenol via copper-catalyzed or base-mediated nucleophilic aromatic substitution or metal-catalyzed hydroxylation",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -1414,6 +1720,12 @@
                             "id": 5,
                             "name": "Azole to nitrile",
                             "description": "Conversion of a heterocyclic precursor (e.g., tetrazole, oxadiazole) to a nitrile via thermal or chemical ring fragmentation",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Nitrile to tetrazole",
+                            "description": "[3+2] Cycloaddition of a nitrile with an azide (e.g., sodium azide, TMSN3) to form a tetrazole, typically under thermal or copper-catalyzed conditions",
                             "subsubclasses": []
                         }
                     ]
@@ -1463,6 +1775,12 @@
                             "id": 6,
                             "name": "Ketone to amide",
                             "description": "Conversion of a ketone to an amide (e.g., via Beckmann rearrangement of a ketoxime, or Baeyer-Villiger oxidation followed by aminolysis)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "Carbonyl to acetal/ketal",
+                            "description": "Acid-catalyzed protection of an aldehyde or ketone with an alcohol or diol (e.g., ethylene glycol, methanol) to form an acetal or ketal",
                             "subsubclasses": []
                         }
                     ]
@@ -1574,6 +1892,18 @@
                             "id": 2,
                             "name": "Alkyne hydration",
                             "description": "Addition of water across an alkyne to form a ketone (Markovnikov, e.g., Hg2+/H2SO4) or an aldehyde (anti-Markovnikov, e.g., hydroboration-oxidation)",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Alkyne hydroamination",
+                            "description": "Addition of an amine across an alkyne to form an imine, enamine, or vinyl amine, typically catalyzed by transition metals or bases",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Alkyne hydrohalogenation",
+                            "description": "Addition of a hydrogen halide (HX) across an alkyne to form a vinyl halide, typically following Markovnikov regioselectivity",
                             "subsubclasses": []
                         }
                     ]
@@ -1702,6 +2032,12 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Hydrosilylation",
+                            "description": "Addition of a Si-H bond across an alkene or alkyne, typically catalyzed by Pt, Rh, or other transition metals, to form an organosilicon compound",
                             "subsubclasses": []
                         }
                     ]
@@ -2217,6 +2553,12 @@
                             "name": "Organolithium carboxylation",
                             "description": "Reaction of an organolithium species with CO2 to form a carboxylic acid after workup",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Carboxylation of organoboron compounds with CO2",
+                            "description": "Copper-catalyzed carboxylation of organoboranes or boronic acids with CO2 to form carboxylic acids",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -2242,6 +2584,12 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Regitz diazo transfer",
+                            "description": "Transfer of a diazo group from a sulfonyl azide (e.g., tosyl azide, p-ABSA) to an activated methylene compound (e.g., beta-ketoester, malonate) to form an alpha-diazo carbonyl compound",
                             "subsubclasses": []
                         }
                     ]
@@ -2437,6 +2785,12 @@
                             "name": "Van Leusen oxazole synthesis",
                             "description": "Reaction of an aldehyde with tosylmethyl isocyanide (TosMIC) and base to form a 5-substituted oxazole",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Benzoxazole synthesis",
+                            "description": "Synthesis of benzoxazoles via condensation of ortho-aminophenols with aldehydes, carboxylic acids, or acyl chlorides, typically under oxidative or acid-catalyzed conditions",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -2462,6 +2816,12 @@
                             "name": "1,3-Dipolar cycloaddition of diazo compounds with alkynes/alkenes",
                             "description": "Formation of pyrazoles via [3+2] cycloaddition of a diazo compound with an alkyne, or pyrazolines with an alkene",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Indazole (benzopyrazole) synthesis",
+                            "description": "Synthesis of indazoles via intramolecular cyclization of ortho-substituted arenes (e.g., diazotization of ortho-alkylanilines, cyclization of hydrazones, or metal-catalyzed C-H/N-N bond formation)",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -2474,6 +2834,12 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Benzimidazole synthesis",
+                            "description": "Synthesis of benzimidazoles via condensation of ortho-phenylenediamines with aldehydes, carboxylic acids, or their equivalents, typically under acid catalysis or oxidative conditions",
                             "subsubclasses": []
                         }
                     ]
@@ -2518,6 +2884,12 @@
                             "id": 2,
                             "name": "RuAAC (ruthenium-catalyzed azide-alkyne cycloaddition)",
                             "description": "Ruthenium-catalyzed [3+2] cycloaddition of an azide with a terminal or internal alkyne to form a 1,5-disubstituted 1,2,3-triazole",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Thermal Huisgen 1,3-dipolar cycloaddition",
+                            "description": "Uncatalyzed [3+2] cycloaddition of an azide with an alkyne, typically requiring heating, giving a mixture of 1,4- and 1,5-regioisomeric 1,2,3-triazoles",
                             "subsubclasses": []
                         }
                     ]
@@ -2856,6 +3228,12 @@
                             "name": "Oppenauer oxidation",
                             "description": "Oxidation of a secondary alcohol to a ketone using aluminium alkoxide and an excess of a sacrificial ketone (acetone)",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 8,
+                            "name": "TPAP/NMO oxidation",
+                            "description": "Mild oxidation of primary and secondary alcohols to aldehydes and ketones using tetra-n-propylammonium perruthenate (TPAP) with N-methylmorpholine N-oxide (NMO) as co-oxidant",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -2892,6 +3270,24 @@
                             "id": 4,
                             "name": "Oxidative cleavage (periodate)",
                             "description": "Cleavage of a 1,2-diol with NaIO4 (or Pb(OAc)4) to form two carbonyl fragments",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 5,
+                            "name": "Allylic oxidation with selenium dioxide",
+                            "description": "Oxidation of an alkene at the allylic position using SeO2 to form an allylic alcohol or enone",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 6,
+                            "name": "Allylic/benzylic oxidation with Cr(VI) reagents",
+                            "description": "Oxidation of allylic or benzylic C-H bonds using CrO3, PCC, PDC, or Collins reagent to form enones or aromatic carbonyls",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 7,
+                            "name": "Lemieux-Johnson oxidation",
+                            "description": "Sequential dihydroxylation and periodate cleavage of an alkene using OsO4/NaIO4 (or catalytic OsO4 with NaIO4) to directly yield aldehyde or ketone fragments",
                             "subsubclasses": []
                         }
                     ]
@@ -3036,6 +3432,18 @@
                             "name": "Hydroxylamine formation",
                             "description": "Oxidation of a secondary amine to a hydroxylamine using an oxidant such as mCPBA or H2O2",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 3,
+                            "name": "Amine to imine oxidation",
+                            "description": "Oxidation of a primary or secondary amine to an imine using oxidants such as IBX, DDQ, MnO2, or transition metal catalysts",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 4,
+                            "name": "Aniline to azo compound oxidation",
+                            "description": "Oxidative coupling of anilines to form azo or azoxy compounds using oxidants such as MnO2, KMnO4, or peroxides",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -3055,6 +3463,12 @@
                             "name": "Organoboron oxidation",
                             "description": "Oxidation of an organoboron species (boronic acid, boronate ester, trialkylborane) to the corresponding alcohol or phenol using H2O2/NaOH or other oxidant",
                             "subsubclasses": []
+                        },
+                        {
+                            "id": 2,
+                            "name": "Tamao-Fleming oxidation",
+                            "description": "Oxidation of a C-Si bond to a C-OH bond using peroxide or peracid conditions, typically on aryl- or alkylsilanes with activating groups",
+                            "subsubclasses": []
                         }
                     ]
                 },
@@ -3067,6 +3481,12 @@
                             "id": 0,
                             "name": "Other",
                             "description": "Reactions that don't fit into the other categories",
+                            "subsubclasses": []
+                        },
+                        {
+                            "id": 1,
+                            "name": "Alpha-hydroxy ketone cleavage",
+                            "description": "Oxidative cleavage of an alpha-hydroxy ketone or 1,2-diketone using periodate (NaIO4) or lead tetraacetate to give carboxylic acid or aldehyde fragments",
                             "subsubclasses": []
                         }
                     ]
