@@ -259,7 +259,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -530,14 +532,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Formation of Sulfonic Esters",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:8]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I;H0;D1;+0].[#6;+0:6]-[O;H1;D1;+0:7]>>[#6;+0:6]-[O;H0;D2;+0:7]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[*:8]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -549,14 +551,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Formation of Sulfonic Esters on TMS protected alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:8]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I;H0;D1;+0].[#6;+0:6]-[O;H0;D2;+0:7]-[Si;H0;D4;+0]>>[#6;+0:6]-[O;H0;D2;+0:7]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[*:8]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -580,7 +582,9 @@
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -661,7 +665,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": 8,
         "name": "Formation of Azides from halogens",
         "priority": {
             "priority_class": null,
@@ -670,7 +674,7 @@
         "smirks": "[Na,Li]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
         "subclass_id": 2,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000331",
@@ -680,14 +684,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Formation of Azides from halogens",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D1;-1:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:2]-[Cl,F,Br,I]>>[*:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -699,14 +703,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Formation of Azides from boronic acids",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[Na,Li]-[N;+0:3]=[N;+1:4]=[N;-1:5]>>[N;-1:3]=[N;+1:4]=[N;+0:5]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -718,14 +722,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Formation of Azides from boronic acids",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[N;-1:3]=[N;+1:4]=[N;-1:5]>>[N;-1:3]=[N;+1:4]=[N;+0:5]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -749,7 +753,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -823,7 +829,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -878,7 +886,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -902,36 +912,40 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Preparation of boronic acids from trifluoroborates",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D4;-1:3](-[F;H0;D1;+0])(-[F;H0;D1;+0])-[F;H0;D1;+0]>>[O;H1;+0]-[B;H0;D3;+0:3](-[#6;+0:2])-[O;H1;+0]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Preparation of boronic acids",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0:3](-[O;H0;D2;+0:4]-[*])-[O;H0;D2;+0:5]-[*]>>[O;H1;+0:5]-[B;H0;D3;+0:3](-[#6;+0:2])-[O;H1;+0:4]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -955,14 +969,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Azide to amine reduction (Staudinger)",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H0;D2;+0:3]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[N;H2;D1;+0:3]-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 6,
         "rxno_classification": [
@@ -986,7 +1000,9 @@
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1105,7 +1121,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Julia Olefination",
         "priority": {
             "priority_class": null,
@@ -1162,7 +1178,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Aromatic dehalogenation",
         "priority": {
             "priority_class": null,
@@ -1174,7 +1190,9 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1540,7 +1558,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Organolithium aldehyde to alcohol",
         "priority": {
             "priority_class": null,
@@ -1559,7 +1577,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Organolithium from ketone to alcohol",
         "priority": {
             "priority_class": null,
@@ -1635,7 +1653,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Preparation of trialkylsilanes with Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -1647,12 +1665,14 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Formation of Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -1664,12 +1684,14 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 20,
         "name": "Deselenization",
         "priority": {
             "priority_class": null,
@@ -1681,7 +1703,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1705,19 +1729,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Preparation of organolithium compounds",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Li;D0;H0:3].[#6;+0:2]-[Br,I]>>[#6;+0:2]-[Li:3]",
-        "subclass_id": null,
+        "subclass_id": 6,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1753,7 +1779,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1770,7 +1798,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1806,7 +1836,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1823,7 +1855,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -1859,7 +1893,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -2149,48 +2185,52 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Deboronation of boronic esters",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Deboronation of boronic acids",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0]>>[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Oxidation of boronic acids, hydrogen peroxide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[O;H1;D1;+0]-[O;H1;D1;+0:3]>>[#6;+0:2]-[O;H1;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -2202,14 +2242,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Oxidation of boronic acids, peroxide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[*]-[O;H0;D2;+0]-[O;H1;D1;+0:3]>>[#6;+0:2]-[O;H1;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -2221,14 +2261,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Oxidation of boronic esters",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1>>[#6;+0:2]-[O;H1;D1;+0]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -2240,19 +2280,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Halodeboronation of boronic acids",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[I]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -2383,7 +2425,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -2426,14 +2470,14 @@
         ]
     },
     {
-        "class_id": 0,
+        "class_id": 6,
         "name": "Acyl bromides from alcohols",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[Br:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[Br;H0;D1;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -2452,7 +2496,7 @@
             "priority": null
         },
         "smirks": "fixthis[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[I:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[I;H0;D1;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -2533,12 +2577,14 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 19,
         "name": "Decarboxylation",
         "priority": {
             "priority_class": null,
@@ -2557,7 +2603,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 19,
         "name": "Decarboxylation",
         "priority": {
             "priority_class": null,
@@ -2576,14 +2622,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Pinner reaction to ester",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D1;+0]#[C;H0;D2;+0:2]-[#6:3].[#6:4]-[O;H1;D1;+0:5].[O;H2;D0;+0:6]>>[#6:3]-[C;H0;D3;+0:2](=[O;H0;D1;+0:6])-[O;H0;D2;+0:5]-[#6:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -2633,7 +2679,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Friedel-Crafts alkylation",
         "priority": {
             "priority_class": null,
@@ -2652,7 +2698,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Friedel-Crafts alkylation with halide",
         "priority": {
             "priority_class": null,
@@ -2671,7 +2717,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Friedel-Crafts alkylation with halide",
         "priority": {
             "priority_class": null,
@@ -2690,16 +2736,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Addition of primary amines to aldehydes/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]~[#6:5]-[C;H1;D2;+0:6](=[O,S;H0;D1;+0])>>[*:4]~[#6:5]-[C;H1;D2;+0:6]=[N;H0;D2;+0:3]-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -2709,16 +2755,16 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": 10,
         "name": "Addition of primary amines to ketones/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]~[#6:5]-[C;H0;D3;+0:6](=[O,S;H0;D1;+0])-[#6:7]>>[*:4]~[#6:5]-[C;H0;D3;+0:6](-[#6:7])=[N;H0;D2;+0:3]-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
-        "superclass_id": null,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -2740,7 +2786,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -3106,7 +3154,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Non-Aromatic Dehalogenation",
         "priority": {
             "priority_class": null,
@@ -3118,19 +3166,21 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Finkelstein reaction",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[Cl,Br].[I;H0;D0;-1:3]>>[#6:2]-[I;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3180,14 +3230,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Ullmann-Goldberg Substitution thiol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[c;D3;H0;+0:2]-[Cl,Br,I].[*:4]-[S;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[S;H0;D2;+0:5]-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -3313,7 +3363,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of nitrile to carboxylic acid with water",
         "priority": {
             "priority_class": null,
@@ -3332,16 +3382,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Oxidation of nitrile to carboxylic acid with base",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H0;D2;+0:2]#[N;H0;D1;+0].[OH;D0;-1:3].[OH;D0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
-        "superclass_id": 10,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000366",
@@ -3370,19 +3420,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 16,
         "name": "Oxidation of amide to carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
-        "superclass_id": 10,
+        "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -3425,7 +3477,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 18,
         "name": "Phenol with formaldehyde (ortho)",
         "priority": {
             "priority_class": null,
@@ -3434,7 +3486,7 @@
         "smirks": "[C;H2;D1;+0:1]=[O;H0;D1;+0:2].[O;H1;D1;+0:9]-[c:3]1:[c:4]:[c:5]:[c:6]:[c:7]:[c;H1;+0:8]:1>>[O;H1;D1;+0:9]-[c:3]1:[c:4]:[c:5]:[c:6]:[c:7]:[c;H0;D3;+0:8]:1-[C;H2;D2;+0:1]-[O;H1;D1;+0:2]",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 7,
+        "superclass_id": 4,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000677",
@@ -3444,7 +3496,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 18,
         "name": "Phenol with formaldehyde (para)",
         "priority": {
             "priority_class": null,
@@ -3453,7 +3505,7 @@
         "smirks": "[C;H2;D1;+0:1]=[O;H0;D1;+0:2].[O;H1;D1;+0:9]-[c:3]1:[c:4]:[c:5]:[c;H1:6]:[c:7]:[c:8]:1>>[O;H1;D1;+0:9]-[c:3]1:[c:4]:[c:5]:[c;D3;H0;+0:6](-[C;H2;D2;+0:1]-[O;H1;D1;+0:2]):[c:7]:[c:8]:1",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 7,
+        "superclass_id": 4,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000677",
@@ -3463,7 +3515,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Reduction of carboxylic acid to primary alcohol",
         "priority": {
             "priority_class": null,
@@ -3482,14 +3534,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Primary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[O;H2;D0;+0:2].[C;H2;+0:1]-[Cl,Br,I]>>[C;H2;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3501,14 +3553,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Primary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[O;H1;D0;-1:2].[C;H2;+0:1]-[Cl,Br,I]>>[C;H2;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3520,14 +3572,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Secondary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[O;H2;D0;+0:2].[C;H1;+0:1]-[Cl,Br,I]>>[C;H1;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3539,14 +3591,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Secondary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[O;H1;D0;-1:2].[C;H1;+0:1]-[Cl,Br,I]>>[C;H1;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3558,14 +3610,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Primary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[OH;D0;-1:2].[C;H2;+0:1]-[Cl,Br,I]>>[C;H2;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3577,14 +3629,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Primary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[OH;D0;-1:2].[C;H2;+0:1]-[Cl,Br,I]>>[C;H2;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3596,7 +3648,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Secondary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
@@ -3615,7 +3667,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Secondary alkyl halide to alcohol",
         "priority": {
             "priority_class": null,
@@ -3767,14 +3819,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Alcohol to azide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H0;D2;+0:2]=[N;H0;D2;+1:3]=[N;H0;D1;-1:4].[#6;+0:1]-[O;H1;D1;+0]>>[#6;+0:1]-[N;H0;D2;+0:4]=[N;H0;D2;+1:3]=[N;H0;D1;-1:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3862,7 +3914,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Hydrogenation (triple to double)",
         "priority": {
             "priority_class": null,
@@ -3874,7 +3926,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -3898,7 +3952,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Nitrile to amide water",
         "priority": {
             "priority_class": null,
@@ -3917,14 +3971,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Nitrile to amide base",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H0;D2;+0:1]#[N;H0;D1;+0:2].[OH;D0;-1:3]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:3])-[N;H2;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -3936,14 +3990,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Nitrile to amide hydrogen peroxide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H0;D2;+0:1]#[N;H0;D1;+0:2].[OH;D1;+0:3]-[OH;D1;+0]>>[C;H0;D3;+0:1](=[O;H0;D1;+0:3])-[N;H2;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4164,7 +4218,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Retro-Diels-Alder from oxazole",
         "priority": {
             "priority_class": null,
@@ -4202,14 +4256,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt reaction nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H1;D2;+0:2]=[O;H0;D1;+0].[Na,Li]-[N;H0;D2;+0:3]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D2;+0:2]#[N;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4221,14 +4275,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt reaction nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H1;D2;+0:2]=[O;H0;D1;+0].[N;H0;D1;-1:3]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[C;H0;D2;+0:2]#[N;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4240,7 +4294,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 23,
         "name": "Schmidt reaction nitrile",
         "priority": {
             "priority_class": null,
@@ -4259,7 +4313,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 23,
         "name": "in-situ Schmidt reaction",
         "priority": {
             "priority_class": null,
@@ -4278,7 +4332,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 23,
         "name": "in-situ Schmidt reaction",
         "priority": {
             "priority_class": null,
@@ -4297,7 +4351,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 23,
         "name": "Schmidt reaction",
         "priority": {
             "priority_class": null,
@@ -4316,7 +4370,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 23,
         "name": "Schmidt reaction",
         "priority": {
             "priority_class": null,
@@ -4335,7 +4389,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 22,
         "name": "in-situ Schmidt reaction alkene",
         "priority": {
             "priority_class": null,
@@ -4354,7 +4408,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 22,
         "name": "in-situ Schmidt reaction alkene",
         "priority": {
             "priority_class": null,
@@ -4373,7 +4427,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 22,
         "name": "Schmidt reaction alkene",
         "priority": {
             "priority_class": null,
@@ -4392,14 +4446,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt ketone amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4].[Na,Li]-[N;H0;D2;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 6,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4411,14 +4465,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt ketone amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4].[N;H0;D1;-1:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 6,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4430,14 +4484,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Schmidt ketone amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4].[N;H0;D1;-1:5]=[N;H0;D2;+1]=[N;H1;D1;+0]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 6,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4449,14 +4503,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Schmidt ketone amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4].[*:6]-[N;H0;D2;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]([*:6])-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 6,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4468,14 +4522,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt aldehyde amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[Na,Li]-[N;H0;D2;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H2;D1;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4487,7 +4541,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "in-situ Schmidt aldehyde amide",
         "priority": {
             "priority_class": null,
@@ -4506,14 +4560,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Schmidt aldehyde amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[N;H0;D1;-1:5]=[N;H0;D2;+1]=[N;H1;D1;+0]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4525,14 +4579,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Schmidt aldehyde amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[*:4]-[N;H0;D2;+0:5]=[N;H0;D2;+1]=[N;H0;D1;-1]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;H1;D2;+0:5]-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -4544,7 +4598,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Mignonac reaction",
         "priority": {
             "priority_class": null,
@@ -4753,7 +4807,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Pyrazole formation",
         "priority": {
             "priority_class": null,
@@ -4829,7 +4883,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Quinone formation",
         "priority": {
             "priority_class": null,
@@ -4841,12 +4895,14 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Quinone formation",
         "priority": {
             "priority_class": null,
@@ -4858,7 +4914,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -4996,7 +5054,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Arene hydrogenation",
         "priority": {
             "priority_class": null,
@@ -5015,14 +5073,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Hydration of terminal alkyne to ketone",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[O;D0;H2;+0:4]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:4])-[C;H3;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -5034,53 +5092,59 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Terminal alkyne to aldehyde with H2O2",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3].[OH;D1;+0]-[OH;D1;+0:4]>>[*:1]-[C;H2;D2;+0:2]-[C;H1;D2;+0:3](=[O;H0;D1;+0:4])",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Internal alkyne to aldehyde with H2O2",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D1;+0:3]-[*:4].[OH;D1;+0]-[OH;D1;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Internal alkyne to aldehyde with H2O",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D1;+0:3]-[*:4].[O;D0;H2;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5104,7 +5168,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Aerobic oxidation of Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -5218,14 +5282,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Azide-alkyne click cycloaddition to triazole",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[N;H0;D2;+0:3]=[N+;H0;D2:4]=[N-;H0;D1:5].[CH2;D2;+0:9]-[C;H0;D2;+0:10]#[C;H1;D1;+0:11]>>[#6:2]-[n;H0;D3;+0:3]1:[n;H0;D2;+0:4]:[n;H0;D2;+0:5]:[c;H0;D3;+0:10](-[C:9]):[c;H1;D2;+0:11]:1",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -5237,14 +5301,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Azide-alkyne click cycloaddition to triazole",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D1;-1:3]=[N+;H0;D2:4]=[N-;H0;D1:5].[CH2;D2;+0:9]-[C;H0;D2;+0:10]#[C;H1;D1;+0:11]>>[n;D2;+0:3]1:[n;D2;+0:4]:[n;D2;+0:5]:[c;D3;+0:10](-[C:9]):[c;D2;+0:11]:1",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -5256,7 +5320,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 17,
         "name": "Nef reaction (nitro to ketone)",
         "priority": {
             "priority_class": null,
@@ -5275,7 +5339,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Acylation of olefines by aldehydes",
         "priority": {
             "priority_class": null,
@@ -5287,12 +5351,14 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Cleavage of sulfons and sulfoxides",
         "priority": {
             "priority_class": null,
@@ -5311,7 +5377,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Difluoroalkylation-Induced 1, 2-Heteroarene Migration of Allylic Alcohols",
         "priority": {
             "priority_class": null,
@@ -5323,7 +5389,9 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5442,7 +5510,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 17,
         "name": "Minisci (para)",
         "priority": {
             "priority_class": null,
@@ -5492,12 +5560,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 17,
         "name": "Minisci (ortho-cyanide)",
         "priority": {
             "priority_class": null,
@@ -5509,7 +5579,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5526,7 +5598,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5550,7 +5624,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Hydrolysis of primary amides/imides/carbamates with water",
         "priority": {
             "priority_class": 2,
@@ -5562,12 +5636,14 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Hydrolysis of secondary amides/imides/carbamates with water",
         "priority": {
             "priority_class": 2,
@@ -5579,12 +5655,14 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Hydrolysis of primary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
@@ -5596,19 +5674,21 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": 0,
+        "class_id": 16,
         "name": "Hydrolysis of secondary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
             "priority": 5
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
-        "subclass_id": 0,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -5620,19 +5700,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Hydrogenolysis of tertiary amines",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;!$(CC(=O));+0:1]-[N;H0;D3;+0:2](-[*])-[*:3]>>[#6;+0:1]-[N;H1;D2;+0:2]-[*:3]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5656,7 +5738,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Hydrazone oxidation to diazoalkane",
         "priority": {
             "priority_class": null,
@@ -5668,7 +5750,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5685,7 +5769,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5728,14 +5814,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "[3+2]-cycloaddition of hydrazone and alkyne",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+0:2]-[N;H2;D1;+0:3].[*:4]-[C;H0;D2;+0:5]#[C;H0;D2;+0:6]-[*:7]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]1-[N;H0;D2;+0:2]=[N;H0;D2;+0:3]-[C;H0;D3;+0:6](-[*:7])=[C;H0;D3;+0:5]-1-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -5747,14 +5833,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "[3+2]-cycloaddition of hydrazone and alkene",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+0:2]-[N;H2;D1;+0:3].[*:4]-[C;H1;D2;+0:5]=[C;H1;D2;+0:6]-[*:7]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]1-[N;H1;D2;+0:2]-[N;H0;D2;+0:3]=[C;H0;D3;+0:6](-[*:7])-[C;H1;D3;+0:5]-1-[*:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -5766,7 +5852,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "[3+2]-cycloaddition of diazoalkane and alkyne",
         "priority": {
             "priority_class": null,
@@ -5804,14 +5890,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "[3+2]-cycloaddition of diazoalkane and alpha-alkyne",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]=[N;H0;D2;+0:2]-[N;H2;D1;+0:3].[*:4]-[C;H0;D2;+0:5]#[C;H1;D1;+0:6]>>[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]1-[N;H0;D2;+0:2]=[N;H0;D2;+0:3]-[C;H0;D3;+0:5](-[*:4])=[C;H1;D2;+0:6]-1",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -5949,7 +6035,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -5966,7 +6054,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -6142,14 +6232,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Oxirane functionalization with alkyl iodide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;+0:1]1-[O;H0;D2;+0:2]-[C;H1;D3;+0:3]-1.[C;H2,H3;+0:4]-[I]>>[C;+0:1]1-[O;H0;D2;+0:2]-[C;H0;D4;+0:3]-1-[C;+0:4]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -6161,7 +6251,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxirane functionalization with silyl chloride",
         "priority": {
             "priority_class": null,
@@ -6173,12 +6263,14 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Homologation of aldehydes with formaldehyde",
         "priority": {
             "priority_class": null,
@@ -6197,7 +6289,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 18,
         "name": "Derived alcohol via homologation of aldehydes with formaldehyde",
         "priority": {
             "priority_class": null,
@@ -6206,7 +6298,7 @@
         "smirks": "[C;H2;D1;+0:5]=[O;D1;H0:6].C-O-C1(-C)-N=N-[C;H0;D4;+0:2](-[C:3])(-[C:4])-O-1>>[C;+0:3]-[C;H1;D3;+0:2](-[C;+0:4])-[C;H2;D2;+0:5]-[O;H1;D1;+0:6]",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 4,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000070",
@@ -6235,7 +6327,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 18,
         "name": "Homologation of diazo compounds to aldehydes using formaldehyde ",
         "priority": {
             "priority_class": null,
@@ -6244,7 +6336,7 @@
         "smirks": "[N;H2;D1;+0]-[N;H0;D2;+0]=[#6;+0:2].[C;H2;D1;+0:3]=[O;H0;D1:4]>>[O;D1;H0:4]=[C;H1;D2;+0:3]-[#6;+0:2]",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 4,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000070",
@@ -6254,7 +6346,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Homologation of diazo compounds to alcohols using formaldehyde ",
         "priority": {
             "priority_class": null,
@@ -6273,7 +6365,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 15,
         "name": "Newman-Kwart rearrangement",
         "priority": {
             "priority_class": null,
@@ -6292,7 +6384,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Sodiation",
         "priority": {
             "priority_class": null,
@@ -6304,7 +6396,9 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -6385,7 +6479,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Nucleophilic substitution OH - alkyl silane",
         "priority": {
             "priority_class": null,
@@ -6397,7 +6491,9 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -6414,7 +6510,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -6431,7 +6529,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -7196,14 +7296,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 14,
         "name": "Cleavage of alkoxy ethers to alcohols",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:1;!$([CX3](=O))]-[O;H0;D2;+0:2]-[*;!$([CX3](=O))]>>[#6;+0:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7215,7 +7315,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Cleavage of methoxy thioethers to alcohols",
         "priority": {
             "priority_class": null,
@@ -7234,7 +7334,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Cleavage of alkoxy thioethers to alcohols",
         "priority": {
             "priority_class": null,
@@ -7253,14 +7353,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Sulfonamide synthesis (Schotten-Baumann) primary amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I,OH].[#6;+0:5]-[N;H2;D1;+0:6]>>[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[N;H1;D2;+0:6]-[#6;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -7272,14 +7372,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Sulfonamide synthesis (Schotten-Baumann) secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I,OH].[#6;+0:5]-[N;H1;D2;+0:6]>>[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[N;H0;D3;+0:6]-[#6;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -7367,14 +7467,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Alcohol to chloride - PCl5 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
         },
         "smirks": "[Cl]-[P;H0;D5;+0](-[Cl])(-[Cl])(-[Cl])-[Cl:1].[c;$([c;H0](:[c,n]):[n]);H0;D3;+0:2]-[O;H1;D1;+0]>>[c;H0;D3;+0:2]-[Cl:1]",
-        "subclass_id": null,
+        "subclass_id": 7,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7386,14 +7486,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Alcohol to chloride - POCl3 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
         },
         "smirks": "[O;H0;D1;+0]=[P;H0;D4;+0](-[Cl])(-[Cl])-[Cl:1].[c;$([c;H0](:[c,n]):[n]);H0;D3;+0:2]-[O;H1;D1;+0]>>[c;H0;D3;+0:2]-[Cl:1]",
-        "subclass_id": null,
+        "subclass_id": 7,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7588,7 +7688,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -7966,7 +8068,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -7983,12 +8087,14 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "C-Methylation with MeI - primary",
         "priority": {
             "priority_class": null,
@@ -8007,7 +8113,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "C-Methylation with MeI - secondary",
         "priority": {
             "priority_class": null,
@@ -8019,12 +8125,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "C-Methylation with MeI - tertiary",
         "priority": {
             "priority_class": null,
@@ -8036,12 +8144,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "C-Methylation with DMS",
         "priority": {
             "priority_class": null,
@@ -8053,12 +8163,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "C-Methylation with DMC",
         "priority": {
             "priority_class": null,
@@ -8070,12 +8182,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "C-Methylation with MeI - aryl",
         "priority": {
             "priority_class": null,
@@ -8125,7 +8239,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -8294,7 +8410,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -8432,14 +8550,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Primary amine to fluoride",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[N;H2;D1;+0].[F;H0;D1;+0:3]>>[#6:2]-[F;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -8451,14 +8569,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Primary amine to chloride",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[N;H2;D1;+0].[Cl;H0;D1;+0:3]>>[#6:2]-[Cl;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -8470,14 +8588,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Primary amine to bromide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[N;H2;D1;+0].[Br;H0;D1;+0:3]>>[#6:2]-[Br;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -8489,14 +8607,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Primary amine to iodide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6:2]-[N;H2;D1;+0].[I;H0;D1;+0:3]>>[#6:2]-[I;H0;D1;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -8508,7 +8626,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Diazo addition with azide",
         "priority": {
             "priority_class": null,
@@ -8520,12 +8638,14 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Diazo addition with azide",
         "priority": {
             "priority_class": null,
@@ -8537,7 +8657,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -8763,12 +8885,14 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 14,
         "name": "Arens-van Dorp Synthesis",
         "priority": {
             "priority_class": null,
@@ -8901,14 +9025,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Hantzsch thiazole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;R0:2](=[O;D1])-[C;H2;R0:6]-[*;#17,#35,#53].[NH2:3]-[C:4]=[S;D1:5]>>[c:2]2:[n:3]:[c:4]:[s:5][c:6]:2",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -8920,14 +9044,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "Niementowski quinazoline synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[c:2](-[C;$(C-c1ccccc1):3](=[OD1:4])-[OH1]):[c:5](-[NH2:6]).[N;!H0;!$(N-N);!$(N-C=N);!$(N(-C=O)-C=O):7]-[C;H1,$(C-[#6]):8]=[OD1]>>[c:5]2:[c:2]-[C:3](=[O:4])-[N:7]-[C:8]=[N:6]-2",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -9129,14 +9253,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Knorr pyrazole synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;!$([#6](-C=O)-C=O):5]-[CH0:2](=[OD1])-[C;H1&!$(C-[*;!#6])&!$(C-C(=O)O),H2:3]-[CH0;R0:4](=[OD1])-[#6;!$([#6](-C=O)-C=O):6].[NH2:7]-[N;!H0;$(N-[#6]),H2:8]>>[C:2]1(-[#6:5])-[C:3]=[C:4](-[#6:6])-[N:8]-[N:7]=1",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -9224,14 +9348,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Friedlander quinoline synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[NH2;$(N-c1ccccc1):2]-[c:3]:[c:4]-[CH1:5]=[OD1].[C;$(C([#6])[#6]):7](=[OD1])-[CH2;$(C([#6])[#6]);!$(C(C=O)C=O):6]>>[N:2]1-[c:3]:[c:4]-[C:5]=[C:6]-[C:7]:1",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -9376,14 +9500,14 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": 10,
         "name": "Pictet-Spengler cyclization with piperidone",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[c;H1:4]1:[c:5]:[c:6]:[c;H1:7]:[c:8]2:[nH:9]:[c:10]:[c;H1:2]:[c:3]:1:2.O=[C:11]1[#6;H2:12][#6;H2:13][N:14][#6;H2:15][#6;H2:16]1>>[#6;H2:13]3[#6;H1:12]=[C:11]([c:2]1:[c:10]:[n:9]:[c:8]2:[c:7]:[c:6]:[c:5]:[c:4]:[c:3]:1:2)[#6;H2:16][#6;H2:15][N:14]3",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -9863,7 +9987,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -9880,7 +10006,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -10398,7 +10526,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Parnes methylation",
         "priority": {
             "priority_class": null,
@@ -10417,7 +10545,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 6,
         "name": "1,2-amino oxygenation of alkenes",
         "priority": {
             "priority_class": null,
@@ -10429,7 +10557,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -10472,19 +10602,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 1,
         "name": "Ynamide synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H0;D2;+0:3]#[C;H1;D1;+0:4].[N;H1;D2;+0:10]>>[C;H0;D2;+0:3]#[C;H0;D2;+0:4]-[N;H0;D3;+0:10]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
-        "superclass_id": 7,
+        "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -10508,7 +10640,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 15,
         "name": "Coupling of benzylboronic esters with aldehydes",
         "priority": {
             "priority_class": null,
@@ -10527,7 +10659,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 16,
         "name": "Coupling of benzylboronic esters with imines",
         "priority": {
             "priority_class": null,
@@ -10565,14 +10697,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Amine to azide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:1]-[NH2;D1;+0]>>[*:1]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -10603,14 +10735,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Alcohol to triflate conversion",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "F-C(-F)(-F)-S(=O)(=O)-O-[S;H0;D4;+0:2](=[O;D1;H0:3])(=[O;D1;H0:4])-[C:5](-[F;D1;H0:6])(-[F;D1;H0:7])-[F;D1;H0:8].[OH;D1;+0:9]>>[F;D1;H0:6]-[C:5](-[F;D1;H0:7])(-[F;D1;H0:8])-[S;H0;D4;+0:2](=[O;D1;H0:3])(=[O;D1;H0:4])-[O;H0;D2;+0:9]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -10641,14 +10773,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 6,
         "name": "TMS deprotection from alkyne",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "C-[Si](-C)(-C)-[C;H0;D2;+0:2]#[C;X2;+0:3]>>[CH;D1;+0:2]#[C;X2;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
@@ -10660,7 +10792,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Carboxylic acid to carboxylate",
         "priority": {
             "priority_class": null,
@@ -10672,7 +10804,9 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -10981,19 +11115,21 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 16,
         "name": "Carboxylate to carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;D3;H0;+0:3](-[O-;H0;D1:5])=[O;D1;H0:4]>>[C;D3;H0;+0:3](=[O;D1;H0:4])-[OH;D1;+0:5]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -11017,14 +11153,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Bouveault aldehyde synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Cl,Br,I;D1;+0]-[*;+0:2].[N;D3;+0]-[C;H1;D2;+0:7]=[O;D1;H0;+0:8]>>[O;D1;H0:8]=[CH;D2;+0:7]-[*:2]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11036,14 +11172,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Bouveault aldehyde synthesis",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Cl,Br,I;D1;+0]-[*;+0:2].[N;D3;+0]-[C;H1;D2;+0:7]=[O;D1;H0;+0:8]>>[O;D1;H0:8]=[CH;D2;+0:7]-[*:2]",
-        "subclass_id": null,
+        "subclass_id": 5,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11093,14 +11229,14 @@
         ]
     },
     {
-        "class_id": 0,
+        "class_id": 9,
         "name": "N-hydroxyimidamide from nitrile and hydroxylamine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D1;+0:2]#[C;H0;D2;+0:3].[NH2;D1;+0:7]-[O;D1;H1:8]>>[NH;D1;+0:2]=[C;H0;D3;+0:3](-[NH;D2;+0:7]-[O;D1;H1:8])",
-        "subclass_id": 0,
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11112,7 +11248,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Amidoxime from nitrile and hydroxylamine",
         "priority": {
             "priority_class": null,
@@ -11124,19 +11260,21 @@
         "superclass_id": 12,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Amine and thiophosgene to isothiocyanate",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "Cl-[C;H0;D3;+0:2](-Cl)=[S;D1;H0:3].[NH2;D1;+0:4]>>[S;D1;H0:3]=[C;H0;D2;+0:2]=[N;H0;D2;+0:4]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11167,14 +11305,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 11,
         "name": "Hydrazine synthesis from amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "O=[N;H0;D2;+0:2]-[O-].[NH2;D1;+0:3]>>[NH2;D1;+0:2]-[NH;D2;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11205,14 +11343,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Alcohol to triflate conversion",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "F-C(-F)(-F)-S(=O)(=O)-N(-c1:c:c:c:c:c:1)-[S;H0;D4;+0:2](=[O;D1;H0:3])(=[O;D1;H0:4])-[C:5](-[F;D1;H0:6])(-[F;D1;H0:7])-[F;D1;H0:8].[OH;D1;+0:9]>>[F;D1;H0:6]-[C:5](-[F;D1;H0:7])(-[F;D1;H0:8])-[S;H0;D4;+0:2](=[O;D1;H0:3])(=[O;D1;H0:4])-[O;H0;D2;+0:9]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11293,7 +11431,9 @@
         "superclass_id": 9,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
@@ -11621,7 +11761,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 13,
         "name": "in-situ organolithium aldehyde to alcohol",
         "priority": {
             "priority_class": null,
@@ -11640,14 +11780,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 3,
         "name": "in-situ organolithium ketone to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Li;H0].[#6;+0:2]-[Br,I,Cl].[*:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[#6;+0:6]>>[*:3]-[C;H0;D4;+0:4](-[O;H1;D1;+0:5])(-[#6;+0:6])-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 4,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11716,7 +11856,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 21,
         "name": "Preparation of trialkylsilanes with in-situ Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -11725,22 +11865,24 @@
         "smirks": "[Mg;H0].[#6;+0:2]-[Br,I,Cl].[#6;+0:3]-[Br].[#6;+0:4]-[Br,I,Cl].[#6;+0:5]-[Si;H0;D4;+0:6](-[Cl])(-[Cl])-[Cl]>>[#6;+0:5]-[Si;H0;D4;+0:6](-[#6;+0:2])(-[#6;+0:3])-[#6;+0:4]",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Aerobic oxidation of in-situ Grignard reagents",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Mg;H0].[c:1]-[Br,I,Cl].[O;H0;D1;+0:2]=[O;H0;D1;+0]>>[c:1]-[O;H1;D1;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -11809,7 +11951,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of amine to nitro group with oxygen",
         "priority": {
             "priority_class": null,
@@ -11828,7 +11970,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of amine to nitro group with metal oxidizer",
         "priority": {
             "priority_class": null,
@@ -11847,7 +11989,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of amine to nitro group with metal oxidizer",
         "priority": {
             "priority_class": null,
@@ -11923,7 +12065,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "N-oxidation",
         "priority": {
             "priority_class": null,
@@ -11961,14 +12103,14 @@
         ]
     },
     {
-        "class_id": 0,
+        "class_id": 10,
         "name": "Oxime formation",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[OH;D1;+0:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[O;D1;H1:5])",
-        "subclass_id": 0,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -11980,16 +12122,16 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Imine formation",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;+0:2]=[O;H0;D1;+0].[N;H2;D1;+0:4]-[#6:5]>>[C;+0:2](=[N;H0;D2;+0:4]-[#6:5])",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": 5,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -11999,7 +12141,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Imine reduction",
         "priority": {
             "priority_class": null,
@@ -12037,7 +12179,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 10,
         "name": "Oxime reduction",
         "priority": {
             "priority_class": null,
@@ -12056,14 +12198,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Alkyne SN2",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C:1]-[Cl,Br,I].[C:4]-[C;H0;D2;+0:2]#[C;H1;D1;+0:3]>>[C:1]-[C;H0;D2;+0:2]#[C;H0;D2;+0:3]-[C:4]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -12113,14 +12255,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 7,
         "name": "Alcohol to nitrate",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H0;D3;+1:2](=[O;H0;D1;+0:3])(-[O;H0;D1;-1:4])-[OH;D1;+0].[OH;D1;H1;+0:5]>>[O;D2;H0;+0:5]-[N;H0;D3;+1:2](=[O;H0;D1;+0:3])-[O;H0;D1;-1:4]",
-        "subclass_id": null,
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -12208,7 +12350,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Oxidation of ketone to carboxylic acid with metal oxidizer",
         "priority": {
             "priority_class": null,
@@ -12227,7 +12369,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Oxidation of ketone to carboxylic acid with metal oxidizer",
         "priority": {
             "priority_class": null,
@@ -12246,7 +12388,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 9,
         "name": "Oxidation of ketone to carboxylic acid with chloro-oxidizer",
         "priority": {
             "priority_class": null,
@@ -12379,7 +12521,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of amide to carboxylic acid with water",
         "priority": {
             "priority_class": null,
@@ -12391,12 +12533,14 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Oxidation of amide to carboxylic acid with base",
         "priority": {
             "priority_class": null,
@@ -12586,14 +12730,52 @@
         ]
     },
     {
-        "class_id": 0,
+        "class_id": 8,
         "name": "Primary halogenoalkane to nitrile",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;H2;D2;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H2;D2;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
-        "subclass_id": 0,
+        "subclass_id": 3,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
+            }
+        ]
+    },
+    {
+        "class_id": 8,
+        "name": "Secondary halogenoalkane to nitrile",
+        "priority": {
+            "priority_class": null,
+            "priority": null
+        },
+        "smirks": "[C;H1;D3;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H1;D3;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
+        "subclass_id": 3,
+        "subsubclass_id": null,
+        "superclass_id": 5,
+        "rxno_classification": [
+            {
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
+            }
+        ]
+    },
+    {
+        "class_id": 8,
+        "name": "Tertiary halogenoalkane to nitrile",
+        "priority": {
+            "priority_class": null,
+            "priority": null
+        },
+        "smirks": "[C;H0;D4;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H0;D4;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
+        "subclass_id": 3,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -12606,44 +12788,6 @@
     },
     {
         "class_id": 0,
-        "name": "Secondary halogenoalkane to nitrile",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[C;H1;D3;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H1;D3;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
-        "subclass_id": 0,
-        "subsubclass_id": null,
-        "superclass_id": 5,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000331",
-                "rxno_label": "substitution step",
-                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
-            }
-        ]
-    },
-    {
-        "class_id": null,
-        "name": "Tertiary halogenoalkane to nitrile",
-        "priority": {
-            "priority_class": null,
-            "priority": null
-        },
-        "smirks": "[C;H0;D4;+0:1]-[F,Cl,Br,I].[N;H0;D1;+0:2]#[C;H0;D1;-1:3]>>[C;H0;D4;+0:1]-[C;H0;D2;+0:3]#[N;H0;D1;+0:2]",
-        "subclass_id": null,
-        "subsubclass_id": null,
-        "superclass_id": 4,
-        "rxno_classification": [
-            {
-                "rxno_id": "RXNO:0000331",
-                "rxno_label": "substitution step",
-                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
-            }
-        ]
-    },
-    {
-        "class_id": null,
         "name": "Elimination to alkene",
         "priority": {
             "priority_class": null,
@@ -12700,7 +12844,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 0,
         "name": "Formation of peroxy acids from carboxylic acids",
         "priority": {
             "priority_class": null,
@@ -12712,7 +12856,9 @@
         "superclass_id": null,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "",
+                "rxno_label": "",
+                "rxno_definition": ""
             }
         ]
     },
