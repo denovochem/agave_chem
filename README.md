@@ -12,11 +12,11 @@
 
 An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y). AgaveChem can also be used to classify reactions and is capable of mapping and automatically balancing unbalanced reactions.
 
-AgaveChem is comprised of four mappers:
+**AgaveChem mappers**:
 
 - **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno).
 
-- **MCS-like mapper**: Fingerprint based mapper that generates conservative partial maps some radius away from detected reaction centers.
+- **MCS-like mapper**: Fingerprint based mapper that generates conservative partial maps at some radius around detected reaction centers.
 
 - **Identical fragment mapper**: Fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents) are detected and atom-mapped before any other mapper is invoked.
 

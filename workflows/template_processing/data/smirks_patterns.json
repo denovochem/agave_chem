@@ -1,13 +1,13 @@
 [
     {
-        "class_id": 5,
+        "class_id": 2,
         "name": "Schotten-Baumann to ester",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Cl,F,Br,I]-[C;H0;D3;+0:2](=[O,S;D1;H0:3])-[*:4].[OH;D1;+0:5]-[*:6]>>[O,S;D1;H0:3]=[C;H0;D3;+0:2](-[*:4])-[O;H0;D2;+0:5]-[*:6]",
-        "subclass_id": 3,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -26,7 +26,7 @@
             "priority": null
         },
         "smirks": "[Cl,F,Br,I]-[C;H0;D3;+0:2](=[N;D2;H0:3])-[*:4].[*:5]-[NH2;D1;+0:6]>>[*:5]-[NH;D2;+0:6]-[C;H0;D3;+0:2](=[N;D2;H0:3])-[*:4]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -133,14 +133,14 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 12,
         "name": "Formation of NOS Heterocycles",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*:9]-[C;H0;D3;+0:7](=[O,S;D1;H0:8])-[N;H1;D2;+0:2]-[C;+0:3]-[C;H0;D3;+0:4](=[O,S;D1;H0;+0:5])-[*]>>[*:9]-[C;H0;D3;+0:7]1=[N;H0;D2;+0:2]-[C;+0:3]-[C;H0;D3;+0:4](=[O,S;D1;H0;+0:5])-[O,S;H0;D2;+0:8]1",
-        "subclass_id": 1,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -549,7 +549,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Formation of Sulfonic Esters on TMS protected alcohol",
         "priority": {
             "priority_class": null,
@@ -642,14 +642,14 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Production of 2H,1-benzopyrans",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[O;H0;D1;+0]=[C;H1;D2;+0:2]-[CH;D2;+0:3]=[C;+0:4](-[H,$(C),$(CC),$(CCC),$(CCCC):5])(-[H,$(C),$(CC),$(CCC),$(CCCC),$(CCCCC),$(CCCCCC):6]).[OH;D1;+0:7]-[c:8]:[cH;D2;+0:9]:[c:10]>>[H,$(C),$(CC),$(CCC),$(CCCC):5]-[C;H0;D4;+0:4]1(-[H,$(C),$(CC),$(CCC),$(CCCC),$(CCCCC),$(CCCCCC):6])-[CH;D2;+0:3]=[CH;D2;+0:2]-[c;H0;D3;+0:9](:[c:10]):[c:8]-[O;H0;D2;+0:7]-1",
-        "subclass_id": null,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -711,7 +711,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
             }
         ]
     },
@@ -728,7 +730,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
             }
         ]
     },
@@ -776,7 +780,7 @@
             "priority": null
         },
         "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -797,7 +801,7 @@
         "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H1;D1;+0:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;H2;D2;+0:5]",
         "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": null,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000331",
@@ -850,7 +854,7 @@
             "priority": null
         },
         "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -869,7 +873,7 @@
             "priority": null
         },
         "smirks": "[C;D2;H2;+0:3]-[O;H1;D1;+0].[#6;+0:5]-[S;H0;D1;-1:7]>>[C;D2;H2;+0:3]-[S;H0;D2;+0:7]-[#6;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -963,9 +967,9 @@
         "superclass_id": 6,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000337",
-                "rxno_label": "nitro reduction to amine",
-                "rxno_definition": "A reduction reaction where a nitro group is reduced to an amino group."
+                "rxno_id": "RXNO:0000037",
+                "rxno_label": "functional group reduction",
+                "rxno_definition": "A functional group modification reaction where a functional group is reduced."
             }
         ]
     },
@@ -1101,7 +1105,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": null,
         "name": "Julia Olefination",
         "priority": {
             "priority_class": null,
@@ -1182,7 +1186,7 @@
             "priority": null
         },
         "smirks": "[*]-[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[#7;H0,H1;+0:2]>>[#7;H1,H2;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
@@ -1334,7 +1338,7 @@
             "priority": null
         },
         "smirks": "[C;H3;D1;+0:2]-[C;H0;D4;+0:3](-[C;H3;D1;+0:4])(-[C;H3;D1;+0:5])-[O;H0;D2;+0:6]-[C;H0;D3;+0:7](=[O;H0;D1;+0:8])-[C;H2;D2;+0:9]-[Cl,Br,I].[#7;H1,H2;+0:10]>>[C;H3;D1;+0:2]-[C;H0;D4;+0:3](-[C;H3;D1;+0:4])(-[C;H3;D1;+0:5])-[O;H0;D2;+0:6]-[C;H0;D3;+0:7](=[O;H0;D1;+0:8])-[C;H2;D2;+0:9]-[#7;H0,H1;+0:10]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 9,
         "rxno_classification": [
@@ -1536,14 +1540,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Organolithium aldehyde to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[Li].[*:3]-[C;H1;D2;+0:4](=[O;H0;D1;+0:5])>>[*:3]-[C;H1;D3;+0:4](-[O;H1;D1;+0:5])-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -1555,14 +1559,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Organolithium from ketone to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[Li].[*:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[#6;+0:6]>>[*:3]-[C;H0;D4;+0:4](-[O;H1;D1;+0:5])(-[#6;+0:6])-[#6;+0:2]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -1593,7 +1597,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 3,
         "name": "Olefination of ketones with Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -1605,12 +1609,14 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000479",
+                "rxno_label": "olefination",
+                "rxno_definition": "A molecular skeleton joining reaction where the connection formed is a carbon-carbon double bond."
             }
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 3,
         "name": "Olefination of aldehydes with Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -1752,14 +1758,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Primary amide to secondary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H2;D1;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H2;D1;+0:3]-[*:2]>>[*:2]-[N;H1;D2;+0:3]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1769,14 +1775,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Primary amide to tertiary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[N;H2;D1;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H1;D2;+0:3]([*:4])-[*:2]>>[*:2]-[N;H0;D3;+0:3](-[*:4])-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1788,14 +1794,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Secondary amide to secondary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H2;D1;+0:3]-[*:2]>>[*:2]-[N;H1;D2;+0:3]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1805,14 +1811,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Secondary amide to tertiary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H1;D2;+0:3]([*:4])-[*:2]>>[*:2]-[N;H0;D3;+0:3](-[*:4])-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1822,14 +1828,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Tertiary amide to secondary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H2;D1;+0:3]-[*:2]>>[*:2]-[N;H1;D2;+0:3]-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1841,14 +1847,14 @@
         ]
     },
     {
-        "class_id": 4,
+        "class_id": 5,
         "name": "Transamidation - Tertiary amide to tertiary amide",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[*]-[N;H0;D3;+0](-[*])-[C;H0;D3;+0:5]=[O;H0;D1;+0:6].[N;H1;D2;+0:3]([*:4])-[*:2]>>[*:2]-[N;H0;D3;+0:3](-[*:4])-[C;H0;D3;+0:5]=[O;H0;D1;+0:6]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -1884,7 +1890,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:3]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -1903,14 +1909,14 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[S;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[#6;$([#6]~[#6]:[#6]),$([#6]-[#9]);+0]>>[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000589",
-                "rxno_label": "triflyloxy Suzuki-type coupling",
-                "rxno_definition": "A Suzuki-type coupling where the rule of the halide is played by a triflyloxy group."
+                "rxno_id": "RXNO:0000592",
+                "rxno_label": "Suzuki-type coupling",
+                "rxno_definition": "The coupling of a boronic acid or boronic ester with an unsaturated halide, triflate or sulfonate."
             }
         ]
     },
@@ -1922,14 +1928,14 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[O;H0;D2;+0]-[S;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[#6;$([#6]~[#6]:[#6]),$([#6]-[#9]);+0]>>[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000589",
-                "rxno_label": "triflyloxy Suzuki-type coupling",
-                "rxno_definition": "A Suzuki-type coupling where the rule of the halide is played by a triflyloxy group."
+                "rxno_id": "RXNO:0000592",
+                "rxno_label": "Suzuki-type coupling",
+                "rxno_definition": "The coupling of a boronic acid or boronic ester with an unsaturated halide, triflate or sulfonate."
             }
         ]
     },
@@ -1941,7 +1947,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1.[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:3]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:3]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -1998,7 +2004,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:3]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[#6;+0:3]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -2208,7 +2214,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -2225,9 +2233,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000011",
-                "rxno_label": "functional group modification",
-                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -2418,7 +2426,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 0,
         "name": "Acyl bromides from alcohols",
         "priority": {
             "priority_class": null,
@@ -2430,7 +2438,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -2441,13 +2451,15 @@
             "priority_class": null,
             "priority": null
         },
-        "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[I:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[I;H0;D1;+0:5]",
+        "smirks": "fixthis[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0].[*]-[I:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[I;H0;D1;+0:5]",
         "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -2609,7 +2621,7 @@
             "priority": null
         },
         "smirks": "[*:5]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;+0].[c;D2;H1;+0:4]>>[c;D3;h0;+0:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:5]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -2678,14 +2690,14 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Addition of primary amines to aldehydes/thiocarbonyls",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]~[#6:5]-[C;H1;D2;+0:6](=[O,S;H0;D1;+0])>>[*:4]~[#6:5]-[C;H1;D2;+0:6]=[N;H0;D2;+0:3]-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -2704,9 +2716,9 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H2;D1;+0:3].[*:4]~[#6:5]-[C;H0;D3;+0:6](=[O,S;H0;D1;+0])-[#6:7]>>[*:4]~[#6:5]-[C;H0;D3;+0:6](-[#6:7])=[N;H0;D2;+0:3]-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
-        "superclass_id": 1,
+        "superclass_id": null,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000367",
@@ -2740,7 +2752,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H1;D2;+0:3]-[#6;+0:8].[*:4]~[#6:5]-[C;H1;D2;+0:6](=[O,S;H0;D1;+0])>>[*:4]~[#6:5]=[C;H1;D2;+0:6]-[N;H0;D3;+0:3](-[#6;+0:8])-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -2752,7 +2764,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Benzothiazole formation from aldehyde",
         "priority": {
             "priority_class": null,
@@ -2771,7 +2783,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Benzothiazole formation from acyl halide",
         "priority": {
             "priority_class": null,
@@ -2790,7 +2802,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Benzothiazole formation from ester/carboxylic acid",
         "priority": {
             "priority_class": null,
@@ -2835,7 +2847,7 @@
             "priority": null
         },
         "smirks": "[O;H1;D1;+0:2]-[c:3]:[c:4]-[N;H2;D1;+0:5].[#6:6]-[C;H0;D3;+0:7](=[O;H0;D1;+0])-[Cl,Br,I]>>[o;H0;D2;+0:2]1:[c:3]:[c:4]:[n;H0;D2;+0:5]:[c;H0;D3;+0:7]1-[#6:6]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -2859,9 +2871,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000349",
-                "rxno_label": "heterocycle synthesis",
-                "rxno_definition": "A ring formation reaction where the intended product contains a heterocycle that was not in any of the reactants."
+                "rxno_id": "RXNO:0000346",
+                "rxno_label": "oxacycle synthesis",
+                "rxno_definition": "A ring formation reaction where the intended product contains an oxacycle that was not in any of the reactants."
             }
         ]
     },
@@ -2885,7 +2897,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole formation from aldehyde",
         "priority": {
             "priority_class": null,
@@ -2904,7 +2916,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole formation from acyl halide",
         "priority": {
             "priority_class": null,
@@ -2923,7 +2935,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole formation from ester/carboxylic acid",
         "priority": {
             "priority_class": null,
@@ -3025,7 +3037,7 @@
             "priority": null
         },
         "smirks": "[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H0;D2;+0]-[*].[#7;H3;D0;+0:5]>>[*:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[N;H2;D1;+0:5]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -3046,7 +3058,7 @@
         "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;!$(OC(C)(C)C);H0;D1;+0:4])-[O;H0;D2;+0]-[*].[#7;H2;D1;+0:6]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H1;D2;+0:6]",
         "subclass_id": 2,
         "subsubclass_id": null,
-        "superclass_id": 2,
+        "superclass_id": null,
         "rxno_classification": [
             {
                 "rxno_id": "RXNO:0000357",
@@ -3063,7 +3075,7 @@
             "priority": null
         },
         "smirks": "[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;!$(OC(C)(C)C);H0;D2;+0].[#7;H1;D2;+0:6]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#7;H0;D3;+0:6]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -3075,7 +3087,7 @@
         ]
     },
     {
-        "class_id": 5,
+        "class_id": 1,
         "name": "Acid anhydride with primary amine to amide",
         "priority": {
             "priority_class": null,
@@ -3213,7 +3225,7 @@
             "priority": null
         },
         "smirks": "[c;D3;H0;+0:2]-[Cl,Br,I,F].[#6:4]-[O;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[O;H0;D2;+0:5]-[#6:4]",
-        "subclass_id": 3,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -3289,7 +3301,7 @@
             "priority": null
         },
         "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -3743,7 +3755,7 @@
             "priority": null
         },
         "smirks": "[C;H2;+0:1]=[C;H0,H1;+0:2].[O;H2;D0;+0:3]>>[C;!$(CO);+0:1]-[C;!$(C=O);+0:2]-[O;H1;D1;+0:3]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 7,
         "rxno_classification": [
@@ -4107,9 +4119,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000244",
-                "rxno_label": "Passerini reaction",
-                "rxno_definition": "The reaction between an isonitrile, a carboxylic acid and aldehyde or ketone to give an alpha-acyloxy amide."
+                "rxno_id": "RXNO:0000129",
+                "rxno_label": "Ugi reaction",
+                "rxno_definition": "Reaction of a ketone or aldehyde, amine, an isocyanide and carboxylic acid to form a bisamide."
             }
         ]
     },
@@ -4183,9 +4195,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000187",
-                "rxno_label": "Tishchenko reaction",
-                "rxno_definition": "The formation of an ester from two aldehydes via a disproportionation process using a metal alkoxide to oxidise one aldehyde and reduce the other."
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -4653,7 +4665,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H1;D2;+0:3].[#6;!$(C(=O)O);+0:5]-[O;H1;D1;+0]>>[#6;+0:2]-[N;H0;D3;+0:3]-[#6;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -4684,7 +4696,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Huisgen alkyne-azide 1,3 dipolar cycloaddition",
         "priority": {
             "priority_class": null,
@@ -4703,7 +4715,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Huisgen alkyne-azide 1,3 dipolar cycloaddition",
         "priority": {
             "priority_class": null,
@@ -4722,7 +4734,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Huisgen alkene-azide 1,3 dipolar cycloaddition",
         "priority": {
             "priority_class": null,
@@ -4734,9 +4746,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000269",
-                "rxno_label": "alkyne-azide click reaction",
-                "rxno_definition": "A [3+2] cycloaddition reaction between an azide and an alkyne to give a 1,2,3-triazole, needing only heat to proceed."
+                "rxno_id": "RXNO:0000018",
+                "rxno_label": "1,3-dipolar cycloaddition",
+                "rxno_definition": "A ring formation reaction where a 1,3-dipolar compound reacts with an alkene or alkyne to form a five-membered ring compound."
             }
         ]
     },
@@ -4805,7 +4817,7 @@
             "priority": null
         },
         "smirks": "[*:1]-[N;H1;D2;+0:2]-[*:3].[C;H3;D1;+0:4]-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[O;H0;D2;+0]-[C;H0;D3;+0](=[O;H0;D1;+0])-[C;H3;D1;+0]>>[*:1]-[N;H0;D3;+0:2](-[*:3])-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[C;H3;D1;+0:4]",
-        "subclass_id": 2,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -4817,7 +4829,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Quinone formation",
         "priority": {
             "priority_class": null,
@@ -4984,14 +4996,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Arene hydrogenation",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[c:1]1:[c:2]:[c:3]:[c:4]:[c:5]:[c:6]:1>>[C:1]1-[C:2]-[C:3]-[C:4]-[C:5]-[C:6]-1",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 6,
         "rxno_classification": [
@@ -5104,7 +5116,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -5116,7 +5130,7 @@
             "priority": null
         },
         "smirks": "[*:1]-[C;H1;D2;+0:2](=[O;H0;D1;+0]).[*:3]-[N;H1;D2;+0:4]-[*:5].[*:6]-[C;H0;D2;+0:7]#[C;H1;D1;+0:8]>>[*:6]-[C;H0;D2;+0:7]#[C;H0;D2;+0:8]-[C;H1;D3;+0:2](-[*:1])-[N;H0;D3;+0:4](-[*:3])-[*:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -5128,7 +5142,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "A3 coupling to imidazoles",
         "priority": {
             "priority_class": null,
@@ -5147,7 +5161,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Alkyne-imine cycloaddition",
         "priority": {
             "priority_class": null,
@@ -5166,7 +5180,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Azide-nitrile click cycloaddition to tetrazole",
         "priority": {
             "priority_class": null,
@@ -5185,7 +5199,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Azide-nitrile click cycloaddition to tetrazole",
         "priority": {
             "priority_class": null,
@@ -5340,7 +5354,7 @@
             "priority": null
         },
         "smirks": "[*:1]-[N;H2;D1;+0:2].[C;H0,H1;+0:4]#[C;H0;D2;+0:5]-[O;H0;D2;+0:6]-[C;H2;D2;+0]-[C;H3;D1;+0]>>[*:1]-[N;H1;D2;+0:2]-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[C;+0:4]",
-        "subclass_id": 2,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -5421,9 +5435,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000040",
-                "rxno_label": "Ullmann reaction",
-                "rxno_definition": "A carbon-carbon homocoupling reaction of an aryl halide mediated by copper."
+                "rxno_id": "RXNO:0000081",
+                "rxno_label": "Ullmann condensation",
+                "rxno_definition": "A coupling reaction in which a phenol is coupled to an aryl halide to give a diaryl ether in the presence of a copper compound."
             }
         ]
     },
@@ -5447,7 +5461,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Minisci (ortho)",
         "priority": {
             "priority_class": null,
@@ -5524,7 +5538,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:1]-[N;H1;D2;+0:2]-[C;H0;D3;+0](=[O;H0;D1;+0])-[*]>>[#6;+0:1]-[N;H2;D1;+0:2]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
@@ -5570,14 +5584,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Hydrolysis of primary amides/imides/carbamates with base",
         "priority": {
             "priority_class": 2,
             "priority": 5
         },
         "smirks": "[*]-[N;H1;D2;+0]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[#6;+0:1].[OH;D0;-1:2]>>[#6;+0:1]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -5666,7 +5680,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]-[#6]),$([#6]:[#6]);H0,H1;+0:1]=[N;H0;D2;+0]-[N;H2;D1;+0].[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H1;D1;+0:5]>>[#6:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])-[O;H0;D2;+0:5]-[#6;$([#6]-[#6]),$([#6]:[#6]);+0:1]",
-        "subclass_id": null,
+        "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -5683,7 +5697,7 @@
             "priority": null
         },
         "smirks": "[#6:8]-[#6;$([#6]-[#6]),$([#6]:[#6]);H0;+0:1](=[N;H0;D2;+0]-[N;H2;D1;+0])-[C;H3;D1;+0:9].[*:2]-[C;H0;D3;+0:3](=[C;H2;D1;+0:4])-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[O;H0;D2;+0:7]>>[#6:8]-[#6;H0;D4;+0:1]1(-[C;H3;D1;+0:9])-[C;H2;D2;+0:4]-[C;H0;D4;+0:3]1(-[*:2])-[C;H0;D3;+0:5](=[O;H0;D1;+0:6])-[O;H0;D2;+0:7]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -5771,7 +5785,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "[3+2]-cycloaddition of diazoalkane and alkene",
         "priority": {
             "priority_class": null,
@@ -5809,7 +5823,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "[3+2]-cycloaddition of diazoalkane and alpha-alkene",
         "priority": {
             "priority_class": null,
@@ -5835,7 +5849,7 @@
             "priority": null
         },
         "smirks": "[c;+0;H0;D3:1]-[Br,I].[C;H3;D1;+0]-[N;H0;D3;+0](-[C;H3;D1;+0])-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4]>>[c;+0;H0;D3:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[*:4]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -5847,7 +5861,7 @@
         ]
     },
     {
-        "class_id": 2,
+        "class_id": 12,
         "name": "Intramolecular amination of azidobiphenyls (heterocycle formation)",
         "priority": {
             "priority_class": null,
@@ -5964,7 +5978,7 @@
             "priority": null
         },
         "smirks": "[O;H0;D1;+0:1]=[C;H0;D2;+0:2]=[O;H0;D1;+0].[#6:4]-[Mg]-[Br,I,Cl].[#6:5]-[Li]>>[#6:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:1])-[#6:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 7,
         "rxno_classification": [
@@ -5983,7 +5997,7 @@
             "priority": null
         },
         "smirks": "[O;H0;D1;+0:1]=[C;H0;D2;+0:2]=[O;H0;D1;+0].[#6:4]-[Br,I].[#6:5]-[Li]>>[#6:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:1])-[#6:5]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 7,
         "rxno_classification": [
@@ -6202,7 +6216,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Derived benzimidazole via homologation of aldehydes with formaldehyde",
         "priority": {
             "priority_class": null,
@@ -6214,9 +6228,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000399",
-                "rxno_label": "Phillips benzimidazole synthesis",
-                "rxno_definition": "Reaction of an ortho-diaminobenzene with a carboxylic acid under heat to yield a benzimidazole."
+                "rxno_id": "RXNO:0000398",
+                "rxno_label": "benzimidazole synthesis",
+                "rxno_definition": "A reaction in which the intended product is a benzimidazole that was not present in any of the reactants."
             }
         ]
     },
@@ -6441,7 +6455,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 12,
         "name": "Huisgen 1,3,4-oxadiazoles from COOH and tetrazole",
         "priority": {
             "priority_class": null,
@@ -6453,7 +6467,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000349",
+                "rxno_label": "heterocycle synthesis",
+                "rxno_definition": "A ring formation reaction where the intended product contains a heterocycle that was not in any of the reactants."
             }
         ]
     },
@@ -6508,9 +6524,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000332",
-                "rxno_label": "aromatic substitution step",
-                "rxno_definition": "A substitution step where one singly-bonded substituent on an aromatic skeleton is replaced by another singly-bonded substituent."
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6527,9 +6543,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000332",
-                "rxno_label": "aromatic substitution step",
-                "rxno_definition": "A substitution step where one singly-bonded substituent on an aromatic skeleton is replaced by another singly-bonded substituent."
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6546,7 +6562,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6563,7 +6581,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6580,7 +6600,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6597,7 +6619,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -6633,7 +6657,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
             }
         ]
     },
@@ -6859,9 +6885,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000316",
-                "rxno_label": "palladium-catalysed carbon-carbon coupling reaction",
-                "rxno_definition": "A carbon-carbon coupling reaction that is catalysed by a palladium atom."
+                "rxno_id": "RXNO:0000137",
+                "rxno_label": "Sonogashira coupling",
+                "rxno_definition": "A carbon-carbon coupling reaction where a terminal alkyne reacts with an aryl halide to give an aryl alkyne. It is catalysed by palladium."
             }
         ]
     },
@@ -7063,7 +7089,7 @@
             "priority": null
         },
         "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H2;D1;+0:3]>>[c;H0;D3;+0:1]-[N;H1;D2;+0:3]-[#6;+0:2]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -7101,7 +7127,7 @@
             "priority": null
         },
         "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#7;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[#7;H0;D3;+0:3]",
-        "subclass_id": null,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
@@ -7201,7 +7227,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -7218,19 +7246,21 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
     {
-        "class_id": 5,
+        "class_id": null,
         "name": "Sulfonamide synthesis (Schotten-Baumann) primary amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I,OH].[#6;+0:5]-[N;H2;D1;+0:6]>>[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[N;H1;D2;+0:6]-[#6;+0:5]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -7242,14 +7272,14 @@
         ]
     },
     {
-        "class_id": 5,
+        "class_id": null,
         "name": "Sulfonamide synthesis (Schotten-Baumann) secondary amine",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[F,Cl,Br,I,OH].[#6;+0:5]-[N;H1;D2;+0:6]>>[#6,#7,Cl;+0:1]-[S;H0;D4;+0:2](=[O;H0;D1;+0:3])(=[O;H0;D1;+0:4])-[N;H0;D3;+0:6]-[#6;+0:5]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -7337,14 +7367,14 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Alcohol to chloride - PCl5 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
         },
         "smirks": "[Cl]-[P;H0;D5;+0](-[Cl])(-[Cl])(-[Cl])-[Cl:1].[c;$([c;H0](:[c,n]):[n]);H0;D3;+0:2]-[O;H1;D1;+0]>>[c;H0;D3;+0:2]-[Cl:1]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7356,14 +7386,14 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Alcohol to chloride - POCl3 ortho",
         "priority": {
             "priority_class": 3,
             "priority": 5
         },
         "smirks": "[O;H0;D1;+0]=[P;H0;D4;+0](-[Cl])(-[Cl])-[Cl:1].[c;$([c;H0](:[c,n]):[n]);H0;D3;+0:2]-[O;H1;D1;+0]>>[c;H0;D3;+0:2]-[Cl:1]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7382,7 +7412,7 @@
             "priority": 5
         },
         "smirks": "[O;H0;D1;+0]=[P;H0;D4;+0](-[Cl])(-[Cl])-[Cl:1].[c;$([c;H0](:[c]):[c]:[c]:[n]);H0;D3;+0:2]-[O;H1;D1;+0]>>[c;H0;D3;+0:2]-[Cl:1]",
-        "subclass_id": 2,
+        "subclass_id": 0,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -7665,7 +7695,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0])-[N;H0;D3;+0:3]>>[#6;+0:1]-[C;H2;D2;+0:2]-[N;H0;D3;+0:3]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 6,
         "rxno_classification": [
@@ -8233,7 +8263,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole aldehyde",
         "priority": {
             "priority_class": null,
@@ -8245,9 +8275,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000399",
-                "rxno_label": "Phillips benzimidazole synthesis",
-                "rxno_definition": "Reaction of an ortho-diaminobenzene with a carboxylic acid under heat to yield a benzimidazole."
+                "rxno_id": "RXNO:0000398",
+                "rxno_label": "benzimidazole synthesis",
+                "rxno_definition": "A reaction in which the intended product is a benzimidazole that was not present in any of the reactants."
             }
         ]
     },
@@ -8338,7 +8368,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000603",
+                "rxno_label": "cross-coupling",
+                "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
             }
         ]
     },
@@ -8355,7 +8387,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000603",
+                "rxno_label": "cross-coupling",
+                "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
             }
         ]
     },
@@ -8410,9 +8444,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000127",
-                "rxno_label": "Balz-Schiemann reaction",
-                "rxno_definition": "The conversion of an aromatic amine to the corresponding fluoride via the diazonium fluoroborate."
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
             }
         ]
     },
@@ -8515,7 +8549,7 @@
             "priority": null
         },
         "smirks": "[CX4;+0:2]-[N;H0;D3;+1:3](=[O;H0;D1;+0:4])-[O;H0;D1;-1:5].[CX3;+0:6]=[O;H0;D1;+0:7]>>[O;H1;D1;+0:7]-[CX4;+0:6]-[CX4;+0:2]-[N;H0;D3;+1:3](=[O;H0;D1;+0:4])-[O;H0;D1;-1:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -8698,7 +8732,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Ackermann Reaction",
         "priority": {
             "priority_class": null,
@@ -8753,7 +8787,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Pictet-Spengler reaction",
         "priority": {
             "priority_class": null,
@@ -8772,7 +8806,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole synthesis from carboxylic acid/ester",
         "priority": {
             "priority_class": null,
@@ -8791,7 +8825,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Benzimidazole synthesis from aldehyde",
         "priority": {
             "priority_class": null,
@@ -8810,7 +8844,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Benzothiazole synthesis from 2-aminothiophenol and aldehyde",
         "priority": {
             "priority_class": null,
@@ -8822,9 +8856,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000349",
-                "rxno_label": "heterocycle synthesis",
-                "rxno_definition": "A ring formation reaction where the intended product contains a heterocycle that was not in any of the reactants."
+                "rxno_id": "RXNO:0000348",
+                "rxno_label": "thiacycle synthesis",
+                "rxno_definition": "A ring formation reaction where the intended product contains an thiacycle that was not in any of the reactants."
             }
         ]
     },
@@ -8855,7 +8889,7 @@
             "priority": null
         },
         "smirks": "[c;r6:2](-[OH1:3]):[c;r6:4](-[NH2:5]).[#6:7]-[C;R0:6](=[OD1])-[OH1]>>[c:4]2:[c:2]:[o:3]:[c:6](-[#6:7]):[n:5]@2",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 8,
         "rxno_classification": [
@@ -8905,7 +8939,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Tetrazole synthesis from nitrile",
         "priority": {
             "priority_class": null,
@@ -8924,7 +8958,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Tetrazole synthesis, N-alkylated regioisomer 1",
         "priority": {
             "priority_class": null,
@@ -8943,7 +8977,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Tetrazole synthesis, N-alkylated regioisomer 2",
         "priority": {
             "priority_class": null,
@@ -8962,7 +8996,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Cu-catalyzed azide-alkyne cycloaddition (1,4-triazole)",
         "priority": {
             "priority_class": null,
@@ -8981,7 +9015,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Ru-catalyzed azide-alkyne cycloaddition (1,5-triazole)",
         "priority": {
             "priority_class": null,
@@ -9000,7 +9034,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Huisgen azide-alkyne cycloaddition (internal alkyne)",
         "priority": {
             "priority_class": null,
@@ -9019,7 +9053,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "1,2,4-Triazole synthesis from acetohydrazide",
         "priority": {
             "priority_class": null,
@@ -9038,7 +9072,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "1,2,4-Triazole synthesis from carboxylic acid/ester",
         "priority": {
             "priority_class": null,
@@ -9076,7 +9110,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Spiro-chromanone synthesis (o-hydroxyaryl ketone + cyclic ketone)",
         "priority": {
             "priority_class": null,
@@ -9114,7 +9148,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "Phthalazinone synthesis from 2-acylbenzoic acid and hydrazine",
         "priority": {
             "priority_class": null,
@@ -9152,7 +9186,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Radziszewski imidazole synthesis (triaryl)",
         "priority": {
             "priority_class": null,
@@ -9190,7 +9224,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Friedlander quinoline synthesis",
         "priority": {
             "priority_class": null,
@@ -9266,7 +9300,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "1,2,4-Oxadiazole synthesis from nitrile and carboxylic acid",
         "priority": {
             "priority_class": null,
@@ -9278,7 +9312,9 @@
         "superclass_id": 8,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000349",
+                "rxno_label": "heterocycle synthesis",
+                "rxno_definition": "A ring formation reaction where the intended product contains a heterocycle that was not in any of the reactants."
             }
         ]
     },
@@ -9613,7 +9649,7 @@
             "priority": null
         },
         "smirks": "[C;$(C=O):2][OH1].[N;$(N[#6]);!$(N=*);!$([N-]);!$(N#*);!$([ND3]);!$([ND4]);!$(N[O,N]);!$(N[C,S]=[S,O,N]):3]>>[C:2][N+0:3]",
-        "subclass_id": 3,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -9632,7 +9668,7 @@
             "priority": null
         },
         "smirks": "[S;$(S(=O)(=O)[C,N]):2][Cl].[N;$(NC);!$(N=*);!$([N-]);!$(N#*);!$([ND3]);!$([ND4]);!$(N[c,O]);!$(N[C,S]=[S,O,N]):3]>>[S:2][N+0:3]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -9656,9 +9692,9 @@
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000372",
-                "rxno_label": "heteroaryl N-arylation",
-                "rxno_definition": "An N-arylation reaction where the reactive centre is an azacycle ring nitrogen."
+                "rxno_id": "RXNO:0000374",
+                "rxno_label": "Chan-Lam coupling",
+                "rxno_definition": "Arylation of an amine or an alcohol with an arylboronic acid, stannane or siloxane in air with a copper acetate catalyst."
             }
         ]
     },
@@ -9701,7 +9737,7 @@
         ]
     },
     {
-        "class_id": null,
+        "class_id": 8,
         "name": "Debus-Radziszewski imidazole synthesis",
         "priority": {
             "priority_class": null,
@@ -9861,7 +9897,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9878,7 +9916,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9895,9 +9935,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000332",
-                "rxno_label": "aromatic substitution step",
-                "rxno_definition": "A substitution step where one singly-bonded substituent on an aromatic skeleton is replaced by another singly-bonded substituent."
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9914,7 +9954,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9931,7 +9973,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9967,7 +10011,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -9984,7 +10030,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10001,7 +10049,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10018,7 +10068,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10035,7 +10087,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10071,7 +10125,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10107,7 +10163,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10124,7 +10182,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10141,7 +10201,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10158,9 +10220,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000225",
-                "rxno_label": "Wohl-Ziegler bromination",
-                "rxno_definition": "The allylic or benzylic bromination of hydrocarbons using an N-bromoimide and a radical initiator, to give an allylic or benzylic bromide."
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10177,7 +10239,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10213,7 +10277,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10230,7 +10296,9 @@
         "superclass_id": 7,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000373",
+                "rxno_label": "functional group addition step",
+                "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
             }
         ]
     },
@@ -10373,7 +10441,7 @@
             "priority": null
         },
         "smirks": "[C;X2;+0:4]#[C;X2;+0:5].[Cl;H0;D1;+0:6]-[C;H0;D3;+0:7](=[O;D1;H0:8])>>[C;H0;D3;+0:4](-[Cl;H0;D1;+0:6])=[CH;D2;+0:5]\\[C;H0;D3;+0:7](=[O;D1;H0:8])",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -10433,26 +10501,28 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000603",
+                "rxno_label": "cross-coupling",
+                "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
             }
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Coupling of benzylboronic esters with aldehydes",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "C-C1(-C)-O-B(-[C;H2;D2;+0:2]-[c;D3;+0:3])-O-C-1(-C)-C.[O;H0;D1;+0:6]=[C;X3;+0:7]-[c;D3;+0:8]>>[OH;D1;+0:6]-[C;X4;+0:7](-[C;H2;D2;+0:2]-[c;D3;+0:3])-[c;D3;+0:8]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000603",
-                "rxno_label": "cross-coupling",
-                "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
+                "rxno_id": "RXNO:0000002",
+                "rxno_label": "carbon-carbon coupling reaction",
+                "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
             }
         ]
     },
@@ -10507,7 +10577,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -10531,7 +10603,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Alcohol to triflate conversion",
         "priority": {
             "priority_class": null,
@@ -10543,14 +10615,14 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000331",
-                "rxno_label": "substitution step",
-                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
     {
-        "class_id": null,
+        "class_id": 12,
         "name": "1,2,4-oxadiazol-5(2H)-one synthesis from nitrile, hydrogen carbonate, and hydroxylamine",
         "priority": {
             "priority_class": null,
@@ -10581,9 +10653,9 @@
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000430",
-                "rxno_label": "hydroxy group deprotection",
-                "rxno_definition": "A deprotection reaction where the reactive centre is an oxygen atom."
+                "rxno_id": "RXNO:0000203",
+                "rxno_label": "deprotection reaction",
+                "rxno_definition": "A reaction in which a protecting group is modified by converting it into a functional group."
             }
         ]
     },
@@ -10707,7 +10779,7 @@
             "priority": 5
         },
         "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0]-[*].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5]",
-        "subclass_id": 2,
+        "subclass_id": 1,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -10744,7 +10816,7 @@
             "priority_class": 2,
             "priority": 5
         },
-        "smirks": "[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
+        "smirks": "fixthis[C;D3;H0;+0:3](=[O;D1;H0:5])-[O;D2;H0;+0:1]-[*:2].[O;H1;D0;-1:4]>>[C;D3;H0;+0:3](-[O;H1;D1:4])=[O;D1;H0:5].[O;D1;H1;+0:1]-[*:2]",
         "subclass_id": 2,
         "subsubclass_id": null,
         "superclass_id": 5,
@@ -10807,7 +10879,9 @@
         "superclass_id": 2,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -10838,7 +10912,7 @@
             "priority": null
         },
         "smirks": "[O;H1;D1;+0:3]-[C;H0;D3;+0:2](=[O;D1;H0]).[NH4+;D0:7]>>[NH2;D1;+0:7]-[C;H0;D3;+0:2](=[O;D1;H0:3])",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 2,
         "rxno_classification": [
@@ -10907,14 +10981,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "Carboxylate to carboxylic acid",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[C;D3;H0;+0:3](-[O-;H0;D1:5])=[O;D1;H0:4]>>[C;D3;H0;+0:3](=[O;D1;H0:4])-[OH;D1;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 5,
         "rxno_classification": [
@@ -10936,9 +11010,9 @@
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000595",
-                "rxno_label": "Claisen-Schmidt condensation",
-                "rxno_definition": "Condensation of an aromatic aldehyde with an aliphatic aldehyde or ketone in the presence of a relatively strong base to from an alpha,beta-unsaturated aldehyde or ketone."
+                "rxno_id": "RXNO:0000017",
+                "rxno_label": "aldol condensation",
+                "rxno_definition": "An aldol addition where an enol or enolate reacts with a carbonyl compound to form an alpha,beta-unsaturated ketone."
             }
         ]
     },
@@ -11067,7 +11141,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -11103,7 +11179,9 @@
         "superclass_id": 5,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000011",
+                "rxno_label": "functional group modification",
+                "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
             }
         ]
     },
@@ -11127,7 +11205,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Alcohol to triflate conversion",
         "priority": {
             "priority_class": null,
@@ -11303,7 +11381,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:1]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]~n);+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11322,14 +11400,14 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:1]-[S;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[#6;$([#6]~[#6]:[#6]),$([#6]-[#9]);+0]>>[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:2]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000589",
-                "rxno_label": "triflyloxy Suzuki-type coupling",
-                "rxno_definition": "A Suzuki-type coupling where the rule of the halide is played by a triflyloxy group."
+                "rxno_id": "RXNO:0000592",
+                "rxno_label": "Suzuki-type coupling",
+                "rxno_definition": "The coupling of a boronic acid or boronic ester with an unsaturated halide, triflate or sulfonate."
             }
         ]
     },
@@ -11341,14 +11419,14 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:1]-[O;H0;D2;+0]-[S;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[#6;$([#6]~[#6]:[#6]),$([#6]-[#9]);+0]>>[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:2]-[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000589",
-                "rxno_label": "triflyloxy Suzuki-type coupling",
-                "rxno_definition": "A Suzuki-type coupling where the rule of the halide is played by a triflyloxy group."
+                "rxno_id": "RXNO:0000592",
+                "rxno_label": "Suzuki-type coupling",
+                "rxno_definition": "The coupling of a boronic acid or boronic ester with an unsaturated halide, triflate or sulfonate."
             }
         ]
     },
@@ -11360,7 +11438,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0]1-[O;H0;D2;+0]-[#6;+0]~[#6;0]-[O;H0;D2;+0]1.[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:1]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11417,7 +11495,7 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[B;H0;D3;+0](-[O;H1;D1;+0])-[O;H1;D1;+0].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]);+0:1]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11543,14 +11621,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "in-situ organolithium aldehyde to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Li;H0].[#6;+0:2]-[Br,I,Cl].[*:3]-[C;H1;D2;+0:4](=[O;H0;D1;+0:5])>>[*:3]-[C;H1;D3;+0:4](-[O;H1;D1;+0:5])-[#6;+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11562,14 +11640,14 @@
         ]
     },
     {
-        "class_id": 3,
+        "class_id": null,
         "name": "in-situ organolithium ketone to alcohol",
         "priority": {
             "priority_class": null,
             "priority": null
         },
         "smirks": "[Li;H0].[#6;+0:2]-[Br,I,Cl].[*:3]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[#6;+0:6]>>[*:3]-[C;H0;D4;+0:4](-[O;H1;D1;+0:5])(-[#6;+0:6])-[#6;+0:2]",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
@@ -11600,7 +11678,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 3,
         "name": "Olefination of ketones with in-situ Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -11619,7 +11697,7 @@
         ]
     },
     {
-        "class_id": 6,
+        "class_id": 3,
         "name": "Olefination of aldehydes with in-situ Grignard reagents",
         "priority": {
             "priority_class": null,
@@ -11667,7 +11745,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -11698,7 +11778,7 @@
             "priority": null
         },
         "smirks": "[Mg;H0].[O;H0;D1;+0:1]=[C;H0;D2;+0:2]=[O;H0;D1;+0].[#6:4]-[Br,I,Cl].[#6:5]-[Mg]-[Br]>>[#6:4]-[C;H0;D3;+0:2](=[O;H0;D1;+0:1])-[#6:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 7,
         "rxno_classification": [
@@ -11741,7 +11821,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -11810,12 +11892,14 @@
             "priority": null
         },
         "smirks": "[#6:2]-[N;D1;H2;+0].[S;H1;D0;-1:5]>>[#6:2]-[S;H1;D1;+0:5]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 1,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000331",
+                "rxno_label": "substitution step",
+                "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
             }
         ]
     },
@@ -11851,7 +11935,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -11894,7 +11980,7 @@
         ]
     },
     {
-        "class_id": 1,
+        "class_id": null,
         "name": "Imine formation",
         "priority": {
             "priority_class": null,
@@ -12053,12 +12139,14 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H1;D2;+0:3]-[#6;+0]-[*]>>[#6;+0:2]-[N;H2;D1;+0:3]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000320",
+                "rxno_label": "amino group deprotection",
+                "rxno_definition": "A deprotection reaction where the reactive centre is an amino nitrogen atom."
             }
         ]
     },
@@ -12070,12 +12158,14 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[#7;H0;D3;+0:3](-[#6;+0:4])-[#6;+0]-[*]>>[#6;+0:2]-[#7;H1;D2;+0:3](-[#6;+0:4])",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000320",
+                "rxno_label": "amino group deprotection",
+                "rxno_definition": "A deprotection reaction where the reactive centre is an amino nitrogen atom."
             }
         ]
     },
@@ -12087,12 +12177,14 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[N;H1;D2;+0:3]-[#6;+0](-[*])-[*]>>[#6;+0:2]-[N;H2;D1;+0:3]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000320",
+                "rxno_label": "amino group deprotection",
+                "rxno_definition": "A deprotection reaction where the reactive centre is an amino nitrogen atom."
             }
         ]
     },
@@ -12109,7 +12201,9 @@
         "superclass_id": 3,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000320",
+                "rxno_label": "amino group deprotection",
+                "rxno_definition": "A deprotection reaction where the reactive centre is an amino nitrogen atom."
             }
         ]
     },
@@ -12126,7 +12220,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": ""
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
@@ -12143,14 +12239,14 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000073",
-                "rxno_label": "cleaving reaction",
-                "rxno_definition": "A reaction where atoms are lost from the molecular skeleton."
+                "rxno_id": "RXNO:0000012",
+                "rxno_label": "functional group oxidation",
+                "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
             }
         ]
     },
     {
-        "class_id": 4,
+        "class_id": null,
         "name": "Oxidation of ketone to carboxylic acid with chloro-oxidizer",
         "priority": {
             "priority_class": null,
@@ -12233,7 +12329,7 @@
             "priority": null
         },
         "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg;D1;H0].[O;D0;H0;-1:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -12252,7 +12348,7 @@
             "priority": null
         },
         "smirks": "[C;H2;D2;+0:2]-[O;H1;D1;+0:3].[*]~[Mn,Cr,Os,Ru,Ce,Pb,Fe,Ag,Hg]~[O;H0:4]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-        "subclass_id": 4,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
@@ -12388,9 +12484,9 @@
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000130",
-                "rxno_label": "Wacker-Tsuji oxidation",
-                "rxno_definition": "The oxidation of a terminal alkene or ethene to a methyl ketone or acetaldehyde, catalysed by PdCl2 and CuCl2, and using molecular oxygen as the oxidant."
+                "rxno_id": "RXNO:0000344",
+                "rxno_label": "alkene oxidative cleavage",
+                "rxno_definition": "An alkene oxidation where the carbon-carbon double bond is cleaved."
             }
         ]
     },
@@ -12421,14 +12517,14 @@
             "priority": null
         },
         "smirks": "[#6;+0:2]-[C;H0,H1;+0:3]=[C;H1,H2;+0].[*]~[Cl;H0]~[O;H0:4]>>[#6;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:4])",
-        "subclass_id": 2,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 10,
         "rxno_classification": [
             {
-                "rxno_id": "RXNO:0000130",
-                "rxno_label": "Wacker-Tsuji oxidation",
-                "rxno_definition": "The oxidation of a terminal alkene or ethene to a methyl ketone or acetaldehyde, catalysed by PdCl2 and CuCl2, and using molecular oxygen as the oxidant."
+                "rxno_id": "RXNO:0000344",
+                "rxno_label": "alkene oxidative cleavage",
+                "rxno_definition": "An alkene oxidation where the carbon-carbon double bond is cleaved."
             }
         ]
     },
@@ -12592,7 +12688,7 @@
             "priority": null
         },
         "smirks": "[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:2]-[B;H0;D3;+0](~[O;H0;D2;+0]-[*])~[O;H0;D2;+0]-[*].[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:1]-[O;H0;D2;+0]-[S;H0;D4;+0](=[O;H0;D1;+0])(=[O;H0;D1;+0])-[C;H0;D4;+0](-[F])(-[F])-[F]>>[#6;$([#6]:[#6]),$([#6]=[#6]),$([#6]#[#6]);+0:1]-[#6;$([#6]=[#6]),$([#6]~[#6]:[#6]),$([#6]:[#6]),$([#6]~n);+0:2]",
-        "subclass_id": 1,
+        "subclass_id": null,
         "subsubclass_id": null,
         "superclass_id": 4,
         "rxno_classification": [
