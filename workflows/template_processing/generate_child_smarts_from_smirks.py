@@ -308,9 +308,10 @@ if __name__ == "__main__":
         )
         default_smirk_pattern["class_id"] = default_smirk_pattern["class_id"] or 0
         default_smirk_pattern["subclass_id"] = default_smirk_pattern["subclass_id"] or 0
+        default_smirk_pattern["subsubclass_id"] = default_smirk_pattern["subsubclass_id"] or 0
 
         default_smirk_pattern["class_str"] = (
-            f"{default_smirk_pattern['superclass_id']}.{default_smirk_pattern['class_id']}.{default_smirk_pattern['subclass_id']}"
+            f"{default_smirk_pattern['superclass_id']}.{default_smirk_pattern['class_id']}.{default_smirk_pattern['subclass_id']}.{default_smirk_pattern["subsubclass_id"]}"
         )
 
         default_smirks_with_children.append(default_smirk_pattern)

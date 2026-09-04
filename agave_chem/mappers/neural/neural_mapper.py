@@ -1,13 +1,14 @@
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Literal, Optional, Set, Tuple, TypedDict, Union, cast
 
 import numpy as np
 import torch
 from rdkit import Chem
 from transformers import AlbertForMaskedLM
 
+from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
 from agave_chem.mappers.neural.constants import (
     smiles_token_to_id_dict,
     token_atom_identity_dict,
@@ -17,9 +18,14 @@ from agave_chem.mappers.neural.model import (
     SupervisedConfig,
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
-from agave_chem.mappers.reaction_mapper import ReactionMapper, ReactionMapperResult
+from agave_chem.mappers.reaction_mapper import ReactionMapper
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.chem_utils import canonicalize_reaction_smiles
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.reaction_balancing import (
+    compute_unmapped_product_atom_islands,
+    determine_one_to_one_correspondence,
+)
 from agave_chem.utils.symmetry_classes import get_symmetry_class_from_mol
 
 
@@ -134,6 +140,7 @@ class NeuralReactionMapper(ReactionMapper):
         )
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
+        self._mcs_mapper: Optional[MCSReactionMapper] = None
 
     def _encode_atom(self, atom: Chem.Atom) -> List[int]:
         """
@@ -509,21 +516,17 @@ class NeuralReactionMapper(ReactionMapper):
         ranks = []
         seen_smiles_and_symmetry_classes: Dict[str, List[int]] = {}
         for i, mol in enumerate(mols):
-            if Chem.MolToSmiles(mol) in seen_smiles_and_symmetry_classes:
-                mol_symmetry_classes = seen_smiles_and_symmetry_classes[
-                    Chem.MolToSmiles(mol)
-                ]
+            mol_smiles = Chem.MolToSmiles(mol)
+            if mol_smiles in seen_smiles_and_symmetry_classes:
+                mol_symmetry_classes = seen_smiles_and_symmetry_classes[mol_smiles]
             else:
-                mol_symmetry_classes = get_symmetry_class_from_mol(mol)
-                mol_symmetry_classes = [
-                    ele + (i + 1) * 1000 for ele in mol_symmetry_classes
-                ]
-                seen_smiles_and_symmetry_classes[Chem.MolToSmiles(mol)] = (
-                    mol_symmetry_classes
-                )
+                raw_classes = get_symmetry_class_from_mol(mol)
+                mol_symmetry_classes = [ele + (i + 1) * 1000 for ele in raw_classes]
+                seen_smiles_and_symmetry_classes[mol_smiles] = mol_symmetry_classes
 
             ranks.extend(mol_symmetry_classes)
-        return self.get_duplicate_indices([ranks])
+        result = self.get_duplicate_indices([ranks])
+        return result
 
     def _apply_symmetric_attention(
         self,
@@ -580,6 +583,120 @@ class NeuralReactionMapper(ReactionMapper):
 
         return result
 
+    def _apply_noisy_or(
+        self,
+        attn: np.ndarray,
+        symmetric_indices: Dict[int, List[int]],
+        axis: int,
+    ) -> np.ndarray:
+        """
+        Combine attention scores for symmetric atoms using noisy-OR.
+
+        For each group of symmetric atoms, replaces each member's attention
+        slice (row or column) with the noisy-OR combination across the group:
+        ``1 - prod(1 - p_i)``. This treats each symmetric atom's attention as
+        an independent opinion about the same event, combining them so that
+        multiple moderate confidences yield a higher combined confidence
+        without reaching certainty unless at least one source is certain.
+
+        Values are computed from the input array before any modifications are
+        applied, ensuring groups do not influence one another.
+
+        Args:
+            attn (np.ndarray): Attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            symmetric_indices (Dict[int, List[int]]): Output of
+                _get_symmetric_atom_indices — maps each atom index to its
+                symmetric partners.
+            axis (int): Axis along which to aggregate. Use 1 for reactant
+                atoms (columns) and 0 for product atoms (rows).
+
+        Returns:
+            np.ndarray: A copy of attn with symmetric atom slices replaced by
+                their group noisy-OR combination. The original array is not
+                modified.
+        """
+        identical_groups: List[Tuple[int, ...]] = list(
+            {tuple(sorted([k] + v)) for k, v in symmetric_indices.items()}
+        )
+
+        result = attn.copy()
+        new_val_mapping: Dict[int, np.ndarray] = {}
+        for group in identical_groups:
+            idx = list(group)
+            if axis == 1:
+                combined = 1.0 - np.prod(1.0 - attn[:, idx], axis=1)
+                for i in idx:
+                    new_val_mapping[i] = combined
+            else:
+                combined = 1.0 - np.prod(1.0 - attn[idx, :], axis=0)
+                for i in idx:
+                    new_val_mapping[i] = combined
+
+        for i, val in new_val_mapping.items():
+            if axis == 1:
+                result[:, i] = val
+            else:
+                result[i, :] = val
+
+        return result
+
+    def _symmetry_aware_confidence(
+        self,
+        p2r: np.ndarray,
+        r2p: np.ndarray,
+        r_sym: Dict[int, List[int]],
+        p_sym: Dict[int, List[int]],
+        one_to_one_correspondence: bool = True,
+    ) -> np.ndarray:
+        """
+        Compute symmetry-corrected confidence matrix from products-to-reactants attention.
+
+        Uses only the products-to-reactants (p2r) attention matrix for
+        confidence scoring, applying two types of symmetry correction:
+
+        1. **Opposite-side sum** (via _apply_symmetric_attention): When a
+           product atom could map to any of several symmetric reactant atoms,
+           the attention is split across them. Summing recovers the total
+           probability that the product atom maps to *some* member of the
+           symmetric reactant group.
+
+        2. **Same-side noisy-OR** (via _apply_noisy_or): When several
+           symmetric product atoms each have an opinion about the same
+           reactant atom, their confidences are combined using noisy-OR
+           (``1 - prod(1 - p_i)``). This treats each symmetric product atom
+           as an independent observer and correctly combines moderate
+           confidences into a higher combined confidence.
+
+        The r2p matrix is accepted for interface compatibility but not used.
+        Empirically, including r2p in the confidence calculation dilutes
+        accuracy because the reverse-direction noisy-OR introduces different
+        values than the forward-direction sum, and r2p is more susceptible
+        to noise on complex molecules.
+
+        Args:
+            p2r (np.ndarray): Products-to-reactants attention matrix of shape
+                (n_product_atoms, n_reactant_atoms).
+            r2p (np.ndarray): Reactants-to-products attention matrix of shape
+                (n_product_atoms, n_reactant_atoms). Not used; kept for
+                interface compatibility.
+            r_sym (Dict[int, List[int]]): Symmetric atom indices for
+                reactants.
+            p_sym (Dict[int, List[int]]): Symmetric atom indices for
+                products.
+            one_to_one_correspondence (bool): Kept for interface
+                compatibility; does not affect the result since only p2r is
+                used regardless.
+
+        Returns:
+            np.ndarray: Symmetry-corrected confidence matrix of shape
+                (n_product_atoms, n_reactant_atoms) with values in [0, 1].
+        """
+        p2r_corrected = self._apply_symmetric_attention(p2r, r_sym, axis=1)
+        p2r_corrected = np.clip(p2r_corrected, 0.0, 1.0)
+        p2r_corrected = self._apply_noisy_or(p2r_corrected, p_sym, axis=0)
+        return p2r_corrected
+
     def assign_atom_maps(
         self,
         rxn_smiles: str,
@@ -592,9 +709,16 @@ class NeuralReactionMapper(ReactionMapper):
         Assign atom-to-atom map numbers to a reaction SMILES using a pre-computed
         attention matrix.
 
-        Handles symmetric atoms in both reactants and products by summing their
-        attention contributions, preventing artificially low confidence scores
-        caused by equivalent atoms splitting probability mass.
+        Handles symmetric atoms in both reactants and products via
+        ``_symmetry_aware_confidence``, which applies opposite-side sum to
+        recover split probability mass and same-side noisy-OR to combine
+        independent opinions from symmetric source atoms. This prevents
+        artificially low confidence scores caused by equivalent atoms
+        splitting probability mass.
+
+        Greedy assignment uses the raw averaged attention (without symmetry
+        correction) to select the best individual atom pair, while confidence
+        scores are read from the symmetry-corrected matrix.
 
         Uses the scoring heuristic parameters (adjacent_atom_multiplier,
         identical_adjacent_atom_multiplier, used_atom_divisor) configured on the
@@ -665,26 +789,19 @@ class NeuralReactionMapper(ReactionMapper):
         reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
         products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
 
-        orig_products_to_reactants_attn = self._apply_symmetric_attention(
-            orig_products_to_reactants_attn, reactants_symmetric_indices, axis=1
-        )
-        orig_reactants_to_products_attn = self._apply_symmetric_attention(
-            orig_reactants_to_products_attn, products_symmetric_indices, axis=0
+        orig_attn = self._symmetry_aware_confidence(
+            orig_products_to_reactants_attn,
+            orig_reactants_to_products_attn,
+            reactants_symmetric_indices,
+            products_symmetric_indices,
+            one_to_one_correspondence=one_to_one_correspondence,
         )
 
-        ## If not a one-to-one correspondence, multiple product atoms could map to the same
-        ## reactant atom. That reactant atom signal would be split, producing inaccurate
-        ## assignment probabilities. So we use only product to reactant attention
         if one_to_one_correspondence:
-            orig_attn = (
-                orig_reactants_to_products_attn.copy()
-                + orig_products_to_reactants_attn.copy()
-            ) / 2
             attn = (
                 reactants_to_products_attn.copy() + products_to_reactants_attn.copy()
             ) / 2
         else:
-            orig_attn = orig_products_to_reactants_attn.copy()
             attn = products_to_reactants_attn.copy()
 
         assignment_probs = []
@@ -737,6 +854,8 @@ class NeuralReactionMapper(ReactionMapper):
                 products_atom_dict[row_highest_attn].SetAtomMapNum(map_num + 1)
                 reactants_atom_dict[col_highest_attn].SetAtomMapNum(map_num + 1)
 
+                conf_val = orig_attn[row_highest_attn, col_highest_attn]
+
                 if one_to_one_correspondence:
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] = 0
@@ -744,7 +863,7 @@ class NeuralReactionMapper(ReactionMapper):
                     attn[row_highest_attn] = 0
                     attn[:, col_highest_attn] /= self._used_atom_divisor
 
-                assignment_probs.append(orig_attn[row_highest_attn, col_highest_attn])
+                assignment_probs.append(conf_val)
 
             for (
                 product_atom_idx,
@@ -1095,10 +1214,62 @@ class NeuralReactionMapper(ReactionMapper):
 
         return ".".join(kept_frags) + ">>" + products_str
 
-    def map_reaction(
+    def _resolve_one_to_one_correspondence(
         self,
         rxn_smiles: str,
-        one_to_one_correspondence: bool = True,
+        one_to_one_correspondence: Union[bool, Literal["auto"]],
+        reaction_input: Optional[ReactionInput] = None,
+    ) -> bool:
+        """
+        Resolve the ``one_to_one_correspondence`` flag for a single reaction.
+
+        When the flag is ``"auto"``, the method uses pre-computed data from
+        ``reaction_input`` if available, or lazily instantiates an
+        ``MCSReactionMapper`` to compute the MCS mapping and unmapped atom
+        islands, then calls
+        :func:`determine_one_to_one_correspondence`.
+
+        Args:
+            rxn_smiles (str): The reaction SMILES to evaluate.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): The
+                correspondence mode.  ``True`` or ``False`` are passed through
+                unchanged; ``"auto"`` triggers detection.
+            reaction_input (Optional[ReactionInput]): Pre-computed reaction
+                data including MCS results and the determined flag.  If
+                provided and the mode is ``"auto"``, the
+                ``one_to_one_correspondence`` field is used directly.
+
+        Returns:
+            bool: The resolved ``one_to_one_correspondence`` flag.
+        """
+        if one_to_one_correspondence != "auto":
+            return one_to_one_correspondence
+
+        if reaction_input is not None:
+            return reaction_input.one_to_one_correspondence
+
+        if self._mcs_mapper is None:
+            self._mcs_mapper = MCSReactionMapper(
+                mapper_name="mcs_auto",
+                mapper_weight=0,
+            )
+
+        mcs_result = self._mcs_mapper.map_reaction(rxn_smiles)
+        islands: Dict[int, Set[int]] = {}
+        if mcs_result.selected_mapping:
+            try:
+                islands = compute_unmapped_product_atom_islands(
+                    mcs_result.selected_mapping.split(">>")[1]
+                )
+            except ValueError:
+                islands = {}
+
+        return determine_one_to_one_correspondence(rxn_smiles, islands)
+
+    def map_reaction(
+        self,
+        rxn_smiles: Union[str, ReactionInput],
+        one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
     ) -> ReactionMapperResult:
         """
@@ -1107,8 +1278,13 @@ class NeuralReactionMapper(ReactionMapper):
         Convenience wrapper around map_reactions for single-reaction use.
 
         Args:
-            rxn_smiles (str): A reaction SMILES string.
-            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            rxn_smiles (Union[str, ReactionInput]): A reaction SMILES string or
+                a ``ReactionInput`` with pre-computed data.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): If True,
+                enforces greedy one-to-one assignment.  If False, allows
+                oversubscription for reaction balancing.  If ``"auto"`` (the
+                default), the flag is determined per-reaction using atom-count
+                imbalance and MCS-based island detection.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers from the input SMILES before remapping.
 
@@ -1117,15 +1293,15 @@ class NeuralReactionMapper(ReactionMapper):
                 empty selected_mapping.
         """
         return self.map_reactions(
-            [rxn_smiles],
+            cast(Union[List[str], List[ReactionInput]], [rxn_smiles]),
             one_to_one_correspondence=one_to_one_correspondence,
             start_from_partial_map=start_from_partial_map,
         )[0]
 
     def map_reactions(
         self,
-        reaction_list: List[str],
-        one_to_one_correspondence: bool = True,
+        reaction_list: Union[List[str], List[ReactionInput]],
+        one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
         batch_size: int = 32,
     ) -> List[ReactionMapperResult]:
@@ -1142,8 +1318,15 @@ class NeuralReactionMapper(ReactionMapper):
         on the NeuralReactionMapper instance at construction time.
 
         Args:
-            reaction_list (List[str]): A list of unmapped reaction SMILES strings.
-            one_to_one_correspondence (bool): If True, enforces greedy one-to-one assignment.
+            reaction_list (Union[List[str], List[ReactionInput]]): A list of
+                unmapped reaction SMILES strings or ``ReactionInput`` objects.
+            one_to_one_correspondence (Union[bool, Literal["auto"]]): If True,
+                enforces greedy one-to-one assignment for all reactions.  If
+                False, allows oversubscription for all reactions.  If
+                ``"auto"`` (the default), the flag is determined per-reaction
+                using atom-count imbalance and MCS-based island detection.
+                When ``ReactionInput`` objects are provided, their
+                pre-computed ``one_to_one_correspondence`` field is used.
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers before remapping.
             batch_size (int): Number of reactions to process in a single forward pass.
@@ -1169,15 +1352,32 @@ class NeuralReactionMapper(ReactionMapper):
             for _ in reaction_list
         ]
 
-        # Preprocess: validate and optionally strip existing partial maps
+        # Preprocess: validate, resolve one_to_one_correspondence per reaction,
+        # and optionally strip existing partial maps
         prepared: List[
-            Optional[Tuple[str, Optional[Dict[int, int]], Optional[Dict[int, int]]]]
+            Optional[
+                Tuple[str, bool, Optional[Dict[int, int]], Optional[Dict[int, int]]]
+            ]
         ] = []
-        for rxn_smiles in reaction_list:
+        for item in reaction_list:
+            reaction_input: Optional[ReactionInput] = None
+            if isinstance(item, ReactionInput):
+                reaction_input = item
+                rxn_smiles = item.stripped_smiles
+            else:
+                rxn_smiles = item
+
             rxn_smiles = canonicalize_reaction_smiles(rxn_smiles)
             if not self._reaction_smiles_valid(rxn_smiles):
                 prepared.append(None)
                 continue
+
+            resolved_o2o = self._resolve_one_to_one_correspondence(
+                rxn_smiles,
+                one_to_one_correspondence,
+                reaction_input,
+            )
+
             reactants_atom_idx_to_orig_mapping = None
             products_atom_idx_to_orig_mapping = None
             if start_from_partial_map:
@@ -1189,6 +1389,7 @@ class NeuralReactionMapper(ReactionMapper):
             prepared.append(
                 (
                     rxn_smiles,
+                    resolved_o2o,
                     reactants_atom_idx_to_orig_mapping,
                     products_atom_idx_to_orig_mapping,
                 )
@@ -1224,14 +1425,14 @@ class NeuralReactionMapper(ReactionMapper):
             )
             for local_idx, (
                 orig_idx,
-                (rxn_smiles, reactants_map, products_map),
+                (rxn_smiles, o2o, reactants_map, products_map),
             ) in enumerate(batch_pairs):
                 attn, tokens = attn_tokens_list[local_idx]
                 result, expanded_rxn_smiles = self._map_from_attention(
                     rxn_smiles=rxn_smiles,
                     attn=attn,
                     tokens=tokens,
-                    one_to_one_correspondence=one_to_one_correspondence,
+                    one_to_one_correspondence=o2o,
                     reactants_atom_idx_to_orig_mapping=reactants_map,
                     products_atom_idx_to_orig_mapping=products_map,
                 )

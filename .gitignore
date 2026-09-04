@@ -31,6 +31,7 @@
 !agave_chem/datafiles/smirks_patterns/
 !agave_chem/datafiles/smirks_patterns/__init__.py
 !agave_chem/datafiles/smirks_patterns/smirks_patterns_with_children.json
+!agave_chem/datafiles/smirks_patterns/reaction_classes.json
 !agave_chem/datafiles/models/
 !agave_chem/datafiles/models/__init__.py
 !agave_chem/datafiles/models/supervised_albert_model/
@@ -72,6 +73,7 @@
 !agave_chem/utils/logging_config.py
 !agave_chem/utils/graph_utils.py
 !agave_chem/utils/symmetry_classes.py
+!agave_chem/utils/reaction_balancing.py
 
 !docs/
 !docs/getting_started.md
@@ -83,6 +85,7 @@
 !docs/images/
 !docs/images/tnt_balanced_reaction_mapped.png
 !docs/images/tnt_unbalanced_reaction.png
+!docs/images/agave_chem_image.png
 
 !examples/
 !examples/example_notebook.ipynb
@@ -102,6 +105,21 @@
 !workflows/benchmarking/benchmark_rxnmapper.py
 !workflows/benchmarking/benchmark_rxnmapper_v2.py
 !workflows/benchmarking/run_external_benchmarks.py 
+
+!workflows/compare_mappers/
+!workflows/compare_mappers/elo_rating.py
+!workflows/compare_mappers/viz_utils.py
+!workflows/compare_mappers/bradley_terry_comparison.ipynb
+!workflows/compare_mappers/filter_reactions.py
+!workflows/compare_mappers/run_rxnmapper.py
+!workflows/compare_mappers/run_rxnmapper_v2.py
+!workflows/compare_mappers/run_agavechem.py
+!workflows/compare_mappers/run_localmapper.py
+!workflows/compare_mappers/run_chython.py
+!workflows/compare_mappers/combine_results.py
+!workflows/compare_mappers/compile_speed_table.py
+!workflows/compare_mappers/run_all.sh
+!workflows/compare_mappers/run_speed_benchmark.sh
 
 !workflows/data/
 
@@ -143,13 +161,6 @@
 !tests/unit/test_supervised_training_unit.py
 !tests/unit/test_layer_head_identification_unit.py
 !tests/unit/test_cli_utils_unit.py
-
-
-!golden_seeded_random.pkl
-!golden_seeded_canonicalize.pkl
-!golden_seeded_tautomer.pkl
-!golden_canonical.pkl
-!verify_golden_datasets.py
 
 
 # !manuscript/

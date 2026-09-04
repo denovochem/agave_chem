@@ -1,5 +1,5 @@
 rdkit
-rdchiral-plus
+rdchiral-plus>=0.6.0
 loguru
 torch
 transformers

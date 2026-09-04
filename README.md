@@ -6,7 +6,25 @@
 [![Build Docs](https://img.shields.io/github/actions/workflow/status/denovochem/agave_chem/docs.yml?logo=github&logoColor=%23ffffff&label=docs)](https://denovochem.github.io/agave_chem/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/denovochem/agave_chem/blob/main/examples/example_notebook.ipynb)
 
-An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. AgaveChem provides four composable mappers from deterministic graph-based methods to a supervised neural mapper that can be used individually or combined into a pipeline. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
+![AgaveChem](docs/images/agave_chem_image.png)
+
+> **Try the web demo:** [denovochem.com/demos/reaction-atom-mapper](https://denovochem.com/demos/reaction-atom-mapper)
+
+An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y). AgaveChem can also be used to classify reactions and is capable of mapping and automatically balancing unbalanced reactions.
+
+**AgaveChem mappers**:
+
+- **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno) ontology classifications.
+
+- **MCS-like mapper**: Fingerprint based mapper that generates conservative partial maps at some radius around detected reaction centers.
+
+- **Identical fragment mapper**: Fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents) are detected and atom-mapped before any other mapper is invoked.
+
+- **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and ~90% of all product atoms in this dataset.
+
+These mappers can be used individually, or called as a pipeline using `map_reactions()`.
+
+**Benchmark**:
 
 | Mapper | Per-reaction mapping accuracy |
 | --- | :---: |
@@ -16,29 +34,6 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
 | AgaveChem (neural only) | 91.87% |
 | AgaveChem (using `map_reactions()`) | 92.72% |
-
-## Mappers
-
-### Neural mapper
-
-- **Supervised ALBERT-based mapper**: Trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps
-- **Template and MCS-derived "ground truth"**: Supervised training data for the second phase is generated automatically from ~0.97M filtered USPTO reactions; the deterministic pipeline fully maps ~60% of reactions and maps ~90% of all product atoms
-
-### Identical fragment mapper
-
-- **Spectator molecule handling**: Fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents) are detected and atom-mapped before any other mapper is invoked
-- **Collision-free numbering**: Pre-assigned atoms use a reserved numbering range to avoid conflicts with downstream mappers
-
-### MCS mapper
-
-- **Environment fingerprint matching**: Identifies invariant atoms using a bond-radius fingerprinting scheme, enabling efficient partial mapping
-- **Configurable radius**: A `min_radius_to_anchor_new_mapping` parameter controls how close to the reactive center mapping extends, yielding conservative partial maps that avoid incorrectly assigning atoms near reaction centers
-- **Anchor-extend strategy**: Alternates between propagating mappings from already-assigned anchor atoms and seeding new anchors, ensuring consistent multi-fragment mapping
-
-### Expert template mapper
-
-- **Curated SMIRKS library**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions
-- **Custom template support**: User-supplied SMIRKS patterns can supplement or replace the built-in library via `custom_smirks_patterns`
 
 ## Requirements
 
@@ -96,7 +91,7 @@ result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl"
 print(result.selected_mapping)
 ```
 
-### MCS mapper
+### MCS-like mapper
 
 ```python
 from agave_chem import MCSReactionMapper
@@ -106,7 +101,7 @@ result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl"
 print(result.selected_mapping)
 ```
 
-### Expert template mapper
+### Template mapper
 
 ```python
 from agave_chem import TemplateReactionMapper
@@ -118,7 +113,7 @@ print(result.selected_mapping)
 
 ### Handling unbalanced reactions
 
-AgaveChem is capable of mapping unbalanced reactions and returning balanced mapped reactions when one_to_one_correspondence=False. This feature is under active development.
+The neural mapper is capable of mapping unbalanced reactions and returning balanced mapped reactions when one_to_one_correspondence is set to "auto" or False. When one_to_one_correspondence is set to "auto", the neural mapper uses heuristics to automatically determine for each reaction whether one_to_one_correspondence should be True or False.
 
 ```python
 from rdkit import Chem

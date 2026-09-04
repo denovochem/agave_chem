@@ -5,6 +5,43 @@ from rdchiral import main as rdc
 from rdkit import Chem, DataStructs
 
 
+class ReactionInput(BaseModel):
+    """
+    Pre-processed reaction data shared across mappers to avoid duplicate work.
+
+    Created once by the orchestration layer (``map_reactions_using_mappers``)
+    and passed to each mapper.  When a mapper is used standalone with a raw
+    SMILES string, it internally builds a ``ReactionInput`` as needed.
+
+    Args:
+        original_smiles (str): The original, unmodified reaction SMILES.
+        stripped_smiles (str): Reaction SMILES with identical fragments
+            removed (may be identical to ``original_smiles`` if no identical
+            fragments were found).
+        identical_fragments (List[Tuple[str, str]]): Per-reaction list of
+            ``(reactant_smiles, product_smiles)`` pairs for identical
+            fragments that were stripped, to be re-added after mapping.
+        mcs_mapped_smiles (Optional[str]): Partially mapped SMILES from a
+            conservative MCS mapping pass, or ``None`` if MCS was not run.
+        unmapped_product_atom_islands (Dict[int, Set[int]]): Connected
+            components of unmapped atoms in the product side of
+            ``mcs_mapped_smiles``, keyed by island index.  Empty if MCS
+            was not run or produced no mapping.
+        one_to_one_correspondence (bool): Per-reaction flag determined by
+            the ``"auto"`` detection logic.  ``True`` when the reaction is
+            expected to have a one-to-one atom correspondence; ``False``
+            when atom-count imbalance or multiple unmapped islands suggest
+            the reaction needs balancing.
+    """
+
+    original_smiles: str = ""
+    stripped_smiles: str = ""
+    identical_fragments: List[Tuple[str, str]] = Field(default_factory=list)
+    mcs_mapped_smiles: Optional[str] = None
+    unmapped_product_atom_islands: Dict[int, Set[int]] = Field(default_factory=dict)
+    one_to_one_correspondence: bool = True
+
+
 def _default_additional_info() -> List[Dict[str, Any]]:
     return [{}]
 
@@ -25,6 +62,7 @@ class InitializedSmirksPattern(TypedDict):
     superclass_id: str
     class_id: str
     subclass_id: str
+    subsubclass_id: str
     class_str: str
     products_smarts: List[Chem.Mol]
     reactants_smarts: List[Chem.Mol]
@@ -35,6 +73,7 @@ class InitializedSmirksPattern(TypedDict):
     child_smirks: str
     template_name: str
     priority: Tuple[int, int]
+    rxno_classification: List[Dict[str, str]]
 
 
 class AppliedSmirkData(TypedDict):
@@ -56,6 +95,9 @@ class SmirksPattern(BaseModel):
         superclass_id (Optional[int]): Optional superclass identifier.
         class_id (Optional[int]): Optional class identifier.
         subclass_id (Optional[int]): Optional subclass identifier.
+        subsubclass_id (Optional[int]): Optional sub-subclass identifier.
+        rxno_classification (List[Dict[str, str]]): Optional list of RXNO
+            classification entries, each containing an ``rxno_id`` key.
     """
 
     name: str
@@ -63,6 +105,8 @@ class SmirksPattern(BaseModel):
     superclass_id: Optional[int] = None
     class_id: Optional[int] = None
     subclass_id: Optional[int] = None
+    subsubclass_id: Optional[int] = None
+    rxno_classification: List[Dict[str, str]] = Field(default_factory=list)
 
 
 class ReactionMapperResult(BaseModel):
@@ -72,10 +116,21 @@ class ReactionMapperResult(BaseModel):
     Args:
         original_smiles (str): The original unmapped reaction SMILES.
         selected_mapping (str): The selected atom-mapped reaction SMILES, or empty string on failure.
-        possible_mappings (Dict[str, List[str]]): Mapping from mapped SMILES to list of template names.
+        possible_mappings (Dict[str, List[str]]): Mapping from mapped SMILES to list of template names, ordered by template priority (highest first).
         mapping_type (str): The type of mapper that produced this result (e.g. "mcs", "template", "neural").
         mapping_score (Any): Optional score or scoring object for the selected mapping.
         additional_info (List[Dict[str, Any]]): Additional metadata about the mapping.
+        classification_info (Dict[str, List[Dict[str, Any]]]): Per-mapping reaction
+            classification metadata, keyed by mapped SMILES string (same keys as
+            ``possible_mappings``).  Each value is a list of dicts, one per matching
+            template, containing ``template_name``, ``class_str``, ``class_id``,
+            ``subclass_id``, ``subsubclass_id``, ``superclass_id``,
+            ``superclass_name``, ``superclass_description``, ``class_name``,
+            ``class_description``, ``subclass_name``, ``subclass_description``,
+            ``subsubclass_name``, ``subsubclass_description``, and
+            ``rxno_classification`` (a list of RXNO classification dicts, each
+            containing ``rxno_id``, ``rxno_label``, and ``rxno_definition``).
+            Only populated by the template mapper; other mappers leave this empty.
     """
 
     original_smiles: str = ""
@@ -86,6 +141,7 @@ class ReactionMapperResult(BaseModel):
     additional_info: List[Dict[str, Any]] = Field(
         default_factory=_default_additional_info
     )
+    classification_info: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
 
 
 class AgaveChemMapperResult(BaseModel):
@@ -95,9 +151,40 @@ class AgaveChemMapperResult(BaseModel):
     Args:
         final_mapping (str): The final selected atom-mapped reaction SMILES.
         original_reaction (str): The original unmapped reaction SMILES.
-        mapper_results (List[ReactionMapperResult]): Results from each individual mapper.
+        mapper_results (List[ReactionMapperResult]): Results from each individual
+            mapper.  Only populated when the caller passes
+            ``return_detailed_mapper_info=True`` to ``map_reactions`` or
+            ``map_reactions_using_mappers``; otherwise left empty to reduce
+            result size.
+        confidence (Optional[float]): Confidence score from the neural mapper
+            for the ``final_mapping``, computed as the product of per-atom
+            assignment probabilities.  ``None`` when no neural mapper is used
+            or the neural mapper fails to produce a mapping.
+        class_str (str): Pipe-delimited string of unique classification paths
+            (e.g. ``"1.1.1|2.5.1|2.5.3"``) for all templates matching the
+            ``final_mapping``.  Empty when no template mapper is used or no
+            template matches ``final_mapping``.
+        rxno_classifications (str): Pipe-delimited string of unique RXNO IDs
+            (e.g. ``"RXNO:0000335|RXNO:0000357"``) for all templates matching
+            the ``final_mapping``.  Empty when no template mapper is used or no
+            template matches ``final_mapping``.
+        classification_info (Dict[str, List[Dict[str, Any]]]): Per-mapping
+            classification metadata, keyed by mapped SMILES string.  Each value
+            is a list of dicts (one per matching template) containing
+            ``template_name``, ``class_str``, ``class_id``, ``subclass_id``,
+            ``subsubclass_id``, ``superclass_id``, ``superclass_name``,
+            ``superclass_description``, ``class_name``, ``class_description``,
+            ``subclass_name``, ``subclass_description``, ``subsubclass_name``,
+            ``subsubclass_description``, and ``rxno_classification``
+            (a list of RXNO classification dicts with ``rxno_id``,
+            ``rxno_label``, and ``rxno_definition``).  Always populated when a
+            template mapper matches ``final_mapping``; empty otherwise.
     """
 
     final_mapping: str = ""
     original_reaction: str = ""
     mapper_results: List[ReactionMapperResult] = Field(default_factory=list)
+    confidence: Optional[float] = None
+    class_str: str = ""
+    rxno_classifications: str = ""
+    classification_info: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
