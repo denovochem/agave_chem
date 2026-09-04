@@ -84,31 +84,29 @@ def _build_class_hierarchy_lookup(
                         "subsubclass_description": subsub_desc,
                     }
 
-                if not subclass.get("subsubclasses"):
-                    key = f"{sc_id}.{c_id}.{sub_id}."
-                    lookup[key] = {
-                        "superclass_name": sc_name,
-                        "superclass_description": sc_desc,
-                        "class_name": c_name,
-                        "class_description": c_desc,
-                        "subclass_name": sub_name,
-                        "subclass_description": sub_desc,
-                        "subsubclass_name": "",
-                        "subsubclass_description": "",
-                    }
-
-            if not cls.get("subclasses"):
-                key = f"{sc_id}.{c_id}.."
+                key = f"{sc_id}.{c_id}.{sub_id}."
                 lookup[key] = {
                     "superclass_name": sc_name,
                     "superclass_description": sc_desc,
                     "class_name": c_name,
                     "class_description": c_desc,
-                    "subclass_name": "",
-                    "subclass_description": "",
+                    "subclass_name": sub_name,
+                    "subclass_description": sub_desc,
                     "subsubclass_name": "",
                     "subsubclass_description": "",
                 }
+
+            key = f"{sc_id}.{c_id}.."
+            lookup[key] = {
+                "superclass_name": sc_name,
+                "superclass_description": sc_desc,
+                "class_name": c_name,
+                "class_description": c_desc,
+                "subclass_name": "",
+                "subclass_description": "",
+                "subsubclass_name": "",
+                "subsubclass_description": "",
+            }
 
         if not superclass.get("classes"):
             key = f"{sc_id}..."
