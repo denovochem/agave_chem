@@ -14,7 +14,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 
 **AgaveChem mappers**:
 
-- **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno).
+- **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno) ontology classifications.
 
 - **MCS-like mapper**: Fingerprint based mapper that generates conservative partial maps at some radius around detected reaction centers.
 
@@ -24,8 +24,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 
 These mappers can be used individually, or called as a pipeline using `map_reactions()`.
 
-
-
+**Benchmark**:
 
 | Mapper | Per-reaction mapping accuracy |
 | --- | :---: |
