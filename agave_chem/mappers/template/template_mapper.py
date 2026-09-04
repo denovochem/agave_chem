@@ -29,99 +29,68 @@ from agave_chem.utils.logging_config import logger
 from agave_chem.utils.reaction_balancing import compute_unmapped_product_atom_islands
 
 
-def _build_class_hierarchy_lookup(
+def _build_class_hierarchy(
     reaction_classes_data: Dict[str, Any],
-) -> Dict[str, Dict[str, str]]:
+) -> Dict[str, Dict[str, Any]]:
     """
-    Flatten reaction_classes.json into a lookup keyed by composite ID path.
+    Build a nested hierarchy tree from reaction_classes.json.
 
-    Keys are dot-delimited ID paths (e.g. ``"1.1.1"`` for superclass 1,
-    class 1, subclass 1).  Values are dicts with ``name`` and ``description``
-    for each level of the hierarchy.
+    Each node has ``name``, ``description``, and ``children`` (a dict keyed
+    by string ID).  The top-level dict maps superclass IDs to their nodes.
+
+    This structure supports level-by-level traversal in ``_lookup_class_names``,
+    which can fall back to the ``"0"`` ("Unspecified") entry at each level when
+    an exact ID is not found — something the previous flat-key lookup could not
+    do.
 
     Args:
         reaction_classes_data (Dict[str, Any]): Parsed contents of
             ``reaction_classes.json``.
 
     Returns:
-        Dict[str, Dict[str, str]]: Mapping from dot-delimited ID path to a dict
-        containing ``superclass_name``, ``superclass_description``,
-        ``class_name``, ``class_description``, ``subclass_name``,
-        ``subclass_description``, ``subsubclass_name``, and
-        ``subsubclass_description``.
+        Dict[str, Dict[str, Any]]: Nested tree keyed by superclass ID string.
+        Each node is ``{"name": str, "description": str, "children": {...}}``.
     """
-    lookup: Dict[str, Dict[str, str]] = {}
+    hierarchy: Dict[str, Dict[str, Any]] = {}
 
     for superclass in reaction_classes_data.get("superclasses", []):
         sc_id = str(superclass.get("id", ""))
-        sc_name = str(superclass.get("name", ""))
-        sc_desc = str(superclass.get("description", ""))
+        sc_node: Dict[str, Any] = {
+            "name": str(superclass.get("name", "")),
+            "description": str(superclass.get("description", "")),
+            "children": {},
+        }
 
         for cls in superclass.get("classes", []):
             c_id = str(cls.get("id", ""))
-            c_name = str(cls.get("name", ""))
-            c_desc = str(cls.get("description", ""))
+            c_node: Dict[str, Any] = {
+                "name": str(cls.get("name", "")),
+                "description": str(cls.get("description", "")),
+                "children": {},
+            }
 
             for subclass in cls.get("subclasses", []):
                 sub_id = str(subclass.get("id", ""))
-                sub_name = str(subclass.get("name", ""))
-                sub_desc = str(subclass.get("description", ""))
+                sub_node: Dict[str, Any] = {
+                    "name": str(subclass.get("name", "")),
+                    "description": str(subclass.get("description", "")),
+                    "children": {},
+                }
 
                 for subsub in subclass.get("subsubclasses", []):
                     subsub_id = str(subsub.get("id", ""))
-                    subsub_name = str(subsub.get("name", ""))
-                    subsub_desc = str(subsub.get("description", ""))
-
-                    key = f"{sc_id}.{c_id}.{sub_id}.{subsub_id}"
-                    lookup[key] = {
-                        "superclass_name": sc_name,
-                        "superclass_description": sc_desc,
-                        "class_name": c_name,
-                        "class_description": c_desc,
-                        "subclass_name": sub_name,
-                        "subclass_description": sub_desc,
-                        "subsubclass_name": subsub_name,
-                        "subsubclass_description": subsub_desc,
+                    sub_node["children"][subsub_id] = {
+                        "name": str(subsub.get("name", "")),
+                        "description": str(subsub.get("description", "")),
                     }
 
-                key = f"{sc_id}.{c_id}.{sub_id}."
-                lookup[key] = {
-                    "superclass_name": sc_name,
-                    "superclass_description": sc_desc,
-                    "class_name": c_name,
-                    "class_description": c_desc,
-                    "subclass_name": sub_name,
-                    "subclass_description": sub_desc,
-                    "subsubclass_name": "",
-                    "subsubclass_description": "",
-                }
+                c_node["children"][sub_id] = sub_node
 
-            key = f"{sc_id}.{c_id}.."
-            lookup[key] = {
-                "superclass_name": sc_name,
-                "superclass_description": sc_desc,
-                "class_name": c_name,
-                "class_description": c_desc,
-                "subclass_name": "",
-                "subclass_description": "",
-                "subsubclass_name": "",
-                "subsubclass_description": "",
-            }
+            sc_node["children"][c_id] = c_node
 
-        if not superclass.get("classes"):
-            key = f"{sc_id}..."
-            lookup[key] = {
-                "superclass_name": sc_name,
-                "superclass_description": sc_desc,
-                "class_name": "",
-                "class_description": "",
-                "subclass_name": "",
-                "subclass_description": "",
-                "subsubclass_name": "",
-                "subsubclass_description": "",
-            }
+        hierarchy[sc_id] = sc_node
 
-    return lookup
+    return hierarchy
 
 
 def _offset_map_nums(smirks: str, offset: int) -> str:
@@ -308,7 +277,7 @@ class TemplateReactionMapper(ReactionMapper):
             "reaction_classes.json"
         )
         with reaction_classes_file.open("r") as f:
-            self._class_hierarchy_lookup = _build_class_hierarchy_lookup(json.load(f))
+            self._class_hierarchy = _build_class_hierarchy(json.load(f))
 
         _taut_opts = rdMolStandardize.CleanupParameters()
         _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -1628,7 +1597,11 @@ class TemplateReactionMapper(ReactionMapper):
         subsubclass_id: str,
     ) -> Dict[str, str]:
         """
-        Look up class names and descriptions from the pre-built hierarchy.
+        Look up class names and descriptions via hierarchical tree traversal.
+
+        At each level (superclass → class → subclass → subsubclass) the exact
+        ID is tried first, then ``"0"`` ("Unspecified") as a fallback.  If
+        neither is found the remaining levels are left as empty strings.
 
         Args:
             superclass_id (str): Superclass ID.
@@ -1637,26 +1610,62 @@ class TemplateReactionMapper(ReactionMapper):
             subsubclass_id (str): Sub-subclass ID.
 
         Returns:
-            Dict[str, str]: Dict with ``superclass_name``, ``superclass_description``,
-            ``class_name``, ``class_description``, ``subclass_name``,
-            ``subclass_description``, ``subsubclass_name``, and
-            ``subsubclass_description``.  Values are empty strings when the
-            composite key is not found in the lookup.
+            Dict[str, str]: Dict with ``superclass_name``,
+            ``superclass_description``, ``class_name``, ``class_description``,
+            ``subclass_name``, ``subclass_description``, ``subsubclass_name``,
+            and ``subsubclass_description``.  Values are empty strings for
+            levels not found in the hierarchy.
         """
-        key = f"{superclass_id}.{class_id}.{subclass_id}.{subsubclass_id}"
-        return self._class_hierarchy_lookup.get(
-            key,
-            {
-                "superclass_name": "",
-                "superclass_description": "",
-                "class_name": "",
-                "class_description": "",
-                "subclass_name": "",
-                "subclass_description": "",
-                "subsubclass_name": "",
-                "subsubclass_description": "",
-            },
-        )
+        result: Dict[str, str] = {
+            "superclass_name": "",
+            "superclass_description": "",
+            "class_name": "",
+            "class_description": "",
+            "subclass_name": "",
+            "subclass_description": "",
+            "subsubclass_name": "",
+            "subsubclass_description": "",
+        }
+
+        def _find_node(
+            children: Dict[str, Dict[str, Any]], key: str
+        ) -> Optional[Dict[str, Any]]:
+            if not key:
+                return None
+            node = children.get(key)
+            if node is None and key != "0":
+                node = children.get("0")
+            return node
+
+        sc_node = _find_node(self._class_hierarchy, superclass_id)
+        if sc_node is None:
+            return result
+
+        result["superclass_name"] = sc_node["name"]
+        result["superclass_description"] = sc_node["description"]
+
+        c_node = _find_node(sc_node["children"], class_id)
+        if c_node is None:
+            return result
+
+        result["class_name"] = c_node["name"]
+        result["class_description"] = c_node["description"]
+
+        sub_node = _find_node(c_node["children"], subclass_id)
+        if sub_node is None:
+            return result
+
+        result["subclass_name"] = sub_node["name"]
+        result["subclass_description"] = sub_node["description"]
+
+        subsub_node = _find_node(sub_node["children"], subsubclass_id)
+        if subsub_node is None:
+            return result
+
+        result["subsubclass_name"] = subsub_node["name"]
+        result["subsubclass_description"] = subsub_node["description"]
+
+        return result
 
     def _filter_and_deduplicate_outcomes(
         self,

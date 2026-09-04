@@ -6,7 +6,7 @@ import pytest
 
 from agave_chem.mappers.template.template_mapper import (
     TemplateReactionMapper,
-    _build_class_hierarchy_lookup,
+    _build_class_hierarchy,
     _make_composite_smirks_pattern,
 )
 from agave_chem.mappers.types import InitializedSmirksPattern, ReactionMapperResult
@@ -188,6 +188,16 @@ class TestInitializeSmirksPatterns:
         assert result["subclass_name"] == ""
         assert result["subsubclass_name"] == ""
 
+    def test_lookup_class_names_falls_back_when_class_has_no_subclasses(self, mapper):
+        """_lookup_class_names should still return superclass and class names
+        when a class has no subclasses but the smirks pattern has subclass_id='0'."""
+        result = mapper._lookup_class_names("8", "0", "0", "")
+        assert result["superclass_name"] == "Heterocycle Formation"
+        assert result["class_name"] == "Unspecified"
+        # No subclasses defined for class 0, so these stay empty
+        assert result["subclass_name"] == ""
+        assert result["subsubclass_name"] == ""
+
 
 # ---------------------------------------------------------------------------
 # map_reaction classification_info
@@ -350,15 +360,15 @@ class TestNonTemplateMappersClassificationInfo:
 
 
 # ---------------------------------------------------------------------------
-# _build_class_hierarchy_lookup
+# _build_class_hierarchy
 # ---------------------------------------------------------------------------
 
 
-class TestBuildClassHierarchyLookup:
-    """Tests for _build_class_hierarchy_lookup helper."""
+class TestBuildClassHierarchy:
+    """Tests for _build_class_hierarchy helper."""
 
-    def test_lookup_returns_names_and_descriptions(self):
-        """Lookup should return name and description for each hierarchy level."""
+    def test_hierarchy_returns_nested_tree(self):
+        """Hierarchy should nest classes under superclasses with children dicts."""
         data = {
             "superclasses": [
                 {
@@ -383,22 +393,22 @@ class TestBuildClassHierarchyLookup:
                 }
             ]
         }
-        lookup = _build_class_hierarchy_lookup(data)
-        key = "1.1.1."
-        assert key in lookup
-        assert lookup[key]["superclass_name"] == "Heteroatom Alkylation"
-        assert (
-            lookup[key]["superclass_description"] == "Heteroatom alkylation reactions"
-        )
-        assert lookup[key]["class_name"] == "N-alkylation"
-        assert lookup[key]["class_description"] == "N-alkylation reactions"
-        assert lookup[key]["subclass_name"] == "Reductive amination"
-        assert lookup[key]["subclass_description"] == "Reductive amination"
-        assert lookup[key]["subsubclass_name"] == ""
-        assert lookup[key]["subsubclass_description"] == ""
+        tree = _build_class_hierarchy(data)
+        assert "1" in tree
+        assert tree["1"]["name"] == "Heteroatom Alkylation"
+        assert tree["1"]["description"] == "Heteroatom alkylation reactions"
+        assert "1" in tree["1"]["children"]
+        c_node = tree["1"]["children"]["1"]
+        assert c_node["name"] == "N-alkylation"
+        assert c_node["description"] == "N-alkylation reactions"
+        assert "1" in c_node["children"]
+        sub_node = c_node["children"]["1"]
+        assert sub_node["name"] == "Reductive amination"
+        assert sub_node["description"] == "Reductive amination"
+        assert sub_node["children"] == {}
 
-    def test_lookup_with_subsubclasses(self):
-        """Lookup should include subsubclass names when present."""
+    def test_hierarchy_with_subsubclasses(self):
+        """Hierarchy should nest subsubclasses under subclasses."""
         data = {
             "superclasses": [
                 {
@@ -429,22 +439,20 @@ class TestBuildClassHierarchyLookup:
                 }
             ]
         }
-        lookup = _build_class_hierarchy_lookup(data)
-        key = "2.5.1.1"
-        assert key in lookup
-        assert lookup[key]["subsubclass_name"] == "EDC coupling"
-        assert lookup[key]["subsubclass_description"] == "EDC/HOBt coupling"
+        tree = _build_class_hierarchy(data)
+        subsub_node = tree["2"]["children"]["5"]["children"]["1"]["children"]["1"]
+        assert subsub_node["name"] == "EDC coupling"
+        assert subsub_node["description"] == "EDC/HOBt coupling"
 
-    def test_lookup_empty_data(self):
-        """Lookup should return empty dict for empty input."""
-        lookup = _build_class_hierarchy_lookup({})
-        assert lookup == {}
+    def test_hierarchy_empty_data(self):
+        """Hierarchy should return empty dict for empty input."""
+        tree = _build_class_hierarchy({})
+        assert tree == {}
 
-    def test_lookup_missing_key_returns_empty_strings(self):
-        """Lookup should not contain keys for missing hierarchy levels."""
-        data = {"superclasses": []}
-        lookup = _build_class_hierarchy_lookup(data)
-        assert "1.1.1." not in lookup
+    def test_hierarchy_no_superclasses(self):
+        """Hierarchy should return empty dict when no superclasses are present."""
+        tree = _build_class_hierarchy({"superclasses": []})
+        assert tree == {}
 
 
 # ---------------------------------------------------------------------------

@@ -8,8 +8,11 @@ compatibility filtering.
 
 import itertools
 import json
+import uuid
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from functools import lru_cache
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple
 
 from rdchiral import main as rdc
 from rdkit import Chem
@@ -996,19 +999,72 @@ def classify_rxno(
     }
 
 
+CLASS_TREE_PATH = Path(__file__).parent / "data" / "reaction_classes.json"
+
+# Nucleophiles the taxonomy resolves more precisely than their coarse tags allow.
+AZOLE_NUCLEOPHILES = frozenset(
+    {
+        "imidazole N",
+        "1,2,3-triazole NH",
+        "1,2,4-triazole NH",
+        "tetrazole NH",
+        "pyrazole NH",
+        "indole NH",
+        "benzimidazole NH",
+    }
+)
+PHTHALIMIDE_NUCLEOPHILE = "phthalimide anion (Gabriel)"
+PHENOL_NUCLEOPHILE = "phenol (Ar-OH)"
+HYDROXYLAMINE_O_NUCLEOPHILE = "hydroxylamine (H2N-OH)"
+PHOSPHINE_NUCLEOPHILE = "trialkylphosphine (Mitsunobu / SN2)"
+PHOSPHONATE_NUCLEOPHILE = "phosphonate anion (Arbuzov / HWE)"
+
+
+@lru_cache(maxsize=1)
+def _class_index() -> Dict[Tuple[int, ...], str]:
+    """
+    Index the authoritative reaction-class tree by integer address.
+
+    Returns:
+        Dict[Tuple[int, ...], str]: Mapping from an address tuple such as
+            ``(1, 3, 1, 1)`` to that node's uuid. Every depth is present, so a
+            superclass address like ``(1,)`` is a valid key.
+
+    Note:
+        Reads ``data/reaction_classes.json`` once per process and caches the result.
+    """
+    tree = json.loads(CLASS_TREE_PATH.read_text(encoding="utf-8"))
+    child_keys = ("classes", "subclasses", "subsubclasses")
+    index: Dict[Tuple[int, ...], str] = {}
+
+    def visit(node: Dict, address: Tuple[int, ...], depth: int) -> None:
+        index[address] = node["uuid"]
+        if depth < len(child_keys):
+            for child in node.get(child_keys[depth], []):
+                visit(child, address + (child["id"],), depth + 1)
+
+    for superclass in tree.get("superclasses", []):
+        visit(superclass, (superclass["id"],), 0)
+    return index
+
+
 def classify_reaction_class(
     center: ElectrophilicCenter,
     lg: LeavingGroup,
     nu: Nucleophile,
-) -> Dict[str, Optional[int]]:
+) -> Tuple[int, ...]:
     """
-    Assign the reaction class taxonomy (superclass/class/subclass/subsubclass)
-    for a nucleophilic substitution pattern based on the electrophilic center,
-    leaving group, and nucleophile.
+    Assign the reaction-class address for a nucleophilic substitution pattern.
 
-    The taxonomy follows the hierarchy defined in ``reaction_classes.json``,
-    mapping ``center.name``, ``nu.tags``, and ``lg.tags`` onto the appropriate
-    superclass, class, and subclass IDs.
+    Dispatches on the electrophilic center first, since the center decides the
+    superclass, then refines on nucleophile identity and leaving group. Returns the
+    deepest address the three building blocks actually determine: an alkyl halide
+    plus an alcohol is a Williamson ether synthesis at depth four, whereas a
+    thiol only resolves to the SN2 S-alkylation subclass at depth three.
+
+    Reserved ``0`` (Unspecified) children are used where the taxonomy has a correct
+    parent but no child matching this combination, so no pattern is asserted to be
+    more specific than the inputs support.
 
     Args:
         center (ElectrophilicCenter): The electrophilic center template.
@@ -1016,123 +1072,182 @@ def classify_reaction_class(
         nu (Nucleophile): The nucleophile definition.
 
     Returns:
-        Dict[str, Optional[int]]: A dict with keys ``superclass_id``,
-            ``class_id``, ``subclass_id``, and ``subsubclass_id``.
+        Tuple[int, ...]: Address into ``reaction_classes.json`` as a tuple of one to
+            four ids, ordered superclass, class, subclass, subsubclass.
+
+    Note:
+        A few combinations have no home in the current taxonomy and deliberately
+        resolve to an Unspecified node: halogen exchange (Finkelstein) has no
+        subclass under Halide interconversion and displacement, and epoxide opening
+        by carbon nucleophiles has no subclass under C-C Bond Forming Reactions.
     """
-    subsubclass_id: Optional[int] = None
+    is_n_nuc = "N_nuc" in nu.tags
+    is_o_nuc = "O_nuc" in nu.tags
+    is_s_nuc = "S_nuc" in nu.tags
+    is_azole = nu.name in AZOLE_NUCLEOPHILES
+    is_carboxylate = "carboxylate" in nu.tags
+    is_halide_lg = "halide" in lg.tags
+    is_sulfonate_lg = "sulfonate" in lg.tags
 
-    # --- Superclass 2: Acylation and Related Processes ---
+    # --- Acyl transfer: superclass 2, Acylation and Related Processes ---------
     if center.name == "acyl (carbonyl)":
-        superclass_id = 2
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            if "halide" in lg.tags:
-                class_id = 1  # N-acylation
-                subclass_id = 1  # Acyl chloride aminolysis
-            elif "acyloxy" in lg.tags or "anhydride" in lg.tags:
-                class_id = 1  # N-acylation
-                subclass_id = 2  # Anhydride aminolysis
-            elif "activated_ester" in lg.tags:
-                class_id = 5  # Amide formation
-                subclass_id = 2  # Aminolysis of activated esters
-            else:
-                class_id = 0
-                subclass_id = 0
-        elif "O_nuc" in nu.tags:
-            class_id = 2  # O-acylation
-            if "halide" in lg.tags:
-                subclass_id = 1  # Acyl chloride esterification
-            elif "acyloxy" in lg.tags or "anhydride" in lg.tags:
-                subclass_id = 2  # Anhydride esterification
-            else:
-                subclass_id = 0
-        else:
-            class_id = 0
-            subclass_id = 0
+        # A carboxylate attacking an acyl halide gives an anhydride, not an ester.
+        if is_carboxylate:
+            return (2, 8, 2)  # Mixed anhydride formation
+        if is_azole:
+            return (2, 1, 10)  # Imide and N-acyl heterocycle formation
+        if is_n_nuc:
+            if is_halide_lg:
+                return (2, 1, 2)  # Acyl halide aminolysis
+            if "anhydride" in lg.tags or "acyloxy" in lg.tags:
+                return (2, 1, 3)  # Anhydride aminolysis
+            if "activated_ester" in lg.tags:
+                return (2, 1, 4, 1)  # Activated ester aminolysis
+            return (2, 1, 0)
+        if is_o_nuc:
+            if is_halide_lg:
+                return (2, 2, 3)  # Acyl halide esterification
+            if "anhydride" in lg.tags or "acyloxy" in lg.tags:
+                return (2, 2, 4)  # Anhydride esterification
+            if "activated_ester" in lg.tags:
+                return (2, 2, 6)  # Transesterification
+            return (2, 2, 0)
+        if is_s_nuc:
+            if is_halide_lg:
+                return (2, 3, 1)  # Acyl halide thioesterification
+            return (2, 3, 0)
+        return (2, 0)
 
-    elif center.name == "chloroformate/carbonate":
-        superclass_id = 2
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            class_id = 1  # N-acylation
-            subclass_id = 3  # Carbamate formation
-        elif "O_nuc" in nu.tags:
-            class_id = 2  # O-acylation
-            subclass_id = 3  # Carbonate formation
-        else:
-            class_id = 0
-            subclass_id = 0
+    if center.name == "chloroformate/carbonate":
+        if is_n_nuc or is_azole:
+            return (2, 4, 1)  # Chloroformate and carbonate carbamoylation
+        if is_o_nuc:
+            return (2, 7, 1)  # Chloroformate carbonate formation
+        return (2, 0)
 
-    elif center.name == "sulfonyl":
-        superclass_id = 2
-        class_id = 0  # Other — no specific sulfonylation class
-        subclass_id = 0
+    if center.name == "sulfonyl":
+        # SuFEx is defined by the S-F bond, so the leaving group outranks the nucleophile.
+        if "sulfonyl_halide" in lg.tags and "fluoride" in lg.name:
+            return (2, 11, 3)  # Sulfonyl fluoride and SuFEx chemistry
+        if is_n_nuc or is_azole:
+            return (2, 11, 1)  # Sulfonamide formation
+        if is_o_nuc:
+            return (2, 11, 2)  # Sulfonate ester formation
+        return (2, 11, 0)
 
-    # --- Superclass 1: Heteroatom Alkylation and Arylation ---
-    elif center.name == "SNAr aromatic":
-        superclass_id = 1
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            class_id = 4  # N-arylation
-            subclass_id = 3  # SNAr with N-nucleophiles
-        elif "O_nuc" in nu.tags:
-            class_id = 5  # O-arylation
-            subclass_id = 3  # SNAr with O-nucleophiles
-        else:
-            class_id = 0
-            subclass_id = 0
+    # --- Aromatic substitution: superclass 1, arylation classes ---------------
+    if center.name == "SNAr aromatic":
+        if "azide" in nu.tags:
+            return (1, 2, 3)  # SNAr with nitrogen nucleophiles
+        if "cyanide" in nu.tags:
+            return (5, 5, 3)  # Halide to nitrile
+        if is_n_nuc or is_azole:
+            if "diazonium" in lg.tags:
+                return (1, 2, 5)  # Diazonium N-arylation
+            return (1, 2, 3)  # SNAr with nitrogen nucleophiles
+        if is_o_nuc:
+            return (1, 4, 3)  # SNAr with oxygen nucleophiles
+        if is_s_nuc:
+            return (1, 6, 2)  # SNAr with sulfur nucleophiles
+        return (1, 0)
 
-    elif center.name == "epoxide":
-        superclass_id = 1
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            class_id = 1  # N-alkylation
-            subclass_id = 4  # Epoxide ring opening with amines
-        elif "O_nuc" in nu.tags:
-            class_id = 2  # O-alkylation
-            subclass_id = 3  # Epoxide ring opening with alcohols/phenols
-        elif "S_nuc" in nu.tags:
-            class_id = 3  # S-alkylation
-            subclass_id = 2  # Epoxide ring opening with thiols
-        else:
-            class_id = 0
-            subclass_id = 0
+    # --- Strained-ring opening: superclass 1, ring opening subclasses ---------
+    if center.name in ("epoxide", "aziridine"):
+        amine_opening = (1, 1, 4, 1) if center.name == "epoxide" else (1, 1, 4, 2)
+        if "cyanide" in nu.tags:
+            return (4, 0)  # No carbon-nucleophile ring-opening subclass exists.
+        if "azide" in nu.tags or is_azole:
+            return (1, 1, 4, 0)
+        if is_n_nuc:
+            return amine_opening
+        if is_o_nuc:
+            return (1, 3, 3)  # Ring opening O-alkylation
+        if is_s_nuc:
+            return (1, 5, 2)  # Ring opening S-alkylation
+        return (1, 1, 4, 0)
 
-    elif center.name == "aziridine":
-        superclass_id = 1
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            class_id = 1  # N-alkylation
-            subclass_id = 0  # Other — no aziridine-specific subclass
-        elif "O_nuc" in nu.tags:
-            class_id = 2  # O-alkylation
-            subclass_id = 0
-        elif "S_nuc" in nu.tags:
-            class_id = 3  # S-alkylation
-            subclass_id = 0
-        else:
-            class_id = 0
-            subclass_id = 0
+    # --- sp3 centers: alkyl, benzylic, allylic, propargylic, alpha to EWG -----
+    # Carbon and phosphorus nucleophiles leave superclass 1 entirely.
+    if "enolate" in nu.tags:
+        return (4, 2, 6, 1)  # Malonate and beta-ketoester alkylation
+    if "C_nuc" in nu.tags:
+        return (4, 2, 9)  # Alkylation of terminal alkynes
+    if nu.name == PHOSPHONATE_NUCLEOPHILE:
+        return (1, 7, 2)  # Phosphonate and phosphinate C-P bond formation
+    if nu.name == PHOSPHINE_NUCLEOPHILE:
+        return (1, 7, 1)  # Phosphine alkylation and phosphonium salt formation
 
-    else:
-        # sp3 centres: alkyl, benzylic, allylic, propargylic, alpha to EWG
-        superclass_id = 1
-        if "N_nuc" in nu.tags or "heterocyclic_N" in nu.tags:
-            class_id = 1  # N-alkylation
-            subclass_id = 2  # SN2 N-alkylation
-        elif "O_nuc" in nu.tags and ("halide" in lg.tags or "sulfonate" in lg.tags):
-            class_id = 6  # Williamson ether synthesis
-            subclass_id = None  # No subclasses in class 6
-        elif "O_nuc" in nu.tags:
-            class_id = 2  # O-alkylation
-            subclass_id = 1  # SN2 O-alkylation
-        elif "S_nuc" in nu.tags:
-            class_id = 3  # S-alkylation
-            subclass_id = 1  # SN2 S-alkylation
-        else:
-            class_id = 0  # Other
-            subclass_id = 0
+    # Azide, cyanide and halide displacement are interconversions, not alkylations.
+    if "azide" in nu.tags:
+        return (5, 5, 2) if is_halide_lg else (5, 4, 2)
+    if "cyanide" in nu.tags:
+        return (5, 5, 3)  # Halide to nitrile
+    if "halide_nuc" in nu.tags:
+        return (5, 5, 0)  # No halogen-exchange subclass exists.
 
+    if is_azole:
+        return (1, 1, 1, 3)  # Azole N1 vs N2 alkylation
+    if nu.name == PHTHALIMIDE_NUCLEOPHILE:
+        return (1, 1, 1, 4)  # Gabriel and Delepine amine synthesis
+    if is_n_nuc:
+        if is_halide_lg:
+            return (1, 1, 1, 1)  # Alkyl halide N-alkylation
+        if is_sulfonate_lg:
+            return (1, 1, 1, 2)  # Sulfonate ester N-alkylation
+        return (1, 1, 1, 0)
+    if is_o_nuc:
+        if is_carboxylate:
+            return (1, 3, 1, 3)  # Carboxylate O-alkylation
+        if nu.name == PHENOL_NUCLEOPHILE:
+            return (1, 3, 1, 2)  # Phenol O-alkylation
+        if nu.name == HYDROXYLAMINE_O_NUCLEOPHILE:
+            return (1, 3, 1, 0)
+        if is_halide_lg or is_sulfonate_lg:
+            return (1, 3, 1, 1)  # Williamson ether synthesis
+        return (1, 3, 1, 0)
+    if is_s_nuc:
+        return (1, 5, 1)  # SN2 S-alkylation
+    return (1, 0)
+
+
+def classification_fields(
+    center: ElectrophilicCenter,
+    lg: LeavingGroup,
+    nu: Nucleophile,
+) -> Dict[str, Optional[object]]:
+    """
+    Build the classification record fields for one pattern.
+
+    Args:
+        center (ElectrophilicCenter): The electrophilic center template.
+        lg (LeavingGroup): The leaving group fragment.
+        nu (Nucleophile): The nucleophile definition.
+
+    Returns:
+        Dict[str, Optional[object]]: The four integer id fields, padded to depth four
+            with ``None``, plus ``classification_uuid`` holding the uuid of the
+            addressed node.
+
+    Raises:
+        KeyError: If the assigned address does not exist in ``reaction_classes.json``,
+            which means the classifier and the taxonomy have drifted apart.
+    """
+    address = classify_reaction_class(center, lg, nu)
+    index = _class_index()
+    if address not in index:
+        raise KeyError(
+            f"classify_reaction_class returned {address} for"
+            f" center={center.name!r} lg={lg.name!r} nu={nu.name!r},"
+            f" which is not a node in {CLASS_TREE_PATH.name}"
+        )
+
+    ids: List[Optional[int]] = list(address) + [None] * (4 - len(address))
     return {
-        "superclass_id": superclass_id,
-        "class_id": class_id,
-        "subclass_id": subclass_id,
-        "subsubclass_id": subsubclass_id,
+        "superclass_id": ids[0],
+        "class_id": ids[1],
+        "subclass_id": ids[2],
+        "subsubclass_id": ids[3],
+        "classification_uuid": index[address],
     }
 
 
@@ -1173,7 +1288,8 @@ def enumerate_nuc_sub_smirks() -> List[Dict]:
                 "name": generate_name(center, lg, nu),
                 "priority": {"priority_class": None, "priority": None},
                 "smirks": smirks,
-                **classify_reaction_class(center, lg, nu),
+                "uuid": str(uuid.uuid4()),
+                **classification_fields(center, lg, nu),
             }
         )
 
