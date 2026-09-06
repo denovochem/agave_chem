@@ -18,7 +18,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 
 - **MCS-like mapper**: Fingerprint based mapper that generates conservative partial maps at some radius around detected reaction centers.
 
-- **Identical fragment mapper**: Fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents) are detected and atom-mapped before any other mapper is invoked.
+- **Identical fragment mapper**: Maps fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents).
 
 - **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and ~90% of all product atoms in this dataset.
 
