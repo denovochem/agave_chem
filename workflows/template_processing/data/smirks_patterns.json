@@ -1113,12 +1113,12 @@
     "classification_uuid": "8e0f28ab-c551-5996-86fa-47de92e11ff4"
   },
   {
-    "name": "Wittig reaction with phosphonium ylide (P+)",
+    "name": "Wittig reaction with phosphonium ylide (P+, stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+1](~[*])(~[*])=[C;+0:4]-[*:5]>>[#6:2]-[#6;+0:3]=[C;+0:4]-[*:5]",
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+1](~[*])(~[*])-[C;+0:4]-[*:5]>>[#6:2]-[#6;+0:3]=[C;+0:4]-[*:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000015",
@@ -1134,7 +1134,49 @@
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
   },
   {
-    "name": "Wittig reaction with neutral phosphorane (P0)",
+    "name": "Wittig reaction with phosphonium ylide (P+, stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+1](~[*])(~[*])-[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]/[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000015",
+        "rxno_label": "Wittig reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
+      }
+    ],
+    "uuid": "9727838a-59fb-4684-8b60-bfee4ec7ae26",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": null,
+    "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
+  },
+  {
+    "name": "Wittig reaction with phosphonium ylide (P+, stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+1](~[*])(~[*])-[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]\\[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000015",
+        "rxno_label": "Wittig reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
+      }
+    ],
+    "uuid": "bfd4efc1-9902-4931-9981-7d4a5f54e718",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": null,
+    "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
+  },
+  {
+    "name": "Wittig reaction with neutral phosphorane (P0, stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -1155,12 +1197,12 @@
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
   },
   {
-    "name": "Wittig reaction with phosphonium ylide (PH+)",
+    "name": "Wittig reaction with neutral phosphorane (P0, stereo E)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[PH;+1](~[*])(~[*])=[C;+0:4]-[*:5]>>[#6:2]-[#6;+0:3]=[C;+0:4]-[*:5]",
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+0](~[*])(~[*])=[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]/[*:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000015",
@@ -1168,7 +1210,7 @@
         "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
       }
     ],
-    "uuid": "a9343135-6fd8-44e4-aa9b-6d459a48f6fb",
+    "uuid": "4a2d2196-b1be-41f1-8112-2fa747d62326",
     "superclass_id": 4,
     "class_id": 6,
     "subclass_id": 1,
@@ -1176,7 +1218,28 @@
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
   },
   {
-    "name": "Wittig with Phosphonium fixthisName",
+    "name": "Wittig reaction with neutral phosphorane (P0, stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]~[P;D4;H0;+0](~[*])(~[*])=[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]\\[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000015",
+        "rxno_label": "Wittig reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
+      }
+    ],
+    "uuid": "e73e7034-f767-46cf-b32c-e6c3aaf12364",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": null,
+    "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
+  },
+  {
+    "name": "Horner-Wadsworth-Emmons Olefination (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -1190,6 +1253,48 @@
       }
     ],
     "uuid": "ede96999-500b-48bc-8ef7-5e0bf83b587d",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "48b63aa5-61e1-5525-a82a-2284e4813545"
+  },
+  {
+    "name": "Horner-Wadsworth-Emmons Olefination (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).O(-[*])-P(=O)(-O-[*])-[C;H2;D2;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;H1;D2;+0:4]/[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000056",
+        "rxno_label": "Horner-Wadsworth-Emmons reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction between a phosphonate and a carbonyl compound to give an olefin."
+      }
+    ],
+    "uuid": "f40f07ec-fd80-4924-97e7-9ab71e7eb341",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "48b63aa5-61e1-5525-a82a-2284e4813545"
+  },
+  {
+    "name": "Horner-Wadsworth-Emmons Olefination (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).O(-[*])-P(=O)(-O-[*])-[C;H2;D2;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;H1;D2;+0:4]\\[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000056",
+        "rxno_label": "Horner-Wadsworth-Emmons reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction between a phosphonate and a carbonyl compound to give an olefin."
+      }
+    ],
+    "uuid": "bb081cf9-7262-4983-b2b6-fa081ab26c70",
     "superclass_id": 4,
     "class_id": 6,
     "subclass_id": 2,
@@ -1218,7 +1323,7 @@
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
   },
   {
-    "name": "Wittig reaction with in-situ ylide formation",
+    "name": "Wittig reaction with in-situ ylide formation (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -1238,8 +1343,53 @@
     "subsubclass_id": null,
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
   },
+
+
+  
   {
-    "name": "Julia Olefination",
+    "name": "Wittig reaction with in-situ ylide formation (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]-[P;D3;H0;+0](-[*])(-[*]).[Cl,Br,I]-[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]/[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000015",
+        "rxno_label": "Wittig reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
+      }
+    ],
+    "uuid": "34a510a8-3ac1-4981-9876-c1ea842def24",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": null,
+    "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
+  },
+  {
+    "name": "Wittig reaction with in-situ ylide formation (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).[*]-[P;D3;H0;+0](-[*])(-[*]).[Cl,Br,I]-[C;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;+0:4]\\[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000015",
+        "rxno_label": "Wittig reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where a carbonyl compound reacts with a phosphonium ylide to give an alkene."
+      }
+    ],
+    "uuid": "43a7154c-4f17-4e0d-8548-706032373b25",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": null,
+    "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
+  },
+  {
+    "name": "Julia Olefination (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -1253,6 +1403,48 @@
       }
     ],
     "uuid": "691d22b1-10c5-46a9-91ee-dede0d3fee2b",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 3,
+    "subsubclass_id": null,
+    "classification_uuid": "8a0ed5bd-e106-5f66-914c-7ebe71ce749b"
+  },
+  {
+    "name": "Julia Olefination (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).O=S(=O)(-[*])-[C;H2;D2;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;H1;D2;+0:4]/[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000117",
+        "rxno_label": "Julia olefination",
+        "rxno_definition": "A carbon-carbon coupling reaction between a phenyl sulfone and an aldehyde or ketone to give a (typically trans) alkene."
+      }
+    ],
+    "uuid": "4fd9bdd2-fc0a-4de8-a960-f7676b7e2130",
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 3,
+    "subsubclass_id": null,
+    "classification_uuid": "8a0ed5bd-e106-5f66-914c-7ebe71ce749b"
+  },
+  {
+    "name": "Julia Olefination (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6:2]-[#6;+0:3](=O).O=S(=O)(-[*])-[C;H2;D2;+0:4]-[*:5]>>[#6:2]/[#6;+0:3]=[C;H1;D2;+0:4]\\[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000117",
+        "rxno_label": "Julia olefination",
+        "rxno_definition": "A carbon-carbon coupling reaction between a phenyl sulfone and an aldehyde or ketone to give a (typically trans) alkene."
+      }
+    ],
+    "uuid": "1a1f6314-f73c-4128-8da9-5ec8007149cd",
     "superclass_id": 4,
     "class_id": 6,
     "subclass_id": 3,
@@ -1869,6 +2061,27 @@
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
+    "name": "Formation of Grignard reagents (carbanion)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[Mg;D0;H0:3].[#6;+0:1]-[Cl,Br,I:2]>>[#6;-1:1].[Mg;+2:3].[Cl,Br,I;-1:2]",
+    "rxno_classification": [
+      {
+        "rxno_id": "",
+        "rxno_label": "",
+        "rxno_definition": ""
+      }
+    ],
+    "uuid": "e43b0cd2-863e-46e2-93d4-44e9ffaa986e",
+    "superclass_id": 12,
+    "class_id": null,
+    "subclass_id": null,
+    "subsubclass_id": null,
+    "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
+  },
+  {
     "name": "Deselenization",
     "priority": {
       "priority_class": null,
@@ -1889,13 +2102,36 @@
     "subsubclass_id": null,
     "classification_uuid": "e4c6e727-392b-5dcb-9222-40f030865bd3"
   },
+
+
   {
-    "name": "Preparation of organolithium compounds",
+    "name": "Preparation of organolithium compounds (from lithium metal)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
     "smirks": "[Li;D0;H0:3].[#6;+0:2]-[Br,I]>>[#6;+0:2]-[Li:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000331",
+        "rxno_label": "substitution step",
+        "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
+      }
+    ],
+    "uuid": "bde0fe8c-4878-4b7a-838c-cb09590251c2",
+    "superclass_id": 5,
+    "class_id": 5,
+    "subclass_id": 6,
+    "subsubclass_id": null,
+    "classification_uuid": "d7471937-afb5-53dd-b53a-d917753849c5"
+  },
+  {
+    "name": "Preparation of organolithium compounds (from organolithium)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6]-[Li;D1;H0:3].[#6;+0:2]-[Br,I]>>[#6;+0:2]-[Li:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000331",
@@ -4389,7 +4625,7 @@
     "classification_uuid": "fe08a610-d18d-5aeb-958f-0c50deeac328"
   },
   {
-    "name": "Heck terminal vinyl",
+    "name": "Heck terminal vinyl (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -4410,7 +4646,49 @@
     "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
   },
   {
-    "name": "Oxidative Heck reaction",
+    "name": "Heck terminal vinyl (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$([C;H0;D3](=[O;H0;D1])-[O,N]),$(C#N):4]-[#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5]-[Cl,Br,I]>>[#6:5]/[#6:2]=[#6:3]/[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "532d4411-2ac5-417c-9c74-67853e4a4283",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck terminal vinyl (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$([C;H0;D3](=[O;H0;D1])-[O,N]),$(C#N):4]-[#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5]-[Cl,Br,I]>>[#6:5]/[#6:2]=[#6:3]\\[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "8fa77ecb-3bb3-46cd-8356-e4bc70619429",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Oxidative Heck reaction (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -4424,6 +4702,48 @@
       }
     ],
     "uuid": "eeff0744-62a6-4a05-94c1-dd9c301447a7",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Oxidative Heck reaction (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[C;H2;D1;+0:1]=[C;H1;D2;+0:2]-[#6:3].[#6;$([#6]=[#6]),$(c:c):4]-[B](-O)-O>>[#6:3]/[C;H1;D2;+0:2]=[C;H1;D2;+0:1]/[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000603",
+        "rxno_label": "cross-coupling",
+        "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
+      }
+    ],
+    "uuid": "b5b770cd-ced8-4bff-b046-b2c094b4f895",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Oxidative Heck reaction (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[C;H2;D1;+0:1]=[C;H1;D2;+0:2]-[#6:3].[#6;$([#6]=[#6]),$(c:c):4]-[B](-O)-O>>[#6:3]/[C;H1;D2;+0:2]=[C;H1;D2;+0:1]\\[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000603",
+        "rxno_label": "cross-coupling",
+        "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
+      }
+    ],
+    "uuid": "feadb597-9695-49b8-9bcd-c7926a714f56",
     "superclass_id": 4,
     "class_id": 4,
     "subclass_id": 7,
@@ -4452,7 +4772,7 @@
     "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
   },
   {
-    "name": "Heck reaction with vinyl ester and amine",
+    "name": "Heck reaction with vinyl ester and amine (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -4466,6 +4786,48 @@
       }
     ],
     "uuid": "8b53e155-a02a-4907-a0ca-59f4b51e9f8d",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck reaction with vinyl ester and amine (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[C;H2;D1;+0:1]=[C;H1;D2;+0:2]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[O;H0;D2;+0:3]-[C;H3;D1;+0:6].[#6;$([#6]=[#6]),$(c:c):7]-[N;H2;D1;+0]>>[#6:7]/[C;H1;D2;+0:1]=[C;H1;D2;+0:2]/[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[O;H0;D2;+0:3]-[C;H3;D1;+0:6]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "f86b6712-4277-44a8-a8cb-d95dd76f3441",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck reaction with vinyl ester and amine (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[C;H2;D1;+0:1]=[C;H1;D2;+0:2]-[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[O;H0;D2;+0:3]-[C;H3;D1;+0:6].[#6;$([#6]=[#6]),$(c:c):7]-[N;H2;D1;+0]>>[#6:7]/[C;H1;D2;+0:1]=[C;H1;D2;+0:2]\\[C;H0;D3;+0:4](=[O;H0;D1;+0:5])-[O;H0;D2;+0:3]-[C;H3;D1;+0:6]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "e731895f-16a2-4e12-8e83-4bc697612cc9",
     "superclass_id": 4,
     "class_id": 4,
     "subclass_id": 10,
@@ -5523,12 +5885,12 @@
     "classification_uuid": "789bdc82-459a-51e7-b122-a59e7ca7df8d"
   },
   {
-    "name": "Internal alkyne to aldehyde with H2O2 fixthisName",
+    "name": "Internal alkyne to ketone with H2O2",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D1;+0:3]-[*:4].[OH;D1;+0]-[OH;D1;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
+    "smirks": "[*:1]-[C;H0;D2;+0:2]#[C;H0;D2;+0:3]-[*:4].[OH;D1;+0]-[OH;D1;+0:5]>>[*:1]-[C;H2;D2;+0:2]-[C;H0;D3;+0:3](=[O;H0;D1;+0:5])-[*:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000041",
@@ -9161,7 +9523,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6X3;$(C=C),$(c:c);+0:2]-[Si;D4;+0](~[*])(~[*])~[*].[c;H0;D3;+0:3]-[F,Cl,Br,I]>>[#6;+0:2]-[c;+0:3]",
+    "smirks": "[#6X3;$(C=C),$(c:c);+0:2]-[Si;D4;H0;+0](~[*])(~[*])~[*].[c;H0;D3;+0:3]-[F,Cl,Br,I]>>[#6;+0:2]-[c;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000193",
@@ -9240,12 +9602,33 @@
     "classification_uuid": "c8b014a7-be71-5589-bf01-509fec3b1bd6"
   },
   {
-    "name": "in-situ Aryllithium cross-coupling",
+    "name": "in-situ Aryllithium cross-coupling (lithium metal)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
     "smirks": "[c;H0;D3;+0:2]-[I,Br,Cl].[c;H0;D3;+0:3]-[I,Br,Cl].[Li]>>[c;H0;D3;+0:2]-[c;H0;D3;+0:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000603",
+        "rxno_label": "cross-coupling",
+        "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
+      }
+    ],
+    "uuid": "d0db0b3f-a00a-479d-838c-3ab4c1ec4b4e",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 9,
+    "subsubclass_id": null,
+    "classification_uuid": "c8b014a7-be71-5589-bf01-509fec3b1bd6"
+  },
+  {
+    "name": "in-situ Aryllithium cross-coupling (from organolithium)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[c;H0;D3;+0:2]-[I,Br,Cl].[c;H0;D3;+0:3]-[I,Br,Cl].[Li]-[#6]>>[c;H0;D3;+0:2]-[c;H0;D3;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000603",
@@ -9308,7 +9691,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[N;H2;D1;+0].[F;H0;D1;+0:3]>>[#6:2]-[F;H0;D1;+0:3]",
+    "smirks": "[#6:2]-[N;H2;D1;+0].[F;H0;D1;+0:3]-[Cu]>>[#6:2]-[F;H0;D1;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000127",
@@ -9329,7 +9712,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[N;H2;D1;+0].[Cl;H0;D1;+0:3]>>[#6:2]-[Cl;H0;D1;+0:3]",
+    "smirks": "[#6:2]-[N;H2;D1;+0].[Cl;H0;D1;+0:3]-[Cu]>>[#6:2]-[Cl;H0;D1;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000610",
@@ -9350,7 +9733,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[N;H2;D1;+0].[Br;H0;D1;+0:3]>>[#6:2]-[Br;H0;D1;+0:3]",
+    "smirks": "[#6:2]-[N;H2;D1;+0].[Br;H0;D1;+0:3]-[Cu]>>[#6:2]-[Br;H0;D1;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000611",
@@ -9371,7 +9754,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6:2]-[N;H2;D1;+0].[I;H0;D1;+0:3]>>[#6:2]-[I;H0;D1;+0:3]",
+    "smirks": "[#6:2]-[N;H2;D1;+0].[I;H0;D1;+0:3]-[Cu]>>[#6:2]-[I;H0;D1;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000612",
@@ -9833,7 +10216,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;R0:2](=[O;D1])-[C;H2;R0:6]-[*;#17,#35,#53].[NH2:3]-[C:4]=[S;D1:5]>>[c:2]2:[n:3]:[c:4]:[s:5][c:6]:2",
+    "smirks": "[C;R0:2](=[O;D1])-[C;H2;R0:6]-[#17,#35,#53].[NH2:3]-[C:4]=[S;D1:5]>>[c:2]2:[n:3]:[c:4]:[s:5][c:6]:2",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000348",
@@ -9896,7 +10279,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[CH0;$(C-[#6]):2]#[NH0:3].[C;A;!$(C=O):4]-[*;#17,#35,#53]>>[C:2]1=[N:3]-N(-[C:4])-N=N-1",
+    "smirks": "[CH0;$(C-[#6]):2]#[NH0:3].[C;A;!$(C=O):4]-[#17,#35,#53]>>[C:2]1=[N:3]-N(-[C:4])-N=N-1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000370",
@@ -9917,7 +10300,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[CH0;$(C-[#6]):2]#[NH0:3].[C;A;!$(C=O):4]-[*;#17,#35,#53]>>[C:2]1=[N:3]-N=N-N-1(-[C:4])",
+    "smirks": "[CH0;$(C-[#6]):2]#[NH0:3].[C;A;!$(C=O):4]-[#17,#35,#53]>>[C:2]1=[N:3]-N=N-N-1(-[C:4])",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000370",
@@ -9938,7 +10321,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[CH0;$(C-[#6]):2]#[CH1:3].[C;H1,H2;A;!$(C=O):4]-[*;#17,#35,#53,OH1]>>[C:2]1=[C:3]-N(-[C:4])-N=N-1",
+    "smirks": "[CH0;$(C-[#6]):2]#[CH1:3].[C;H1,H2;A;!$(C=O):4]-[#17,#35,#53,OH1]>>[C:2]1=[C:3]-N(-[C:4])-N=N-1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000270",
@@ -9959,7 +10342,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[CH0;$(C-[#6]):2]#[CH1:3].[C;H1,H2;A;!$(C=O):4]-[*;#17,#35,#53,OH1]>>[C:2]1=[C:3]-N=NN(-[C:4])-1",
+    "smirks": "[CH0;$(C-[#6]):2]#[CH1:3].[C;H1,H2;A;!$(C=O):4]-[#17,#35,#53,OH1]>>[C:2]1=[C:3]-N=NN(-[C:4])-1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000018",
@@ -9980,7 +10363,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[CH0;$(C-[#6]):2]#[CH0;$(C-[#6]):3].[C;H1,H2;A;!$(C=O):4]-[*;#17,#35,#53,OH1]>>[C:2]1=[C:3]-N=NN(-[C:4])-1",
+    "smirks": "[CH0;$(C-[#6]):2]#[CH0;$(C-[#6]):3].[C;H1,H2;A;!$(C=O):4]-[#17,#35,#53,OH1]>>[C:2]1=[C:3]-N=NN(-[C:4])-1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000269",
@@ -10163,13 +10546,15 @@
     "subsubclass_id": 1,
     "classification_uuid": "bb5f0656-9ab1-5e71-8f6c-8d400ee9e4ed"
   },
+
+
   {
-    "name": "Fischer indole synthesis",
+    "name": "Fischer indole synthesis fixthis idea that C:6 is bad (radical) and kekulized smarts?!?",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[NH1;$(N-c1ccccc1):2](-[NH2])-[c:6]:[cH1:5].[C;$(C([#6])[#6]):3](=[OD1])-[CH2;$(C([#6])[#6]);!$(C(C=O)C=O):4]>>[C:6]1-[N:2]-[C:3]=[C:4]-[C:5]:1",
+    "smirks": "[NH1;$(N-c1ccccc1):2](-[NH2])-[c:6]:[cH1:5].[C;$(C([#6])[#6]):3](=[OD1])-[CH2;$(C([#6])[#6]);!$(C(C=O)C=O):4]>>[#6:6]1-[#7:2]-[#6:3]=[#6:4]-[#6:5]:1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000064",
@@ -10184,6 +10569,8 @@
     "subsubclass_id": 1,
     "classification_uuid": "4ef57a32-e364-575d-be4c-c48a8fb0e813"
   },
+
+
   {
     "name": "Friedlander quinoline synthesis",
     "priority": {
@@ -10211,7 +10598,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*;Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[OH1:4].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[o:4]:[c:5]:[c:6]1",
+    "smirks": "[Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[OH1:4].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[o:4]:[c:5]:[c:6]1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000346",
@@ -10232,7 +10619,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*;Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[SD2:4]-[CH3].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[s:4]:[c:5]:[c:6]1",
+    "smirks": "[Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[SD2:4]-[CH3].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[s:4]:[c:5]:[c:6]1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000348",
@@ -10253,7 +10640,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*;Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[NH2:4].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[n:4]:[c:5]:[c:6]1",
+    "smirks": "[Br,I;$(*c1ccccc1)]-[c:2]:[c:3]-[NH2:4].[CH1:6]#[C;$(C-[#6]):5]>>[c:2]1:[c:3]:[n:4]:[c:5]:[c:6]1",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000396",
@@ -10542,12 +10929,12 @@
     "classification_uuid": "3753d7b2-0677-5504-82de-6b1dd9eeddd8"
   },
   {
-    "name": "Heck coupling with terminal alkene",
+    "name": "Heck coupling with terminal alkene (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5]\\/[#6:2]=[#6:3]\\/[#6:4]",
+    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5][#6:2]=[#6:3][#6:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000024",
@@ -10563,7 +10950,49 @@
     "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
   },
   {
-    "name": "Heck coupling with internal alkene",
+    "name": "Heck coupling with terminal alkene (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5]/[#6:2]=[#6:3]/[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "5b4ec90f-709b-4093-9d7d-ae07b1f325a5",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck coupling with terminal alkene (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6;H1:3]=[#6;H2:2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5]/[#6:2]=[#6:3]\\[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "4413c331-862d-4fa0-833f-fd8b956a1051",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck coupling with internal alkene (stereo unspecified)",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -10577,6 +11006,48 @@
       }
     ],
     "uuid": "a9d01cdf-e4c9-41a5-b0d8-84afa3e246bb",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck coupling with internal alkene (stereo E)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6:3]([#6:6])=[#6;H1;$([#6][#6]):2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5]/[#6;H0:2]=[#6:3]([#6:6])/[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "5bd75ad8-4af7-4579-90a5-3dbd1a061421",
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 7,
+    "subsubclass_id": null,
+    "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
+  },
+  {
+    "name": "Heck coupling with internal alkene (stereo Z)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[#6;c,$(C(=O)O),$(C#N):4][#6:3]([#6:6])=[#6;H1;$([#6][#6]):2].[#6;$([#6]=[#6]),$(c:c):5][Cl,Br,I]>>[#6:5]/[#6;H0:2]=[#6:3]([#6:6])\\[#6:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000024",
+        "rxno_label": "Heck reaction",
+        "rxno_definition": "A carbon-carbon coupling reaction where an organohalide or triflate couples to a terminal olefin to produce an internal olefin, catalysed by palladium. It is stereospecific."
+      }
+    ],
+    "uuid": "4c0a4e6a-d6e2-41f7-9911-0ff0d80c3df7",
     "superclass_id": 4,
     "class_id": 4,
     "subclass_id": 7,
@@ -11487,7 +11958,7 @@
     "classification_uuid": "101fc58e-e409-576a-86b4-97769460886d"
   },
   {
-    "name": "Friedel-Crafts acylation of alkynes",
+    "name": "Friedel-Crafts acylation of alkynes fixthis",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -11634,12 +12105,33 @@
     "classification_uuid": "f0ce5a3d-74da-5796-af63-46a1b49b145f"
   },
   {
-    "name": "Amine to azide",
+    "name": "Amine to azide (metal azide)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:1]-[NH2;D1;+0]>>[*:1]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
+    "smirks": "[Na,Li]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:1]-[NH2;D1;+0]>>[*:1]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000011",
+        "rxno_label": "functional group modification",
+        "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
+      }
+    ],
+    "uuid": "e8d2358e-f9f2-4338-ad3e-935b938da16f",
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "928d9491-86d1-5b6a-ba82-af3b05095b5f"
+  },
+  {
+    "name": "Amine to azide (azide anion)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[N;H0;D1;-1:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5].[*:1]-[NH2;D1;+0]>>[*:1]-[N;H0;D2;+0:3]=[N;H0;D2;+1:4]=[N;H0;D1;-1:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000011",
@@ -11823,7 +12315,7 @@
     "classification_uuid": "e8df6c4c-30e6-58a1-9d4c-aa8abfd12219"
   },
   {
-    "name": "Ester to carboxylate ring opening - hydroxide fixthisName",
+    "name": "Ester to carboxylate ring opening - hydroxide",
     "priority": {
       "priority_class": 2,
       "priority": 5
@@ -13608,7 +14100,7 @@
     "classification_uuid": "4865185d-6f43-5e7b-a218-00b9cf0a2da6"
   },
   {
-    "name": "Oxidation of amide to carboxylic acid with water fixthis",
+    "name": "Hydrolysis of carboxamide with water",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -13629,7 +14121,7 @@
     "classification_uuid": "b29bc418-81da-5be1-838f-3f271db9cab8"
   },
   {
-    "name": "Oxidation of amide to carboxylic acid with base fixthis",
+    "name": "Hydrolysis of carboxamide with base",
     "priority": {
       "priority_class": null,
       "priority": null
