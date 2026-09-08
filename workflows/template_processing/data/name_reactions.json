@@ -35,9 +35,9 @@
       }
     ],
     "uuid": "d10b0a2a-2b78-4f78-9891-c1a3dec78e5e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 7,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -56,9 +56,9 @@
       }
     ],
     "uuid": "5196b85a-56e4-4deb-9afd-fa1bee59499e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 7,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -77,9 +77,9 @@
       }
     ],
     "uuid": "7f6aca64-e878-4c8c-ac1f-d1ea4e09be38",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -581,9 +581,9 @@
       }
     ],
     "uuid": "bd1ba3bb-0028-4ce9-861f-c58167eacab3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -623,9 +623,9 @@
       }
     ],
     "uuid": "21a6cedc-bf27-462b-87ef-53aa625265d6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -638,16 +638,16 @@
     "smirks": "[CH2;D1;+0:1]=[CH;D2;+0:2]-[CH3;D1;+0:3].[NH3].[O]=[O]>>[CH2;D1;+0:1]=[CH;D2;+0:2]-[C;H0;D2;+0:3]#[N;H0;D1;+0]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000012",
+        "rxno_label": "functional group oxidation",
+        "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
       }
     ],
     "uuid": "9bfc1db5-4afd-4c9a-a9ee-532a6bb4c658",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 10,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -686,10 +686,10 @@
       }
     ],
     "uuid": "e9802c8a-1fa9-41cb-8902-17bccec49b44",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 2,
+    "class_id": 12,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -722,15 +722,15 @@
     "smirks": "[*:1]-[C;H1;D2;+0:2]=[O;D1;H0;+0:3].[O;D1;H1]-[N;H1;D2;+0:4]-[S](=O)(=O)-c1ccccc1>>[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[N;H1;D2;+0:4]-[O;D1;H1]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000357",
+        "rxno_label": "N-acylation to amide",
+        "rxno_definition": "An acylation reaction where a nitrogen atom is acylated to form an amide."
       }
     ],
     "uuid": "9434d4f1-a553-41c5-993a-b093535923a7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 1,
+    "subclass_id": 9,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1106,9 +1106,9 @@
       }
     ],
     "uuid": "013d1d7d-52a6-4e55-8df9-a74bca24f919",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1169,10 +1169,10 @@
       }
     ],
     "uuid": "d545806e-7add-4952-85ec-c3bc7b8f0c2e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -1337,9 +1337,9 @@
       }
     ],
     "uuid": "abd7fd11-d248-4dac-a726-7f649f65fdec",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 10,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1358,9 +1358,9 @@
       }
     ],
     "uuid": "1d261a24-762d-4492-8c87-f437d9a57bb8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1442,9 +1442,9 @@
       }
     ],
     "uuid": "44231c44-01d7-42d5-beab-ff979046eeec",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 10,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1463,10 +1463,10 @@
       }
     ],
     "uuid": "a747cc5a-fdf8-4e74-a088-c7cea5b5b000",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 8,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -1484,10 +1484,10 @@
       }
     ],
     "uuid": "454e9b0d-8771-4fe1-b461-2e1d89369be7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 8,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -1736,9 +1736,9 @@
       }
     ],
     "uuid": "c79444fe-c595-4fb0-8a77-0b1cbf3912bf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1841,9 +1841,9 @@
       }
     ],
     "uuid": "f37fc096-7345-49c9-9f07-46a9403d6d7e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1877,15 +1877,15 @@
     "smirks": "[c:1]-[OH;D1;+0:2].[C;D3;+0:3](=[O;D1;H0;+0:7])([*:4])[*:5].[C;H1;D3;+0:6](Cl)(Cl)Cl.[O;H1;D0;-1:8]>>[c:1]-[O;H0;D2;+0:2]-[C;D4;+0:3]([*:4])([*:5])-[C;H0;D3;+0:6](=[O;D1;H0;+0:7])-[O;H1;D1;+0:8]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000000",
+        "rxno_label": "molecular skeleton joining reaction",
+        "rxno_definition": "A reaction where the number of atoms in the molecular skeleton increases."
       }
     ],
     "uuid": "79c46990-f77d-4df2-b214-6540e10cf680",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -1898,15 +1898,15 @@
     "smirks": "[c:1]-[SH;D1;+0:2].[C;D3;+0:3](=[O;D1;H0;+0:7])([*:4])[*:5].[C;H1;D3;+0:6](Cl)(Cl)Cl.[O;H1;D0;-1:8]>>[c:1]-[S;H0;D2;+0:2]-[C;D4;+0:3]([*:4])([*:5])-[C;H0;D3;+0:6](=[O;D1;H0;+0:7])-[O;H1;D1;+0:8]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000002",
+        "rxno_label": "carbon-carbon coupling reaction",
+        "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
       }
     ],
     "uuid": "7f2bbc99-de41-4ec7-8f3f-387235e2bdea",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2177,10 +2177,10 @@
       }
     ],
     "uuid": "a94400e7-bb9d-488d-a830-7e08fbda414e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 6,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -2450,9 +2450,9 @@
       }
     ],
     "uuid": "5ddad08d-0549-47fe-af90-47af2ade8a1f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2513,9 +2513,9 @@
       }
     ],
     "uuid": "326ee6d7-e003-4296-b57e-9dafdda4a749",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 9,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2555,10 +2555,10 @@
       }
     ],
     "uuid": "0fe8953c-bfdf-40fc-a4e2-2e5a21e894e6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 7,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -2660,9 +2660,9 @@
       }
     ],
     "uuid": "f99bb9a2-1307-45cf-ba8b-7fbcf70ca76c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2681,9 +2681,9 @@
       }
     ],
     "uuid": "1365917a-59d2-4004-83ef-dc0afde7f068",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2786,9 +2786,9 @@
       }
     ],
     "uuid": "35fba175-2dd1-4af4-90e1-7193b18a0a3e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 2,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2891,9 +2891,9 @@
       }
     ],
     "uuid": "a7509b91-db20-4e06-8f6c-0d9786aacb9a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -2975,10 +2975,10 @@
       }
     ],
     "uuid": "099474ce-fcb9-4bbf-ac38-db3169bab5fb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -3059,9 +3059,9 @@
       }
     ],
     "uuid": "1cb82c5d-82bc-44a6-a845-3e63e843fdbe",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 6,
+    "class_id": 18,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -3122,10 +3122,10 @@
       }
     ],
     "uuid": "9917b583-8505-4cf1-b6df-798a48cff018",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 3,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -3143,9 +3143,9 @@
       }
     ],
     "uuid": "b130b70c-9b07-42b8-a022-a5fb6e2f17b8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -3458,9 +3458,9 @@
       }
     ],
     "uuid": "f3ecc276-e96b-457e-973e-548d394b60b8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -3563,9 +3563,9 @@
       }
     ],
     "uuid": "0f626326-8b7f-4b30-8969-818329241d33",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -3647,8 +3647,8 @@
       }
     ],
     "uuid": "d41e8219-bf54-4b4e-bfcf-a590229fd4fe",
-    "superclass_id": 12,
-    "class_id": null,
+    "superclass_id": 4,
+    "class_id": 99,
     "subclass_id": null,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
@@ -3668,9 +3668,9 @@
       }
     ],
     "uuid": "578157e2-fc54-4182-8c8e-afe3faed3807",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 1,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -3794,9 +3794,9 @@
       }
     ],
     "uuid": "f264cc66-4bed-408d-85ae-420c50714353",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4277,9 +4277,9 @@
       }
     ],
     "uuid": "8c78677d-b989-4dd6-b36f-990ffb0f4e93",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4292,15 +4292,15 @@
     "smirks": "[c:1]-[N+]#N.[C;H0;D3:2](=[N;D2]-[O;H1;D1])[#6:3].[O;H2;D0:4]>>[c:1]-[C;H0;D3:2](=[O;D1:4])-[#6:3]",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000002",
-        "rxno_label": "carbon-carbon coupling reaction",
-        "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
+        "rxno_id": "RXNO:0000603",
+        "rxno_label": "cross-coupling",
+        "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
       }
     ],
     "uuid": "28d69ec6-e9ba-495f-8544-fe35056f9922",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4313,15 +4313,15 @@
     "smirks": "[c:1]-[N+]#N.[C:2](=[N;D2]-[N;H1;D2]-[C;D3](=[O;D1])-[N;H2;D1])[*:3].[O;H2;D0:4]>>[c:1]-[C:2](=[O;D1:4])-[*:3]",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000002",
-        "rxno_label": "carbon-carbon coupling reaction",
-        "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
+        "rxno_id": "RXNO:0000603",
+        "rxno_label": "cross-coupling",
+        "rxno_definition": "A joining reaction where a carbon-carbon bond is formed between unlike moieties."
       }
     ],
     "uuid": "e2308748-e755-472b-af32-03a96c832201",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4340,9 +4340,9 @@
       }
     ],
     "uuid": "fc549d65-19bd-4982-92d8-060eedca009b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4487,9 +4487,9 @@
       }
     ],
     "uuid": "ddf90247-ae7e-42fd-82c6-7e0ad92ce65b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4823,9 +4823,9 @@
       }
     ],
     "uuid": "8ca2f5cf-29de-4542-87aa-ca49c7b7e424",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 7,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4844,9 +4844,9 @@
       }
     ],
     "uuid": "4e05f740-40a6-4ec4-87c4-434043157505",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4865,9 +4865,9 @@
       }
     ],
     "uuid": "40001b03-4200-4f7c-910f-5874684a9aef",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 4,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -4886,9 +4886,9 @@
       }
     ],
     "uuid": "428198bb-ede6-4ae9-bd1e-be98afdc1109",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -5243,9 +5243,9 @@
       }
     ],
     "uuid": "79e82ad5-aed4-4444-bfb0-455490f2291a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -5264,9 +5264,9 @@
       }
     ],
     "uuid": "68caae57-4314-4f3f-a8d8-50fdecc9ce2e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 13,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -5705,9 +5705,9 @@
       }
     ],
     "uuid": "55201ab6-bee3-4fc9-b10d-fc24cabe9f05",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -5915,9 +5915,9 @@
       }
     ],
     "uuid": "ebd84ca8-a2fd-4c20-a6c7-18a08bc61ff4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -5999,9 +5999,9 @@
       }
     ],
     "uuid": "d686632a-4eb8-486c-bb45-b3f797d74e55",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -6125,10 +6125,10 @@
       }
     ],
     "uuid": "5767c479-4c53-431f-9c7c-d0d22592efb6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -6230,9 +6230,9 @@
       }
     ],
     "uuid": "5a891c6e-511a-460c-8864-2abcaca3d7b5",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 4,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -6251,10 +6251,10 @@
       }
     ],
     "uuid": "2450bc52-1302-4139-9310-459c4b850436",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 3,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -6461,10 +6461,10 @@
       }
     ],
     "uuid": "cc590f32-c139-4580-81f3-b337157fd4b8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -6524,10 +6524,10 @@
       }
     ],
     "uuid": "9d31603f-2da0-4cba-8842-829ac4ad6351",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -6545,9 +6545,9 @@
       }
     ],
     "uuid": "58c39a98-0852-4825-9037-b8c2ada02636",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 9,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -6608,9 +6608,9 @@
       }
     ],
     "uuid": "42003d02-1f51-49e4-a804-27f5e75fc51e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -6839,9 +6839,9 @@
       }
     ],
     "uuid": "27f7e153-ed10-48a0-af4b-055e63f00306",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -6986,10 +6986,10 @@
       }
     ],
     "uuid": "5ffeb70c-8f33-4ed1-8f9b-b5df4118cb7d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 2,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -7574,9 +7574,9 @@
       }
     ],
     "uuid": "bab7b5d4-4eb2-4c24-8082-bdea50f8437d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -7679,10 +7679,10 @@
       }
     ],
     "uuid": "65fc3455-599c-48ba-8303-d6a62cb77bc8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -7700,10 +7700,10 @@
       }
     ],
     "uuid": "afd104e9-021e-4ecf-97b0-50548fa64b8a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -7805,10 +7805,10 @@
       }
     ],
     "uuid": "7fe27428-ede1-424f-a233-d4cf429c7b90",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 1,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -7889,9 +7889,9 @@
       }
     ],
     "uuid": "0cf861cc-4a1f-4033-9883-79d294fa29ee",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -7931,9 +7931,9 @@
       }
     ],
     "uuid": "2d9374c6-c18f-4ce3-8d2f-c2e30f3fbc9e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -7952,9 +7952,9 @@
       }
     ],
     "uuid": "2215cac2-fa90-40ec-928e-a43257ee06e6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8015,10 +8015,10 @@
       }
     ],
     "uuid": "12b7d3bd-30cb-470e-8c3f-a69b22830d8b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 1,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -8372,9 +8372,9 @@
       }
     ],
     "uuid": "73bb219c-0d90-48b6-b183-c1ce32e09446",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 6,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8393,9 +8393,9 @@
       }
     ],
     "uuid": "1e3c777a-4ce2-4b20-b3a9-90c1d879a9d2",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8456,9 +8456,9 @@
       }
     ],
     "uuid": "a5e61f26-b1b6-4daf-88ae-7e0564c110db",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8561,9 +8561,9 @@
       }
     ],
     "uuid": "b497efdc-9aa4-4606-9f12-520183a14a69",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8582,9 +8582,9 @@
       }
     ],
     "uuid": "00f68deb-9476-404a-b1da-9cb96f94e6e7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -8834,9 +8834,9 @@
       }
     ],
     "uuid": "26f355fc-4a38-4aeb-8c92-7b89ce7bdfa9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -9359,10 +9359,10 @@
       }
     ],
     "uuid": "f12f5eac-c9eb-44b9-885f-f01b4d4de520",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 3,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -9485,10 +9485,10 @@
       }
     ],
     "uuid": "6b48db93-da7b-4407-a222-45b9555cf4d6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -9569,9 +9569,9 @@
       }
     ],
     "uuid": "cc5daf49-40ab-4b3c-a1b8-0104cb1f58b5",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 0,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -9884,10 +9884,10 @@
       }
     ],
     "uuid": "1fca918f-498d-4508-9de8-951032558a7b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 6,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -9968,10 +9968,10 @@
       }
     ],
     "uuid": "ae30ac07-2bd0-4b82-ae19-14fa8a3ebcb0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -10241,9 +10241,9 @@
       }
     ],
     "uuid": "bea81811-112d-45fd-9cbd-f1fe14041116",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -10340,9 +10340,9 @@
     "smirks": "[CH3:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[C;H1;D3;+0:4](-[*:5])-[C;H0;D3;+0:6](=[O;D1;H0;+0:7])-[O;H0;D2;+0]-[CH2]-[CH3]>>[*:5]-[C;H1;D3;+0:4](-[NH2;D1;+0])-[C;H0;D3;+0:6](=[O;D1;H0;+0:7])-[OH;D1;+0]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000158",
+        "rxno_label": "Japp-Klingemann reaction",
+        "rxno_definition": "The reaction of a doubly activated methylene compound that has at least one carbonyl substituent with an aryl azide to give a hydrazone. Usually there is concomitant cleaving and oxidation of one of the carbonyl substituents."
       }
     ],
     "uuid": "6b3e6587-ab96-455f-b656-c81cec1a9cee",
@@ -10466,16 +10466,16 @@
     "smirks": "[CH2;D1;+0:7]=[C;D3;+0:5]1-[O;D2;+0:11]-[C;H1;D3;+0:1]([O;D2;+0]-[CH3])-[C;H2;D2;+0:2]-[C;H1;D3;+0:3](-[O:9]-[*:13])-[C;H1;D3;+0:4]-1-[O:10]-[*:14]>>[O;D1;H0;+0:11]=[C:5]1-[C:4](-[O:10]-[*:14])-[C:3](-[O:9]-[*:13])-[C;H1:2]=[C;H1:1]-[C;H2:7]-1",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000202",
-        "rxno_label": "ring rearrangement",
-        "rxno_definition": "A reaction in which the number of rings in a molecule stays the same but the connectivity of the atoms in at least one ring changes."
+        "rxno_id": "RXNO:0000229",
+        "rxno_label": "Ferrier rearrangement",
+        "rxno_definition": "The rearrangement of an O-alkenyl acetal to give the corresponding beta-alkoxy carbonyl compound."
       }
     ],
     "uuid": "fdad5b08-a5a3-41d0-9c5d-830aa67cf9e2",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -10535,10 +10535,10 @@
       }
     ],
     "uuid": "e27fef40-f76f-4da1-bff4-378d2581a521",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 5,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -10745,9 +10745,9 @@
       }
     ],
     "uuid": "f67c1a42-8a05-4c41-a377-2a74050eae83",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -10850,9 +10850,9 @@
       }
     ],
     "uuid": "e5703da5-5e28-4f28-8b45-2435954c358f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -10892,10 +10892,10 @@
       }
     ],
     "uuid": "e8f823fc-312d-4cf8-a372-abfdd753218b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -10913,9 +10913,9 @@
       }
     ],
     "uuid": "4abb611d-8419-4132-8172-53b2b4062500",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 10,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -10928,15 +10928,15 @@
     "smirks": "[C:1](=[O:2])[C:3]=[N:4][O;H1].[N:6][Cl]>>[C:1](=[O:2])[C:3]=[N+:4]=[N-:6]",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000011",
-        "rxno_label": "functional group modification",
-        "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
+        "rxno_id": "RXNO:0000012",
+        "rxno_label": "functional group oxidation",
+        "rxno_definition": "A functional group modification reaction where a functional group is oxidised."
       }
     ],
     "uuid": "e0fe269e-c9fc-48bf-b2ee-fbb7fc6f818a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 9,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -10997,9 +10997,9 @@
       }
     ],
     "uuid": "de10871a-f674-4cad-857b-a8bc6518c6f3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 11,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -11018,9 +11018,9 @@
       }
     ],
     "uuid": "e86411a6-f9df-4c13-aeaa-d0bab4f2ef19",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 5,
+    "subclass_id": 6,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -11081,10 +11081,10 @@
       }
     ],
     "uuid": "566cfddf-f109-46f3-a71c-4ad2bf88e09c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -11165,10 +11165,10 @@
       }
     ],
     "uuid": "2557e579-3418-48ca-8192-2dab33d56bbd",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -11186,10 +11186,10 @@
       }
     ],
     "uuid": "7d6af2a1-b833-4799-a046-4d21406c3800",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -11753,9 +11753,9 @@
       }
     ],
     "uuid": "d8a9342d-a80a-45b1-a8de-bdae04b31256",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -11858,9 +11858,9 @@
       }
     ],
     "uuid": "f0dbaf76-3f48-4488-81da-24ae7a9003ff",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -12026,9 +12026,9 @@
       }
     ],
     "uuid": "48600626-3a1c-4e4a-821f-6caab2217a72",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 6,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -12236,9 +12236,9 @@
       }
     ],
     "uuid": "b7c241d5-adad-4be8-ad14-d447b5fc7cd8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 3,
+    "subclass_id": 7,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -12257,10 +12257,10 @@
       }
     ],
     "uuid": "ef5b4fda-a026-4b00-89cf-2685ae652ba2",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 3,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -12278,10 +12278,10 @@
       }
     ],
     "uuid": "a6001b73-9c6a-456c-9bc5-d1e04748ae09",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -12320,9 +12320,9 @@
       }
     ],
     "uuid": "fda9cd1a-a21c-4f11-94db-47444ec3557e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 5,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -12824,9 +12824,9 @@
       }
     ],
     "uuid": "5575c4bc-843e-4c88-b4b1-e0be91602aab",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -12845,10 +12845,10 @@
       }
     ],
     "uuid": "60400a33-f3b8-4649-b972-0df4351d168c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 8,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -12866,10 +12866,10 @@
       }
     ],
     "uuid": "82e60220-0c61-4e28-81d7-061846943ec5",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -12992,10 +12992,10 @@
       }
     ],
     "uuid": "c7f745a1-d161-4385-a579-b892aa85972d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -13013,10 +13013,10 @@
       }
     ],
     "uuid": "f2e5a8a9-86f5-444f-a49f-1e04dca64cc7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -13034,9 +13034,9 @@
       }
     ],
     "uuid": "68831fbf-d4d1-45db-8690-698b6a764256",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -13097,9 +13097,9 @@
       }
     ],
     "uuid": "e73362f6-70a1-4186-8cf9-a0f2a64b8952",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -13244,10 +13244,10 @@
       }
     ],
     "uuid": "0301e648-ffe7-41c8-baf6-5b5467ccd8bf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 2,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -13412,9 +13412,9 @@
       }
     ],
     "uuid": "341cc4c5-87f3-42b0-a431-dac6f467f66c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -13538,9 +13538,9 @@
       }
     ],
     "uuid": "a6e894b8-2a5f-467f-b932-4648ab75415f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -13622,9 +13622,9 @@
       }
     ],
     "uuid": "f51e698d-1249-402e-8dde-9777b788362d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 3,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -13979,10 +13979,10 @@
       }
     ],
     "uuid": "f44e147f-2ad1-42e9-93d6-6c97d0633e7b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": 3,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -14000,10 +14000,10 @@
       }
     ],
     "uuid": "734d049f-c053-4f4c-854e-24d0e7d272df",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": 3,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -14168,9 +14168,9 @@
       }
     ],
     "uuid": "c8659cef-663c-4845-925f-16e373234073",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14483,10 +14483,10 @@
       }
     ],
     "uuid": "9f492a87-c54e-44d4-abf4-c992d582cf78",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 7,
+    "class_id": 7,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -14504,9 +14504,9 @@
       }
     ],
     "uuid": "c4f6f571-e3dc-45c2-b1a0-baadd1f5b813",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 7,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14525,9 +14525,9 @@
       }
     ],
     "uuid": "f8154a3a-493c-4be5-aada-291c984ecd4b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14609,10 +14609,10 @@
       }
     ],
     "uuid": "ae3b208c-ca90-4da5-b6f8-689e4ff5774f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -14693,9 +14693,9 @@
       }
     ],
     "uuid": "27617bf8-9825-467e-b780-4f843b2990af",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14735,9 +14735,9 @@
       }
     ],
     "uuid": "91ff34da-881a-40f9-99a9-5d3fb27de241",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14777,9 +14777,9 @@
       }
     ],
     "uuid": "4182f2af-1fdf-4a07-920b-e6e62c3f3d0b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -14924,9 +14924,9 @@
       }
     ],
     "uuid": "609abbb1-b1bb-4e63-9c9e-9e2c27f308ab",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 11,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15218,9 +15218,9 @@
       }
     ],
     "uuid": "81112316-0f93-40de-baca-28b7e70484a6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15239,10 +15239,10 @@
       }
     ],
     "uuid": "e5fe83f4-7480-4eac-87b3-83c7d5c4a955",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -15260,9 +15260,9 @@
       }
     ],
     "uuid": "b8a151ab-faf6-4c94-926f-6ca248b124c3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15323,9 +15323,9 @@
       }
     ],
     "uuid": "000c3ff5-658e-4c79-8f2b-0674a3b46096",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15428,10 +15428,10 @@
       }
     ],
     "uuid": "5203cffd-639e-43e4-a591-f8809e903166",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -15449,9 +15449,9 @@
       }
     ],
     "uuid": "4cb21e8c-d56e-48ae-8904-b5e16fd4e6b9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15512,9 +15512,9 @@
       }
     ],
     "uuid": "977a8d86-e767-4605-a918-fd8813254fad",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15533,9 +15533,9 @@
       }
     ],
     "uuid": "6eb06eec-0c5d-4e8b-8558-0c8fc1cfd073",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15554,9 +15554,9 @@
       }
     ],
     "uuid": "2d7bc8d6-93d9-4958-a408-55905224467a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 12,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -15638,9 +15638,9 @@
       }
     ],
     "uuid": "f2e63c3e-e38d-420f-a2d1-4c98c3d7307e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16331,9 +16331,9 @@
       }
     ],
     "uuid": "3a860dbd-ee6a-4b42-a8e6-a49007736ad6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16436,9 +16436,9 @@
       }
     ],
     "uuid": "64ae1364-98ce-48fb-ae7f-cd85f110db41",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16457,9 +16457,9 @@
       }
     ],
     "uuid": "72f4132b-7938-438a-970e-02adfa5be1c1",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16478,9 +16478,9 @@
       }
     ],
     "uuid": "39d59e97-e552-4500-a18d-87bb121ea993",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16583,9 +16583,9 @@
       }
     ],
     "uuid": "14b5f01e-18b8-464b-8281-5e4edd7d0b35",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 3,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16625,9 +16625,9 @@
       }
     ],
     "uuid": "7c892c55-4308-42f7-b39b-0d9767070c1a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 5,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16646,9 +16646,9 @@
       }
     ],
     "uuid": "faf02fff-e80f-4991-9605-6f6fdb613138",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -16667,9 +16667,9 @@
       }
     ],
     "uuid": "33dad689-32ef-4468-8ccb-b5f7c661d5d6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 4,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17087,10 +17087,10 @@
       }
     ],
     "uuid": "1e980328-2d0e-4593-85e1-8aa6daa559e6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -17318,9 +17318,9 @@
       }
     ],
     "uuid": "094b017b-c04b-4940-bc65-d87d64e6e4c3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 3,
+    "subclass_id": 7,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17381,9 +17381,9 @@
       }
     ],
     "uuid": "eb9b396c-87ec-4ad8-91cf-f899f1ea9876",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17402,9 +17402,9 @@
       }
     ],
     "uuid": "e23e13cc-2085-4b89-8af7-13eb880931db",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17423,9 +17423,9 @@
       }
     ],
     "uuid": "2c6a9d3b-c4ff-4a10-bba9-2e65ac876328",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17591,10 +17591,10 @@
       }
     ],
     "uuid": "8bb5db39-201c-4ba7-9dd7-5240d4479c1e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -17885,9 +17885,9 @@
       }
     ],
     "uuid": "1e243b9c-132b-439c-a47f-011a51aae4d3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17906,9 +17906,9 @@
       }
     ],
     "uuid": "134b8a13-fdad-4906-bbb3-055c6e835228",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -17948,9 +17948,9 @@
       }
     ],
     "uuid": "53291fe7-882c-4bb7-95c6-806b9bcb27f5",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18068,15 +18068,15 @@
     "smirks": "[S:1]([*:2])-[CH2:3]-[CH:4]=[CH:5]-[*:6].[C:7](=[N+]=[N-])([*:8])[*:9]>>[S:1]([*:2])-[C:7]([*:8])([*:9])-[CH:5]([*:6])-[CH:4]=[CH2:3]",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000025",
-        "rxno_label": "rearrangement step",
-        "rxno_definition": "A reaction which preserves the number of rings and number of skeletal atoms and in which the molecule rearranges so that one or more atoms or groups of atoms move from one atom to another."
+        "rxno_id": "RXNO:0000150",
+        "rxno_label": "joining with rearrangement",
+        "rxno_definition": "A reaction in which one or more atoms are added to the molecular skeleton and a skeletal rearrangement occurs."
       }
     ],
     "uuid": "28d405d9-8436-44d2-896f-5816f0704c3d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 9,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18095,9 +18095,9 @@
       }
     ],
     "uuid": "85c8f726-b79d-4e38-a501-93529af17145",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 9,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18515,9 +18515,9 @@
       }
     ],
     "uuid": "896a6f2b-87f3-48df-babc-9fc8f7b0fc24",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18845,15 +18845,15 @@
     "smirks": "[C;H1;+0:1]([*:2])([*:3])-[O;D2;+0:4]-[O;D2;+0:5]-[C;+0:6]([*:7])([*:8])[*:9]>>[C;+0:1]([*:2])([*:3])=[O;D1;+0:4].[O;H1;D1;+0:5]-[C;+0:6]([*:7])([*:8])[*:9]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000025",
+        "rxno_label": "rearrangement step",
+        "rxno_definition": "A reaction which preserves the number of rings and number of skeletal atoms and in which the molecule rearranges so that one or more atoms or groups of atoms move from one atom to another."
       }
     ],
     "uuid": "6af26351-e4bb-4d14-a55b-67080efd99ef",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18872,9 +18872,9 @@
       }
     ],
     "uuid": "c947905e-57b0-484b-b44d-a2804c9f14a5",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18893,9 +18893,9 @@
       }
     ],
     "uuid": "f3ed08f8-3a59-48c0-8152-5935aec301bf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 4,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -18998,9 +18998,9 @@
       }
     ],
     "uuid": "2fb084f2-3a4e-43e5-94d7-4b460bbf7943",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19271,9 +19271,9 @@
       }
     ],
     "uuid": "a198f651-66cd-4c68-859a-3eb5f103a15c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 11,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19307,15 +19307,15 @@
     "smirks": "[*:3]-[C:1](=[O:2])-[C:4](=[O:5])-[*:6].CC-[O:7]-[P:8](-O-CC)-[O:10]-[Si](C)(C)C>>[*:3]-[C:1]1=[C:4](-[*:6])-[O:5]-[P:8](=[O:10])(-[O:7]-CC)-[O:2]-1",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000346",
-        "rxno_label": "oxacycle synthesis",
-        "rxno_definition": "A ring formation reaction where the intended product contains an oxacycle that was not in any of the reactants."
+        "rxno_id": "",
+        "rxno_label": "",
+        "rxno_definition": ""
       }
     ],
     "uuid": "e934f92f-08a4-4119-a1ef-afb4f1f5e845",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19376,10 +19376,10 @@
       }
     ],
     "uuid": "ab616c52-7f34-47ac-8cb7-3dd98972a3da",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -19754,9 +19754,9 @@
       }
     ],
     "uuid": "92a93921-5d1b-49f8-8641-ed536c73980d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 11,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19775,9 +19775,9 @@
       }
     ],
     "uuid": "9de56199-e0a6-423d-bbf7-4338863458d9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19796,9 +19796,9 @@
       }
     ],
     "uuid": "ffe79e43-2551-4bfa-a19d-16e6427e27ad",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19811,16 +19811,16 @@
     "smirks": "[*:1]-[C;H0;D3;+0:2](=[N;D2;+0:3]-[*:4])-[O;H0;D2;+0:5]-[C;+0].[C;+0:7]-[I]>>[*:1]-[C;H0;D3;+0:2](=[O;H0;D1;+0:5])-[N;H0;D3;+0:3](-[*:4])-[C;+0:7]",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000025",
-        "rxno_label": "rearrangement step",
-        "rxno_definition": "A reaction which preserves the number of rings and number of skeletal atoms and in which the molecule rearranges so that one or more atoms or groups of atoms move from one atom to another."
+        "rxno_id": "RXNO:0000514",
+        "rxno_label": "Chapman rearrangement",
+        "rxno_definition": "Rearrangement of an aryl imino ether to yield an N,N-diaryl amide."
       }
     ],
     "uuid": "b6c7901a-d4e0-4542-8503-fb8439c3d970",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -19901,10 +19901,10 @@
       }
     ],
     "uuid": "bbb8c392-8f49-45ed-869a-20cc40db1d96",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -19922,9 +19922,9 @@
       }
     ],
     "uuid": "a39f1fa8-af93-454f-834f-c8e96f8649d4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 1,
+    "subclass_id": 12,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -19943,10 +19943,10 @@
       }
     ],
     "uuid": "fbad3c17-737d-4ac8-8dc5-19f0636e180a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 13,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -19964,10 +19964,10 @@
       }
     ],
     "uuid": "35173c3d-3759-43a3-a92d-c01b622c27c3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 4,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20195,8 +20195,8 @@
       }
     ],
     "uuid": "cde3636b-5e54-4308-9b7c-31b2bcd39e53",
-    "superclass_id": 12,
-    "class_id": null,
+    "superclass_id": 4,
+    "class_id": 99,
     "subclass_id": null,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
@@ -20258,10 +20258,10 @@
       }
     ],
     "uuid": "06b4b3d4-2bfd-484d-b461-44961a0974d2",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20279,10 +20279,10 @@
       }
     ],
     "uuid": "c8f25612-a97b-4e72-8b18-f55296c3a022",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 6,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20300,10 +20300,10 @@
       }
     ],
     "uuid": "bcb88784-3368-4229-baba-a0e27ce78fed",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 6,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20321,10 +20321,10 @@
       }
     ],
     "uuid": "c33e5766-edcb-472b-856d-006838c40e52",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 6,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20447,10 +20447,10 @@
       }
     ],
     "uuid": "b381ac8e-32ec-4d2b-94c4-c15cfd9dfadf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 6,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20552,10 +20552,10 @@
       }
     ],
     "uuid": "518e3c3b-be0c-46d3-82ee-5cbfa00308ff",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 7,
+    "class_id": 3,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20657,9 +20657,9 @@
       }
     ],
     "uuid": "47b9a479-59cd-405d-82de-85ce0027311d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 12,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -20699,10 +20699,10 @@
       }
     ],
     "uuid": "c723b193-9d4f-402e-b044-041e45dc0e8a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -20825,9 +20825,9 @@
       }
     ],
     "uuid": "9613e349-a999-4e7b-a435-f027d6f1ad7d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 12,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21161,9 +21161,9 @@
       }
     ],
     "uuid": "91a2194a-689d-4312-84d9-93cd82e45235",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21455,10 +21455,10 @@
       }
     ],
     "uuid": "999f53de-7d11-43be-9836-f40ea1dcdba1",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -21581,9 +21581,9 @@
       }
     ],
     "uuid": "84067f66-9edb-4be8-ba0e-83eebab8a766",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21644,9 +21644,9 @@
       }
     ],
     "uuid": "40026959-77c7-49b5-a445-98de91620c09",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21686,10 +21686,10 @@
       }
     ],
     "uuid": "61823af3-4150-45ac-ae2b-b9e58e2fea51",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -21812,9 +21812,9 @@
       }
     ],
     "uuid": "8174f8f0-a57d-4a53-b268-c70c920c8b33",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21833,9 +21833,9 @@
       }
     ],
     "uuid": "6bb9337a-28fe-40e0-98f6-cf7d943c230d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 4,
+    "subclass_id": 10,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21896,9 +21896,9 @@
       }
     ],
     "uuid": "f6ef22fd-ac2d-43a9-8385-6261e36ddc59",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21917,9 +21917,9 @@
       }
     ],
     "uuid": "ce3a4c58-7acf-422c-a9a1-5be03c7cb6c3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21932,15 +21932,15 @@
     "smirks": "[C;D3;+0:1]([*:2])(=[C:8])1-[O;D2;+0:7]-[C;D3;H1;+0:4]1([*:6])>>[*:2]-[C;D3;+0:1](=[C:8])-[C;H1;D3;+0:4](=[O;D1;H0;+0:7])(-[*:6])",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000202",
-        "rxno_label": "ring rearrangement",
-        "rxno_definition": "A reaction in which the number of rings in a molecule stays the same but the connectivity of the atoms in at least one ring changes."
+        "rxno_id": "RXNO:0000205",
+        "rxno_label": "ring breaking",
+        "rxno_definition": "A planned reaction step in which the product has fewer rings than the reactants."
       }
     ],
     "uuid": "f3168d7c-3947-42c0-88a5-83c6fec87e49",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -21959,10 +21959,10 @@
       }
     ],
     "uuid": "f89fd53b-d2d4-4e8d-bc54-530adeab542e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -21980,10 +21980,10 @@
       }
     ],
     "uuid": "4f2ec811-438b-4f78-8d85-3d6a9a7f0050",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -22001,9 +22001,9 @@
       }
     ],
     "uuid": "5a66319a-0699-49af-b533-a8aebca4f2f3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 4,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -22169,10 +22169,10 @@
       }
     ],
     "uuid": "7ebed7a1-7c84-493d-bf64-fbfdd7e95604",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -22421,9 +22421,9 @@
       }
     ],
     "uuid": "1587382e-a9d0-4253-ab4b-3abcba19980f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 7,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -22484,9 +22484,9 @@
       }
     ],
     "uuid": "5380d078-2567-4e86-a4fe-64fba4c4179b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -22757,9 +22757,9 @@
       }
     ],
     "uuid": "d246f6f8-514f-4683-bf7f-c49baf939273",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 9,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -22778,10 +22778,10 @@
       }
     ],
     "uuid": "5637b73a-c540-450d-9047-6e603bce1ef1",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -22988,10 +22988,10 @@
       }
     ],
     "uuid": "96c61ac2-4827-4d2e-b2bb-d215afe3a537",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -23009,9 +23009,9 @@
       }
     ],
     "uuid": "28014f26-22d9-47c5-86f3-a90ec0396ff9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23345,9 +23345,9 @@
       }
     ],
     "uuid": "a7dde8fa-2b65-4591-9a2a-337efaccf589",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 11,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23366,9 +23366,9 @@
       }
     ],
     "uuid": "0195b715-6e82-4bb2-a76a-7d4a0cf7ac0d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 11,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23513,9 +23513,9 @@
       }
     ],
     "uuid": "75e2e89a-97d3-4580-b364-bab7b78d54b4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 9,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23534,9 +23534,9 @@
       }
     ],
     "uuid": "f2c6d69b-92d9-4be7-878b-b28ffc89b3df",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23570,15 +23570,15 @@
     "smirks": "[*:1]-[C;D2:2]#[C;D2:3]-[C;H1;D3;+0:4](-[OH;D1])-[*:5]>>[*:1]-[C;H1:2]=[C:3]=[C;H1:4]-[*:5]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000037",
+        "rxno_label": "functional group reduction",
+        "rxno_definition": "A functional group modification reaction where a functional group is reduced."
       }
     ],
     "uuid": "df641a8b-f050-40cb-8103-c6620d6ac415",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 6,
+    "class_id": 15,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23618,10 +23618,10 @@
       }
     ],
     "uuid": "fcf7abc3-cd6d-40e7-85ed-9e5ad1ff681b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 6,
+    "class_id": 15,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -23681,9 +23681,9 @@
       }
     ],
     "uuid": "a26089c3-542a-47c7-83fa-2d7f129da894",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -23807,9 +23807,9 @@
       }
     ],
     "uuid": "a3ff9cb4-d764-44ed-8ad0-76f9040d52ae",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24122,10 +24122,10 @@
       }
     ],
     "uuid": "fcae3547-9c8a-4962-87fc-91d810b44243",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -24143,10 +24143,10 @@
       }
     ],
     "uuid": "9c77be7d-1c6e-47dc-a90a-1e24cd966bab",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -24290,9 +24290,9 @@
       }
     ],
     "uuid": "5640b912-7221-4aa9-98cc-ef44cbaf0c5e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24437,9 +24437,9 @@
       }
     ],
     "uuid": "3cbda699-2dd7-4336-a34f-b20e2dbf3130",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 7,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24500,9 +24500,9 @@
       }
     ],
     "uuid": "fb9425dc-b078-48e2-a18e-ec0fc1de4a8b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24521,9 +24521,9 @@
       }
     ],
     "uuid": "bede553a-1dab-4a84-903a-5213e4fae874",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24542,8 +24542,8 @@
       }
     ],
     "uuid": "7d35c9b5-4c4c-4167-97f8-b4db039fe2f0",
-    "superclass_id": 12,
-    "class_id": null,
+    "superclass_id": 4,
+    "class_id": 99,
     "subclass_id": null,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
@@ -24563,9 +24563,9 @@
       }
     ],
     "uuid": "5bf7657e-8f42-4359-ad99-370fdae17399",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -24668,9 +24668,9 @@
       }
     ],
     "uuid": "cb75939d-a717-4409-a5e7-3c985da91b01",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 13,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25025,9 +25025,9 @@
       }
     ],
     "uuid": "0bd5e33e-6f51-4c63-8b50-1892ceecdc6b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25046,9 +25046,9 @@
       }
     ],
     "uuid": "3fa73462-2389-480f-bb21-f2a7f5407981",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25067,8 +25067,8 @@
       }
     ],
     "uuid": "9c9c042e-f13b-44e6-a97e-af37e16dd80a",
-    "superclass_id": 12,
-    "class_id": null,
+    "superclass_id": 4,
+    "class_id": 99,
     "subclass_id": null,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
@@ -25235,9 +25235,9 @@
       }
     ],
     "uuid": "6766b201-4f81-4d19-89c4-6462fb81f661",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25466,9 +25466,9 @@
       }
     ],
     "uuid": "7deb2229-c7f4-49c6-84af-4a9f1b186c7b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25487,9 +25487,9 @@
       }
     ],
     "uuid": "a7fb5e89-4843-4c52-a303-f222f5be15d7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25613,9 +25613,9 @@
       }
     ],
     "uuid": "c36031b2-74ac-4bb2-a70d-ba633e545728",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25907,9 +25907,9 @@
       }
     ],
     "uuid": "06cb249d-bc9a-42dc-8ac5-048cd5663cbf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25928,9 +25928,9 @@
       }
     ],
     "uuid": "4d0856e8-8cc2-4cdd-9f67-0bed0b9a478b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 13,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -25970,9 +25970,9 @@
       }
     ],
     "uuid": "b64169e1-9e84-4b5a-bd50-19985890caa9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26054,9 +26054,9 @@
       }
     ],
     "uuid": "4787cfd8-c88a-49ea-bd4f-3cea3698f1eb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26138,10 +26138,10 @@
       }
     ],
     "uuid": "7518436e-8c36-4a46-81b5-9041fd0b154b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -26159,9 +26159,9 @@
       }
     ],
     "uuid": "7c6956e5-74cd-460f-9242-44bd701908b7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26201,10 +26201,10 @@
       }
     ],
     "uuid": "c7e466c3-dee4-4eeb-a8a0-26a2eeadb54a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -26390,9 +26390,9 @@
       }
     ],
     "uuid": "aa872769-80d2-4eaf-b9fa-ae2b86658ec8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26621,9 +26621,9 @@
       }
     ],
     "uuid": "d8beeb4a-6ccd-48f8-a303-8713c2ac1d05",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26642,9 +26642,9 @@
       }
     ],
     "uuid": "a3659f89-6a1e-4869-83b9-9a284e36b096",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26663,9 +26663,9 @@
       }
     ],
     "uuid": "0c0f276d-e81d-4271-8e55-4b4e3ea0f13b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26726,9 +26726,9 @@
       }
     ],
     "uuid": "8706e5c1-258e-4cd5-acd2-ce41b2b571d0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -26789,9 +26789,9 @@
       }
     ],
     "uuid": "fa90d33f-1f1d-4a6f-8d98-b5cf14beba41",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 9,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27455,16 +27455,16 @@
     "smirks": "[cH:1]1[cH:2][cH:3][cH:4][cH:5][cH:6]1>>[c:1]1([OH])[cH:2][cH:3][cH:4][cH:5][cH:6]1",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000332",
-        "rxno_label": "aromatic substitution step",
-        "rxno_definition": "A substitution step where one singly-bonded substituent on an aromatic skeleton is replaced by another singly-bonded substituent."
+        "rxno_id": "RXNO:0000373",
+        "rxno_label": "functional group addition step",
+        "rxno_definition": "A planned reaction step in which a covalent bond is formed between the molecular skeleton and a functional group and where the skeletal bond order is unchanged."
       }
     ],
     "uuid": "491ba633-d5e5-45d8-87d7-2ca92bf74b61",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 10,
+    "class_id": 12,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -27566,10 +27566,10 @@
       }
     ],
     "uuid": "fd17f58e-3056-4c20-af38-50b9febc02ef",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 7,
+    "class_id": 9,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -27671,9 +27671,9 @@
       }
     ],
     "uuid": "5513ddbd-d232-440c-8a18-3bcfc34cffbb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 11,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27755,9 +27755,9 @@
       }
     ],
     "uuid": "84b4ca04-7914-4c6d-99f7-f69253b8fe1a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27776,9 +27776,9 @@
       }
     ],
     "uuid": "69a57986-b538-40af-9175-da48fa8de37a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27797,9 +27797,9 @@
       }
     ],
     "uuid": "70a7c3b6-4a7f-4187-96be-63687c9f6f7a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27875,15 +27875,15 @@
     "smirks": "[n:1]1[cH;D2:2][c:3][c:4][c:5]2[c:6][c:7][c:8][c:9][c:10]12.[C-]#[N].[*]-[C](=O)-[Cl]>>[n:1]1[c:2](-[C](=O)-[OH])[c:3][c:4][c:5]2[c:6][c:7][c:8][c:9][c:10]12",
     "rxno_classification": [
       {
-        "rxno_id": "RXNO:0000002",
-        "rxno_label": "carbon-carbon coupling reaction",
-        "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
+        "rxno_id": "",
+        "rxno_label": "",
+        "rxno_definition": ""
       }
     ],
     "uuid": "dc29dd4d-d31c-43f2-aba2-ddf2cce67660",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -27965,9 +27965,9 @@
       }
     ],
     "uuid": "2a8f8512-3230-4525-b6ba-6a81d8a434b7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -28217,9 +28217,9 @@
       }
     ],
     "uuid": "b41e3f40-c09d-40cb-be77-9b2e8dfdbb64",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 6,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -28616,9 +28616,9 @@
       }
     ],
     "uuid": "4f0e1734-f0d5-4744-bd75-e8c37691a4ae",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -28805,9 +28805,9 @@
       }
     ],
     "uuid": "c997ced3-a5b5-40e0-982d-0c781eaff2a9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -28952,9 +28952,9 @@
       }
     ],
     "uuid": "0888f0cd-b5ed-44d7-9903-c8d7b7b07467",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -28973,9 +28973,9 @@
       }
     ],
     "uuid": "3e7791df-e284-4c70-bac1-e9f265e8e9e4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 1,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -29015,9 +29015,9 @@
       }
     ],
     "uuid": "241c93cb-df9f-4e66-97c7-e07fbc8b162f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -29036,9 +29036,9 @@
       }
     ],
     "uuid": "1aedc095-aa88-4138-a3d5-e4d2f8bc26e1",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -29267,10 +29267,10 @@
       }
     ],
     "uuid": "5a27e228-49b8-4cf3-bd76-2afbb3de5741",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 8,
+    "subclass_id": 1,
+    "subsubclass_id": 2,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -29477,10 +29477,10 @@
       }
     ],
     "uuid": "f092c2a5-07db-47e3-83e9-97af7f01bf88",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 8,
+    "subsubclass_id": 2,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -29540,9 +29540,9 @@
       }
     ],
     "uuid": "310b6820-e17b-4724-af1b-51cfaff0ba36",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -29645,10 +29645,10 @@
       }
     ],
     "uuid": "ec844e2b-2e22-413c-ba35-e4099b591201",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 1,
+    "subsubclass_id": 4,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -29687,9 +29687,9 @@
       }
     ],
     "uuid": "a8093bb8-bd51-42f7-9a8f-6772d4065e42",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -29981,9 +29981,9 @@
       }
     ],
     "uuid": "ebd50700-2821-47ad-a7e4-d1b393544f22",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 3,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30002,9 +30002,9 @@
       }
     ],
     "uuid": "f1a8cba2-e3f0-4f9f-a255-52fb00deadac",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 6,
+    "class_id": 18,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30023,9 +30023,9 @@
       }
     ],
     "uuid": "66ddc678-e52a-4721-b78f-cc5fa7b0aeb0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 5,
+    "subclass_id": 6,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30065,9 +30065,9 @@
       }
     ],
     "uuid": "771d97c4-bf8f-4b36-8880-d8c517a450e4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30212,9 +30212,9 @@
       }
     ],
     "uuid": "7bb0b0c0-4817-4946-b119-4aabb3ce6fcd",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 7,
+    "class_id": 9,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30338,9 +30338,9 @@
       }
     ],
     "uuid": "d3400645-fb18-4a77-87ab-d14fe72361cf",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30422,10 +30422,10 @@
       }
     ],
     "uuid": "eb6634cb-9d5e-40b0-a3fd-a881e101ccb8",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -30464,10 +30464,10 @@
       }
     ],
     "uuid": "b936343e-f61e-441e-8b72-b19669d2a3cb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -30527,9 +30527,9 @@
       }
     ],
     "uuid": "52e00589-6dea-499f-ae5f-c9433aa78b2f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 7,
+    "subclass_id": 6,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30611,9 +30611,9 @@
       }
     ],
     "uuid": "edc04c9d-f052-4fb1-b075-7b01486d54e3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30653,9 +30653,9 @@
       }
     ],
     "uuid": "035e1680-9a1d-4075-ae98-3821822d9ec0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 11,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30842,9 +30842,9 @@
       }
     ],
     "uuid": "2587bdcd-fe4a-49d8-9702-2297fa2a658c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -30947,9 +30947,9 @@
       }
     ],
     "uuid": "da6aa459-9224-4b89-8eb3-6a47de2459fe",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -31115,10 +31115,10 @@
       }
     ],
     "uuid": "518c0f69-a8dc-49cd-b5e3-5dafb8781864",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31157,10 +31157,10 @@
       }
     ],
     "uuid": "dc93ca2e-87a8-4f96-8d54-6a0d2bd26136",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 4,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31283,9 +31283,9 @@
       }
     ],
     "uuid": "4be100e7-eb86-4657-8df7-42e7626a8d41",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 4,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -31304,9 +31304,9 @@
       }
     ],
     "uuid": "c74143db-0e59-4bb9-927b-a59afede781e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 4,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -31346,9 +31346,9 @@
       }
     ],
     "uuid": "68847d02-096b-4172-b50f-0029807c3f62",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 5,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -31535,10 +31535,10 @@
       }
     ],
     "uuid": "eea830a6-8c78-493b-8d8f-15754c343293",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31556,10 +31556,10 @@
       }
     ],
     "uuid": "f0ec22ca-e3b0-4ce4-adbd-4e57beca4505",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 10,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31577,9 +31577,9 @@
       }
     ],
     "uuid": "4817e4a5-7d68-4638-a737-14d9c94345f3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 10,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -31745,10 +31745,10 @@
       }
     ],
     "uuid": "c2e74e64-f99b-41c8-9ab2-e75df67fff0f",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 4,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31766,10 +31766,10 @@
       }
     ],
     "uuid": "7634a23f-0d9e-4013-b2a7-f63898dcd624",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 4,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -31787,9 +31787,9 @@
       }
     ],
     "uuid": "9572f469-e5e8-4886-82c6-d78998d94952",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -32291,9 +32291,9 @@
       }
     ],
     "uuid": "4dbd9871-de78-4ccf-83e9-2b8d77fb8ff4",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -32459,10 +32459,10 @@
       }
     ],
     "uuid": "1c774c88-c2dd-4fa2-9ca1-86b5bff57598",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 9,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -32474,15 +32474,15 @@
     "smirks": "[c:1]-[NH2;D1;+0:2].[CH2;D1;+0:3]=[O;D1;H0]>>[c:1]/[CH;D2;+0:3]=[N;D2;+0:2]/[OH;D1;+0]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000030",
+        "rxno_label": "molecular skeleton insertion reaction",
+        "rxno_definition": "A joining reaction in which one or more atoms are added to the middle of a chain."
       }
     ],
     "uuid": "58883f36-bbd0-4716-b75f-caef6b842d27",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -32795,9 +32795,9 @@
       }
     ],
     "uuid": "796a1f45-4aa4-4521-a365-2100020de2ac",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 6,
+    "class_id": 2,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33026,10 +33026,10 @@
       }
     ],
     "uuid": "81a6411f-558a-4258-bc56-81fbe380a868",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 5,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -33068,9 +33068,9 @@
       }
     ],
     "uuid": "16a3deed-9da5-444b-af01-dcae7c731f8a",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33083,15 +33083,15 @@
     "smirks": "[O;D1;H0:1]=[C:2]1[CH:3]=[CH:4][C:5](=[O;D1;H0:6])[CH:7]=[CH:8]1.[CH3:10][C:11](=[O:12])[O][C:13](=[O])[CH3].[CH3:14][C:15](=[O:16])[O][C:17](=[O])[CH3].[CH3:18][C:19](=[O:20])[O:21][C:22](=[O])[CH3]>>[O:1]([C:11](=[O:12])[CH3:10])[c:2]1[cH:3][cH:4][c:5]([O:6][C:15](=[O:16])[CH3:14])[c:7]([O:21][C:19](=[O:20])[CH3:18])[cH:8]1",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000360",
+        "rxno_label": "O-acylation to ester",
+        "rxno_definition": "An O-acylation reaction where an oxygen centre is acylated to result in an ester."
       }
     ],
     "uuid": "0619479a-bcbe-42e0-a58e-43e11fffef1e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 2,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33152,10 +33152,10 @@
       }
     ],
     "uuid": "cabaa80e-37ca-4c5a-8866-d7362492d437",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 1,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -33167,16 +33167,16 @@
     "smirks": "[*:1]-[CH2;D2;+0:2]-[C;H1;D3;+0:3](=[O;D1;H0;+0]).[O;D1;H0;+0:4]=[C:5]-[CH2;D3;+0:6]-[C:7]=[O;D1;H0;+0:8].[CH3:9]-[C:10](-[CH3:11])=[CH;D2:12]-[O;D2;+0:13]-[CH2:14]-c1ccccc1>>[*:1]-[CH;D3;+0:2]1-[CH2;D2;+0:15]-[C;H0;D4;+0:10](-[CH3:9])(-[CH3:11])-[CH2;D2;+0:12]-[CH;D3;+0:6](-[C:5](=[O:4])[*])(-[C:7]=[O:8])-[CH;D3;+0:3]1",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000313",
+        "rxno_label": "hetero-Diels-Alder reaction",
+        "rxno_definition": "A [4+2] cycloaddition reaction where a diene (or heterocyclic analogue) reacts with a dienophile to form an unsaturated heterocyclic six-membered ring compound."
       }
     ],
     "uuid": "d8f61fd6-1cb0-4f1b-b777-0113f766551b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 1,
+    "subsubclass_id": 2,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -33194,9 +33194,9 @@
       }
     ],
     "uuid": "342e2975-8cd7-4015-ab06-19c48c92355b",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33467,9 +33467,9 @@
       }
     ],
     "uuid": "75126c92-67a3-4514-9050-581e2bbec487",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 6,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33482,16 +33482,16 @@
     "smirks": "[#6:1]-[Cl,Mg;D2]-[Br;D1].[c]1:[c]:[c]:[c]:[c]:[c]:1-[S;D2]-[CH2;D2]-[N;D2]=[N+;D2]=[N-;D1:2].[CH3:8]-[C;H0;D3:3](=[O;D1:9])-[O]-[C](=[O])-[CH3]>>[#6:1]-[NH;D2:2]-[C;H0;D3:3](=[O;D1:9])-[CH3:8]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000331",
+        "rxno_label": "substitution step",
+        "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
       }
     ],
     "uuid": "6f1594d2-95d4-43ae-94d7-9ee555392c49",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -33503,16 +33503,16 @@
     "smirks": "[Mg].[#6:1]-[Cl,Br,I;D1].[c]1:[c]:[c]:[c]:[c]:[c]:1-[S;D2]-[CH2;D2]-[N;D2]=[N+;D2]=[N-;D1:2].[CH3:8]-[C;H0;D3:3](=[O;D1:9])-[O]-[C](=[O])-[CH3]>>[#6:1]-[NH;D2:2]-[C;H0;D3:3](=[O;D1:9])-[CH3:8]",
     "rxno_classification": [
       {
-        "rxno_id": "",
-        "rxno_label": "",
-        "rxno_definition": ""
+        "rxno_id": "RXNO:0000331",
+        "rxno_label": "substitution step",
+        "rxno_definition": "A functional modification step in which one singly-bonded substituent, but not a hydrogen, is replaced by another singly-bonded substituent."
       }
     ],
     "uuid": "17db8e1f-b84d-4d02-869d-7a9e6b986e17",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -33551,9 +33551,9 @@
       }
     ],
     "uuid": "c0c8b175-34e1-49c2-a42e-38793f2735e0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -33572,10 +33572,10 @@
       }
     ],
     "uuid": "548e86bc-a6d2-44e2-8d1d-c6fb1ba2cc91",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 7,
+    "subsubclass_id": 2,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -34244,9 +34244,9 @@
       }
     ],
     "uuid": "1a389dc3-f4a4-4e67-8467-d338203f7b51",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34475,10 +34475,10 @@
       }
     ],
     "uuid": "e24ea419-2b0f-4b2c-aa1e-186e2c08f26e",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 3,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -34580,10 +34580,10 @@
       }
     ],
     "uuid": "00bd8007-390f-49f3-9e56-037b94486bd7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 2,
+    "subclass_id": 6,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -34622,9 +34622,9 @@
       }
     ],
     "uuid": "8f42a741-8c72-44be-b5a0-0e19d5e63ec3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34643,9 +34643,9 @@
       }
     ],
     "uuid": "b2aff3fe-0426-4415-bcb5-edacb4f9c2bb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34664,9 +34664,9 @@
       }
     ],
     "uuid": "a8d8793b-ed76-42b0-98ce-f8102b85a657",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 4,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34685,9 +34685,9 @@
       }
     ],
     "uuid": "5078b9d5-5fd9-4fee-aeca-7670bdbf0fc6",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 13,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34727,9 +34727,9 @@
       }
     ],
     "uuid": "a6ecaaed-74aa-4fb5-9543-44a032aad7a2",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 11,
+    "class_id": 6,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34748,9 +34748,9 @@
       }
     ],
     "uuid": "f3b35a68-9143-4f8f-9ea7-28efe2498a87",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -34811,9 +34811,9 @@
       }
     ],
     "uuid": "a9a31f9a-ad7f-4f4f-9601-b0a1120568a3",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 8,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35168,9 +35168,9 @@
       }
     ],
     "uuid": "40600714-c039-44c0-a9f5-aef13dcd5530",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35189,9 +35189,9 @@
       }
     ],
     "uuid": "681b259b-1120-4fe6-8cb0-21d519ccd904",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 12,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35210,9 +35210,9 @@
       }
     ],
     "uuid": "5945ff74-6710-4b69-be36-1cb9ad25ea39",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35273,9 +35273,9 @@
       }
     ],
     "uuid": "edfe598f-bc8e-4144-9653-626f8a9de78d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 2,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35294,10 +35294,10 @@
       }
     ],
     "uuid": "ea23ea49-5c35-4818-b8a0-7cea58ad1743",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 6,
+    "class_id": 18,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -35315,9 +35315,9 @@
       }
     ],
     "uuid": "390a28ed-0fc4-4104-9201-216a2aea676c",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 6,
+    "class_id": 15,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35336,9 +35336,9 @@
       }
     ],
     "uuid": "8f822554-bc82-4316-8a2d-2bde141f4c06",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -35819,10 +35819,10 @@
       }
     ],
     "uuid": "b860c7b2-eb55-46e7-b0e7-2da929523ef7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 6,
+    "subsubclass_id": 4,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -35966,9 +35966,9 @@
       }
     ],
     "uuid": "fe1d0e4b-b39d-4c01-9fb2-959fc89d255d",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 14,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36029,9 +36029,9 @@
       }
     ],
     "uuid": "882901c5-4a5c-493c-a8ff-f5dd95c7fbde",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 5,
+    "class_id": 1,
+    "subclass_id": 5,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36176,9 +36176,9 @@
       }
     ],
     "uuid": "300c0fa2-48aa-4371-90b1-cdb9111c6fee",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 10,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36491,10 +36491,10 @@
       }
     ],
     "uuid": "fb917a24-2601-4a31-8e22-824f5f71f5e7",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 5,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -36554,10 +36554,10 @@
       }
     ],
     "uuid": "a6301a61-1c86-4dee-80db-86cbc7c86d44",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": 0,
+    "subsubclass_id": 0,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -36785,9 +36785,9 @@
       }
     ],
     "uuid": "e22ff8d5-1e79-442a-8729-f65ed4f195bb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 7,
+    "subclass_id": 99,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36827,10 +36827,10 @@
       }
     ],
     "uuid": "5e968fc8-14e7-40d9-93c2-346e0689ab79",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 8,
+    "class_id": 6,
+    "subclass_id": 1,
+    "subsubclass_id": 1,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -36869,9 +36869,9 @@
       }
     ],
     "uuid": "a729a9ba-e775-4bcd-97a1-e722db5bcc49",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 8,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36890,9 +36890,9 @@
       }
     ],
     "uuid": "7c0a3fd2-9ff8-4d60-9a97-cff447fbb6fb",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 8,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36932,9 +36932,9 @@
       }
     ],
     "uuid": "c738dde0-a4d7-4924-89f5-4cd55a79e1b9",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 10,
+    "class_id": 8,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -36974,10 +36974,10 @@
       }
     ],
     "uuid": "69751b80-507d-423d-b1eb-7f29d23a5468",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
-    "subsubclass_id": null,
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 4,
+    "subsubclass_id": 99,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
@@ -36995,9 +36995,9 @@
       }
     ],
     "uuid": "9646a6a4-5c95-4f17-ac1f-952dcd190ace",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 10,
+    "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -37058,9 +37058,9 @@
       }
     ],
     "uuid": "74516117-93da-4ade-b67f-8e9bd8a35076",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 4,
+    "class_id": 10,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -37079,9 +37079,9 @@
       }
     ],
     "uuid": "1a2bb99e-86dd-4ba4-9856-20bf3ab9ec63",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 2,
+    "class_id": 11,
+    "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
@@ -37289,9 +37289,9 @@
       }
     ],
     "uuid": "a4de9642-4f73-49c9-824d-d268b96abfd0",
-    "superclass_id": 12,
-    "class_id": null,
-    "subclass_id": null,
+    "superclass_id": 8,
+    "class_id": 1,
+    "subclass_id": 3,
     "subsubclass_id": null,
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
