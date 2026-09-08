@@ -105,6 +105,10 @@ class TestAgaveChemMapperResult:
         assert result.final_mapping == ""
         assert result.original_reaction == ""
         assert result.mapper_results == []
+        assert result.confidence is None
+        assert result.class_str == ""
+        assert result.rxno_classifications == ""
+        assert result.classification_info == {}
 
     def test_with_mapper_results(self):
         mapper_result = ReactionMapperResult(mapping_type="mcs")
@@ -112,10 +116,12 @@ class TestAgaveChemMapperResult:
             final_mapping="[C:1]>>[C:1]",
             original_reaction="C>>C",
             mapper_results=[mapper_result],
+            confidence=0.92,
         )
         assert result.final_mapping == "[C:1]>>[C:1]"
         assert len(result.mapper_results) == 1
         assert result.mapper_results[0].mapping_type == "mcs"
+        assert result.confidence == 0.92
 
 
 class TestAtomMapping:

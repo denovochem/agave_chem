@@ -199,10 +199,13 @@ def normalize_mol(mol: Chem.Mol) -> Chem.Mol:
         Chem.Mol: The normalized molecule.
     """
     normalized_mol = NORMALIZER.normalize(mol)
+    normalized_smiles = Chem.MolToSmiles(normalized_mol, canonical=False)
     normalized_mol = Chem.MolFromSmiles(
-        Chem.MolToSmiles(normalized_mol), sanitize=False
+        normalized_smiles,
+        sanitize=False,
     )
     normalized_mol.UpdatePropertyCache(strict=False)
+
     return normalized_mol
 
 
@@ -259,7 +262,8 @@ def get_symmetry_class_from_mol(
         mol_copy = normalize_mol(mol_copy)
 
     if consider_tautomers:
-        return resolve_symmtery_class_for_tautomers(mol_copy)
+        classes = resolve_symmtery_class_for_tautomers(mol_copy)
+        return classes
 
     canonical_ranks = list(Chem.CanonicalRankAtoms(mol_copy, breakTies=False))
 

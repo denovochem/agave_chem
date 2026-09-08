@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from rdkit import Chem
 
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.chem_utils import canonicalize_atom_mapping
 from agave_chem.utils.logging_config import logger
 
@@ -166,13 +166,32 @@ class ReactionMapper(ABC):
         )
         return reactants_strs + ">>" + products_strs
 
+    @staticmethod
+    def _get_smiles(input: Union[str, ReactionInput]) -> str:
+        """
+        Extract the SMILES string from a raw string or ``ReactionInput``.
+
+        Args:
+            input (Union[str, ReactionInput]): A raw reaction SMILES string or
+                a ``ReactionInput`` object.
+
+        Returns:
+            str: The ``stripped_smiles`` if ``input`` is a ``ReactionInput``,
+                otherwise the input string itself.
+        """
+        if isinstance(input, ReactionInput):
+            return input.stripped_smiles
+        return input
+
     @abstractmethod
-    def map_reaction(self, reaction_smiles: str) -> ReactionMapperResult:
+    def map_reaction(
+        self, reaction_smiles: Union[str, ReactionInput]
+    ) -> ReactionMapperResult:
         pass
 
     @abstractmethod
     def map_reactions(
-        self, reaction_smiles_list: List[str]
+        self, reaction_smiles_list: Union[List[str], List[ReactionInput]]
     ) -> List[ReactionMapperResult]:
         pass
 

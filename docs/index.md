@@ -2,7 +2,7 @@
 
 An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. AgaveChem provides four composable mappers—from deterministic graph-based methods to a supervised neural mapper—that can be used individually or combined into a pipeline.
 
-The primary contribution is a supervised ALBERT-based neural mapper trained without any per-reaction manual annotation. Ground truth atom maps are generated automatically by composing an expert template mapper and an MCS mapper over a filtered subset of the Lowe USPTO dataset (~0.97M reactions), yielding a labeled training corpus orders of magnitude larger than what direct annotation can provide.
+The primary contribution is a supervised ALBERT-based neural mapper trained without any per-reaction manual annotation. Ground truth atom maps are generated automatically by composing a template mapper and an MCS mapper over a filtered subset of the Lowe USPTO dataset (~0.97M reactions), yielding a labeled training corpus orders of magnitude larger than what direct annotation can provide.
 
 ## Requirements
 
@@ -56,7 +56,7 @@ result = mapper.map_reaction("CC(Cl)(Cl)OC(C)(Cl)Cl.CC(=O)C(=O)O>>CC(=O)C(=O)Cl"
 print(result["selected_mapping"])
 ```
 
-### Expert template mapper (interpretable, mechanistically grounded)
+### Template mapper (interpretable, mechanistically grounded)
 
 ```python
 from agave_chem import TemplateReactionMapper

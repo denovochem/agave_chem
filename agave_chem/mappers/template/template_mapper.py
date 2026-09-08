@@ -1,9 +1,9 @@
 import json
 import re
-from collections import defaultdict, deque
+from collections import defaultdict
 from importlib.resources import files
 from itertools import product as iterproduct
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from rdchiral import main as rdc
 from rdkit import Chem, DataStructs
@@ -16,6 +16,7 @@ from agave_chem.mappers.types import (
     AppliedSmirkData,
     InitializedSmirksPattern,
     ReactionData,
+    ReactionInput,
     ReactionMapperResult,
     SmirksPattern,
 )
@@ -25,11 +26,95 @@ from agave_chem.utils.chem_utils import (
     canonicalize_smiles,
 )
 from agave_chem.utils.logging_config import logger
+from agave_chem.utils.reaction_balancing import compute_unmapped_product_atom_islands
+
+
+def _build_class_hierarchy(
+    reaction_classes_data: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Build a nested hierarchy tree from reaction_classes.json.
+
+    Each node has ``name``, ``description``, and ``children`` (a dict keyed
+    by string ID).  The top-level dict maps superclass IDs to their nodes.
+
+    This structure supports level-by-level traversal in ``_lookup_class_names``,
+    which can fall back to the ``"0"`` ("Unspecified") entry at each level when
+    an exact ID is not found — something the previous flat-key lookup could not
+    do.
+
+    Args:
+        reaction_classes_data (Dict[str, Any]): Parsed contents of
+            ``reaction_classes.json``.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: Nested tree keyed by superclass ID string.
+        Each node is ``{"name": str, "description": str, "children": {...}}``.
+    """
+    hierarchy: Dict[str, Dict[str, Any]] = {}
+
+    for superclass in reaction_classes_data.get("superclasses", []):
+        sc_id = str(superclass.get("id", ""))
+        sc_node: Dict[str, Any] = {
+            "name": str(superclass.get("name", "")),
+            "description": str(superclass.get("description", "")),
+            "children": {},
+        }
+
+        for cls in superclass.get("classes", []):
+            c_id = str(cls.get("id", ""))
+            c_node: Dict[str, Any] = {
+                "name": str(cls.get("name", "")),
+                "description": str(cls.get("description", "")),
+                "children": {},
+            }
+
+            for subclass in cls.get("subclasses", []):
+                sub_id = str(subclass.get("id", ""))
+                sub_node: Dict[str, Any] = {
+                    "name": str(subclass.get("name", "")),
+                    "description": str(subclass.get("description", "")),
+                    "children": {},
+                }
+
+                for subsub in subclass.get("subsubclasses", []):
+                    subsub_id = str(subsub.get("id", ""))
+                    sub_node["children"][subsub_id] = {
+                        "name": str(subsub.get("name", "")),
+                        "description": str(subsub.get("description", "")),
+                    }
+
+                c_node["children"][sub_id] = sub_node
+
+            sc_node["children"][c_id] = c_node
+
+        hierarchy[sc_id] = sc_node
+
+    return hierarchy
 
 
 def _offset_map_nums(smirks: str, offset: int) -> str:
+    """
+    Shift atom-map numbers in a SMIRKS string by a fixed offset.
+
+    Only colon-prefixed numbers that appear immediately before a closing
+    bracket ``]`` are adjusted (i.e. true atom-map numbers such as
+    ``[*:103]`` or ``[O;H0;D2;+0:102]``).  Aromatic-bond / ring-closure
+    tokens outside atom brackets (e.g. ``:1`` in ``[c:206]:1``) are left
+    untouched.
+
+    Atom-map numbers >= 900 are treated as reserved and left unchanged.
+
+    Args:
+        smirks (str): A SMIRKS reaction string.
+        offset (int): Non-negative integer added to every non-reserved
+            atom-map number.
+
+    Returns:
+        str: A new SMIRKS string with atom-map numbers shifted by ``offset``.
+    """
     return re.sub(
-        r":(\d+)",
+        r":(\d+)(?=\])",
         lambda m: (
             f":{m.group(1)}"
             if int(m.group(1)) >= 900
@@ -40,6 +125,22 @@ def _offset_map_nums(smirks: str, offset: int) -> str:
 
 
 def _combine_child_smirks(smirks_list: List[str]) -> str:
+    """
+    Merge multiple child SMIRKS into a single composite SMIRKS string.
+
+    Each child SMIRKS is shifted by ``(i + 1) * 100`` via
+    :func:`_offset_map_nums` to prevent atom-map collisions between
+    fragments, then all product fragments are joined on the left of
+    ``>>`` and all reactant fragments on the right.
+
+    Args:
+        smirks_list (List[str]): One or more child SMIRKS strings, each
+            in ``"products>>reactants"`` form.
+
+    Returns:
+        str: A composite SMIRKS string of the form
+        ``"prod1.prod2...>>react1.react2..."``.
+    """
     products_parts: List[str] = []
     reactants_parts: List[str] = []
     for i, smirks in enumerate(smirks_list):
@@ -95,12 +196,22 @@ def _make_composite_smirks_pattern(
 
     primary = max(patterns, key=lambda p: p["priority"])
 
+    combined_rxno: List[Dict[str, str]] = []
+    seen_rxno: Set[str] = set()
+    for p in patterns:
+        for rxno in p["rxno_classification"]:
+            rxno_id = rxno["rxno_id"]
+            if rxno_id not in seen_rxno:
+                seen_rxno.add(rxno_id)
+                combined_rxno.append(rxno)
+
     return InitializedSmirksPattern(
         name=_join_unique("name"),
         template_name=_join_unique("template_name"),
         superclass_id=primary["superclass_id"],
         class_id=_join_unique("class_id"),
         subclass_id=_join_unique("subclass_id"),
+        subsubclass_id=_join_unique("subsubclass_id"),
         class_str=_join_unique("class_str"),
         products_smarts=[frag for p in patterns for frag in p["products_smarts"]],
         reactants_smarts=[frag for p in patterns for frag in p["reactants_smarts"]],
@@ -110,12 +221,13 @@ def _make_composite_smirks_pattern(
         parent_smirks="",
         child_smirks=combined_smirks,
         priority=primary["priority"],
+        rxno_classification=combined_rxno,
     )
 
 
 class TemplateReactionMapper(ReactionMapper):
     """
-    Expert template reaction classification and atom-mapping
+    Template reaction classification and atom-mapping
     """
 
     def __init__(
@@ -160,6 +272,12 @@ class TemplateReactionMapper(ReactionMapper):
         self._initialized_smirks_patterns: Optional[List[InitializedSmirksPattern]] = (
             None
         )
+
+        reaction_classes_file = files("agave_chem.datafiles.smirks_patterns").joinpath(
+            "reaction_classes.json"
+        )
+        with reaction_classes_file.open("r") as f:
+            self._class_hierarchy = _build_class_hierarchy(json.load(f))
 
         _taut_opts = rdMolStandardize.CleanupParameters()
         _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -221,12 +339,20 @@ class TemplateReactionMapper(ReactionMapper):
                 ):
                     continue
 
+                rxno_raw = pattern.get("rxno_classification", [])
+                rxno_entries = [
+                    item
+                    for item in rxno_raw
+                    if isinstance(item, dict) and item.get("rxno_id")
+                ]
+
                 initialized_smirks_patterns.append(
                     InitializedSmirksPattern(
                         name=str(pattern.get("name", "")),
                         superclass_id=str(pattern.get("superclass_id", "")),
                         class_id=str(pattern.get("class_id", "")),
                         subclass_id=str(pattern.get("subclass_id", "")),
+                        subsubclass_id=str(pattern.get("subsubclass_id") or ""),
                         class_str=str(pattern.get("class_str", "")),
                         products_smarts=products_smarts,
                         reactants_smarts=reactants_smarts,
@@ -241,6 +367,7 @@ class TemplateReactionMapper(ReactionMapper):
                         child_smirks=str(child_pattern),
                         template_name=str(pattern.get("name", "")),
                         priority=pattern_priority_tuple,
+                        rxno_classification=rxno_entries,
                     )
                 )
 
@@ -680,7 +807,11 @@ class TemplateReactionMapper(ReactionMapper):
         outcomes: List[AppliedSmirkData] = []
         try:
             _, outcomes_dict = rdc.rdchiralRun(
-                rdc_rxn, rdc_products, return_mapped=True, combine_enantiomers=False
+                rdc_rxn,
+                rdc_products,
+                return_mapped=True,
+                combine_enantiomers=False,
+                enforce_reactants_smarts_constraints=True,
             )
 
             for k, v in outcomes_dict.items():
@@ -798,6 +929,7 @@ class TemplateReactionMapper(ReactionMapper):
                     rdc_products,
                     return_mapped=True,
                     combine_enantiomers=False,
+                    enforce_reactants_smarts_constraints=True,
                 )
             except Exception as e:
                 logger.warning(f"Error applying combined SMIRKS: {e}")
@@ -1351,49 +1483,20 @@ class TemplateReactionMapper(ReactionMapper):
         """
         Find connected components ("islands") of unmapped atoms in a product SMILES.
 
+        Thin wrapper around :func:`agave_chem.utils.reaction_balancing.compute_unmapped_product_atom_islands`.
+
         Args:
             smiles (str): Product SMILES string to analyze.
 
         Returns:
             Dict[int, Set[int]]: Mapping from island index (0..N-1) to a set of RDKit
-            atom indices belonging to that connected component, considering only atoms
-            with atom map number equal to 0.
+                atom indices belonging to that connected component, considering only atoms
+                with atom map number equal to 0.
 
         Raises:
             ValueError: If the SMILES cannot be parsed into an RDKit molecule.
         """
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            raise ValueError(f"Could not parse SMILES: {smiles}")
-
-        unmapped = {
-            atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomMapNum() == 0
-        }
-
-        visited = set()
-        islands: Dict[int, Set[int]] = {}
-
-        for idx in unmapped:
-            if idx in visited:
-                continue
-
-            island: Set[int] = set()
-            queue = deque([idx])
-            visited.add(idx)
-
-            while queue:
-                current = queue.popleft()
-                island.add(current)
-
-                for neighbor in mol.GetAtomWithIdx(current).GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx in unmapped and neighbor_idx not in visited:
-                        visited.add(neighbor_idx)
-                        queue.append(neighbor_idx)
-
-            islands[len(islands)] = island
-
-        return islands
+        return compute_unmapped_product_atom_islands(smiles)
 
     def _select_preferred_mapping(
         self, possible_outcomes: Dict[str, List[InitializedSmirksPattern]]
@@ -1445,6 +1548,124 @@ class TemplateReactionMapper(ReactionMapper):
                     max_num_mapped_product_atoms = mapping_num_atoms
 
         return selected_mapping
+
+    @staticmethod
+    def _sort_patterns_by_priority(
+        patterns: List[InitializedSmirksPattern],
+    ) -> List[InitializedSmirksPattern]:
+        """
+        Sort SMIRKS patterns by preference (highest first).
+
+        Sorting criteria, in order:
+
+        1. **Priority** — the ``priority`` tuple ``(priority_class,
+           priority)``; higher is better.
+        2. **Atom count** — when priorities are equal, the total number of
+           reactant SMARTS fragments plus atoms in both reactant and product
+           SMARTS; higher is better.
+
+        Patterns with equal priority and atom count preserve their original
+        relative order (Python's sort is stable).
+
+        Args:
+            patterns (List[InitializedSmirksPattern]): Patterns to sort.
+
+        Returns:
+            List[InitializedSmirksPattern]: A new list sorted by ``priority``
+            then atom count, both descending.
+        """
+
+        def _atom_count(p: InitializedSmirksPattern) -> int:
+            count = len(p["reactants_smarts"])
+            for mol in p["reactants_smarts"]:
+                count += len(list(mol.GetAtoms()))
+            for mol in p["products_smarts"]:
+                count += len(list(mol.GetAtoms()))
+            return count
+
+        return sorted(
+            patterns,
+            key=lambda p: (p.get("priority", (0, 0)), _atom_count(p)),
+            reverse=True,
+        )
+
+    def _lookup_class_names(
+        self,
+        superclass_id: str,
+        class_id: str,
+        subclass_id: str,
+        subsubclass_id: str,
+    ) -> Dict[str, str]:
+        """
+        Look up class names and descriptions via hierarchical tree traversal.
+
+        At each level (superclass → class → subclass → subsubclass) the exact
+        ID is tried first, then ``"0"`` ("Unspecified") as a fallback.  If
+        neither is found the remaining levels are left as empty strings.
+
+        Args:
+            superclass_id (str): Superclass ID.
+            class_id (str): Class ID.
+            subclass_id (str): Subclass ID.
+            subsubclass_id (str): Sub-subclass ID.
+
+        Returns:
+            Dict[str, str]: Dict with ``superclass_name``,
+            ``superclass_description``, ``class_name``, ``class_description``,
+            ``subclass_name``, ``subclass_description``, ``subsubclass_name``,
+            and ``subsubclass_description``.  Values are empty strings for
+            levels not found in the hierarchy.
+        """
+        result: Dict[str, str] = {
+            "superclass_name": "",
+            "superclass_description": "",
+            "class_name": "",
+            "class_description": "",
+            "subclass_name": "",
+            "subclass_description": "",
+            "subsubclass_name": "",
+            "subsubclass_description": "",
+        }
+
+        def _find_node(
+            children: Dict[str, Dict[str, Any]], key: str
+        ) -> Optional[Dict[str, Any]]:
+            if not key:
+                return None
+            node = children.get(key)
+            if node is None and key != "0":
+                node = children.get("0")
+            return node
+
+        sc_node = _find_node(self._class_hierarchy, superclass_id)
+        if sc_node is None:
+            return result
+
+        result["superclass_name"] = sc_node["name"]
+        result["superclass_description"] = sc_node["description"]
+
+        c_node = _find_node(sc_node["children"], class_id)
+        if c_node is None:
+            return result
+
+        result["class_name"] = c_node["name"]
+        result["class_description"] = c_node["description"]
+
+        sub_node = _find_node(c_node["children"], subclass_id)
+        if sub_node is None:
+            return result
+
+        result["subclass_name"] = sub_node["name"]
+        result["subclass_description"] = sub_node["description"]
+
+        subsub_node = _find_node(sub_node["children"], subsubclass_id)
+        if subsub_node is None:
+            return result
+
+        result["subsubclass_name"] = subsub_node["name"]
+        result["subsubclass_description"] = subsub_node["description"]
+
+        return result
 
     def _filter_and_deduplicate_outcomes(
         self,
@@ -1519,9 +1740,51 @@ class TemplateReactionMapper(ReactionMapper):
         else:
             selected_mapping = next(iter(deduplicated_mapped_outcomes))
 
+        sorted_outcomes: Dict[str, List[InitializedSmirksPattern]] = {
+            mapping: self._sort_patterns_by_priority(patterns)
+            for mapping, patterns in deduplicated_mapped_outcomes.items()
+        }
+
         possible_mappings_template_names: Dict[str, List[str]] = {
             mapping: [p["template_name"] for p in patterns]
-            for mapping, patterns in deduplicated_mapped_outcomes.items()
+            for mapping, patterns in sorted_outcomes.items()
+        }
+
+        classification_info: Dict[str, List[Dict[str, Any]]] = {
+            mapping: list(
+                {
+                    (
+                        p["template_name"],
+                        p["class_id"],
+                        p["subclass_id"],
+                        p["subsubclass_id"],
+                        p["superclass_id"],
+                        tuple(
+                            r["rxno_id"]
+                            for r in p["rxno_classification"]
+                            if isinstance(r, dict) and "rxno_id" in r
+                        )
+                        if isinstance(p["rxno_classification"], list)
+                        else p["rxno_classification"],
+                    ): {
+                        "template_name": p["template_name"],
+                        "class_str": p["class_str"],
+                        "class_id": p["class_id"],
+                        "subclass_id": p["subclass_id"],
+                        "subsubclass_id": p["subsubclass_id"],
+                        "superclass_id": p["superclass_id"],
+                        "rxno_classification": p["rxno_classification"],
+                        **self._lookup_class_names(
+                            p["superclass_id"],
+                            p["class_id"],
+                            p["subclass_id"],
+                            p["subsubclass_id"],
+                        ),
+                    }
+                    for p in patterns
+                }.values()
+            )
+            for mapping, patterns in sorted_outcomes.items()
         }
 
         return ReactionMapperResult(
@@ -1531,11 +1794,12 @@ class TemplateReactionMapper(ReactionMapper):
             mapping_type=self._mapper_type,
             mapping_score=None,
             additional_info=[],
+            classification_info=classification_info,
         )
 
     def map_reaction_with_mcs_optimization(
         self,
-        reaction_smiles: str,
+        reaction_smiles: Union[str, ReactionInput],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> Tuple[ReactionMapperResult, ReactionMapperResult]:
@@ -1543,8 +1807,13 @@ class TemplateReactionMapper(ReactionMapper):
         Map a reaction SMILES string using template-based atom mapping with optimization
         that uses MCS to identify probable reaction center.
 
+        When a ``ReactionInput`` is provided with pre-computed MCS results, the
+        internal MCS mapping step is skipped and the pre-computed islands are
+        used directly.
+
         Args:
-            reaction_smiles (str): Reaction SMILES to map.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES to map,
+                or a ``ReactionInput`` with pre-computed MCS data.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
@@ -1553,6 +1822,11 @@ class TemplateReactionMapper(ReactionMapper):
                 mapping result and the MCS mapping result.
         """
         self._initialize_smirks_patterns()
+
+        reaction_input: Optional[ReactionInput] = None
+        if isinstance(reaction_smiles, ReactionInput):
+            reaction_input = reaction_smiles
+            reaction_smiles = reaction_input.stripped_smiles
 
         if not self._reaction_smiles_valid(reaction_smiles):
             return (
@@ -1565,7 +1839,18 @@ class TemplateReactionMapper(ReactionMapper):
         )
 
         unmapped_product_atom_islands = {}
-        if self._mcs_mapper is not None:
+        mcs_result = self._return_default_mapping_dict(reaction_smiles)
+        if reaction_input is not None and reaction_input.mcs_mapped_smiles:
+            mcs_result = ReactionMapperResult(
+                original_smiles=reaction_smiles,
+                selected_mapping=reaction_input.mcs_mapped_smiles,
+                possible_mappings={},
+                mapping_type="mcs",
+                mapping_score=None,
+                additional_info=[{}],
+            )
+            unmapped_product_atom_islands = reaction_input.unmapped_product_atom_islands
+        elif self._mcs_mapper is not None:
             mcs_result = self._mcs_mapper.map_reaction(canonicalized_reaction_smiles)
 
             if mcs_result.selected_mapping != "":
@@ -1597,7 +1882,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def map_reaction(
         self,
-        reaction_smiles: str,
+        reaction_smiles: Union[str, ReactionInput],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> ReactionMapperResult:
@@ -1607,14 +1892,15 @@ class TemplateReactionMapper(ReactionMapper):
         This is a convenience method that calls map_reaction_with_mcs_optimization and returns only the main mapping result.
 
         Args:
-            reaction_smiles (str): Reaction SMILES to map.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES to map,
+                or a ``ReactionInput`` with pre-computed data.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 
         Returns:
             ReactionMapperResult: A mapping result containing the selected mapping and
-            related metadata. If the input is invalid or no unique valid mapping can be
-            produced, an "empty" default result is returned.
+                related metadata. If the input is invalid or no unique valid mapping can be
+                produced, an "empty" default result is returned.
         """
         result, _ = self.map_reaction_with_mcs_optimization(
             reaction_smiles, apply_multiple_smirks, num_smirks_to_apply
@@ -1623,7 +1909,7 @@ class TemplateReactionMapper(ReactionMapper):
 
     def map_reactions(
         self,
-        reaction_list: List[str],
+        reaction_list: Union[List[str], List[ReactionInput]],
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
     ) -> List[ReactionMapperResult]:
@@ -1631,7 +1917,8 @@ class TemplateReactionMapper(ReactionMapper):
         Map a list of reaction SMILES strings using this mapper.
 
         Args:
-            reaction_list (List[str]): Reaction SMILES strings to map.
+            reaction_list (Union[List[str], List[ReactionInput]]): Reaction SMILES
+                strings or ``ReactionInput`` objects to map.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns to the same reaction.
             num_smirks_to_apply (int): Number of SMIRKS patterns to apply to the same reaction.
 

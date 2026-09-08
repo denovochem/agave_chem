@@ -1,11 +1,11 @@
 from collections import defaultdict, deque
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
-from agave_chem.mappers.types import ReactionMapperResult
+from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
 from agave_chem.utils.chem_utils import (
     canonicalize_reaction_smiles,
 )
@@ -722,7 +722,7 @@ class MCSReactionMapper(ReactionMapper):
 
     def map_reaction(
         self,
-        reaction_smiles: str,
+        reaction_smiles: Union[str, ReactionInput],
         min_radius: int = 1,
         min_radius_to_anchor_new_mapping: int = 3,
         max_radius: Optional[int] = None,
@@ -731,8 +731,9 @@ class MCSReactionMapper(ReactionMapper):
         Atom-map a single reaction SMILES using MCS-based environment matching.
 
         Args:
-            reaction_smiles (str): Reaction SMILES of the form
-                ``"reactants>>products"``.
+            reaction_smiles (Union[str, ReactionInput]): Reaction SMILES of
+                the form ``"reactants>>products"``, or a ``ReactionInput``
+                with pre-computed data.
             min_radius (int): Smallest bond-radius to consider.
             min_radius_to_anchor_new_mapping (int): Below this radius,
                 environments are only matched when they already contain at
@@ -745,6 +746,8 @@ class MCSReactionMapper(ReactionMapper):
                 mapped SMILES.  Falls back to the default (empty) result on
                 invalid input or failed mapping.
         """
+        reaction_smiles = self._get_smiles(reaction_smiles)
+
         if not self._reaction_smiles_valid(reaction_smiles):
             return self._return_default_mapping_dict(reaction_smiles)
 
@@ -834,7 +837,7 @@ class MCSReactionMapper(ReactionMapper):
 
     def map_reactions(
         self,
-        reaction_list: List[str],
+        reaction_list: Union[List[str], List[ReactionInput]],
         min_radius: int = 1,
         min_radius_to_anchor_new_mapping: int = 3,
     ) -> List[ReactionMapperResult]:
@@ -842,7 +845,8 @@ class MCSReactionMapper(ReactionMapper):
         Map a list of reaction SMILES strings using the MCS mapper.
 
         Args:
-            reaction_list (List[str]): List of reaction SMILES strings to map.
+            reaction_list (Union[List[str], List[ReactionInput]]): List of
+                reaction SMILES strings or ``ReactionInput`` objects to map.
             min_radius (int): Smallest bond-radius to consider.
             min_radius_to_anchor_new_mapping (int): Below this radius,
                 environments are only matched when they already contain at
