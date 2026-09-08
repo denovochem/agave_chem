@@ -1,3 +1,4 @@
+import gzip
 import json
 import re
 from collections import defaultdict
@@ -243,12 +244,22 @@ class TemplateReactionMapper(ReactionMapper):
         """
         Initialize the TemplateMapper instance.
 
+        JSON data files (SMIRKS patterns and reaction class hierarchy) are
+        loaded lazily on the first call to ``map_reaction_with_mcs_optimization``,
+        not at construction time.
+
         Args:
-            custom_smirks_patterns (List[SmirksPattern] | None): A list of SmirksPattern
-                objects (or dicts that will be validated into SmirksPattern) containing
-                custom SMIRKS patterns.
-            use_default_smirks_patterns (bool): Whether to use the default SMIRKS
-                patterns.
+            mapper_name (str): Name identifier for this mapper instance.
+            mapper_weight (float): Weight used when combining results from
+                multiple mappers.
+            custom_smirks_patterns (List[SmirksPattern] | None): A list of
+                SmirksPattern objects (or dicts that will be validated into
+                SmirksPattern) containing custom SMIRKS patterns.
+            use_default_smirks_patterns (bool): Whether to use the default
+                bundled SMIRKS patterns.
+            max_transforms (int): Maximum tautomer transforms to enumerate.
+            max_tautomers (int): Maximum number of tautomers to generate.
+            use_mcs_mapping (bool): Whether to use MCS mapping as a fallback.
         """
 
         super().__init__("template", mapper_name, mapper_weight)
@@ -264,20 +275,11 @@ class TemplateReactionMapper(ReactionMapper):
         self._custom_smirks_patterns = custom_smirks_patterns
         self._use_default_smirks_patterns = use_default_smirks_patterns
 
-        smirks_patterns_file = files("agave_chem.datafiles.smirks_patterns").joinpath(
-            "smirks_patterns_with_children.json"
-        )
-        with smirks_patterns_file.open("r") as f:
-            self._uninitialized_smirks_patterns = json.load(f)
+        self._uninitialized_smirks_patterns: Optional[List[Dict[str, Any]]] = None
         self._initialized_smirks_patterns: Optional[List[InitializedSmirksPattern]] = (
             None
         )
-
-        reaction_classes_file = files("agave_chem.datafiles.smirks_patterns").joinpath(
-            "reaction_classes.json"
-        )
-        with reaction_classes_file.open("r") as f:
-            self._class_hierarchy = _build_class_hierarchy(json.load(f))
+        self._class_hierarchy: Optional[Dict[str, Dict[str, Any]]] = None
 
         _taut_opts = rdMolStandardize.CleanupParameters()
         _taut_opts.tautomerRemoveSp3Stereo = False  # type: ignore[assignment]
@@ -293,11 +295,31 @@ class TemplateReactionMapper(ReactionMapper):
             )
 
     def _initialize_smirks_patterns(self) -> None:
-        """Initialize SMIRKS patterns."""
+        """
+        Initialize SMIRKS patterns from the bundled gzipped JSON file.
+
+        On first call, decompresses and loads
+        ``smirks_patterns_with_children.json.gz`` from the package data
+        directory (only when ``use_default_smirks_patterns`` is True).
+        Subsequent calls are no-ops once patterns are already initialized.
+        """
         if self._initialized_smirks_patterns is not None:
             return
 
+        if (
+            self._uninitialized_smirks_patterns is None
+            and self._use_default_smirks_patterns
+        ):
+            smirks_patterns_file = files(
+                "agave_chem.datafiles.smirks_patterns"
+            ).joinpath("smirks_patterns_with_children.json.gz")
+            with smirks_patterns_file.open("rb") as f, gzip.open(
+                f, "rt", encoding="utf-8"
+            ) as gz:
+                self._uninitialized_smirks_patterns = json.load(gz)
+
         if self._use_default_smirks_patterns and self._custom_smirks_patterns is None:
+            assert self._uninitialized_smirks_patterns is not None
             smirks_patterns = self._uninitialized_smirks_patterns
         elif self._custom_smirks_patterns and not self._use_default_smirks_patterns:
             smirks_patterns = [
@@ -305,6 +327,7 @@ class TemplateReactionMapper(ReactionMapper):
                 for p in self._custom_smirks_patterns
             ]
         elif self._custom_smirks_patterns and self._use_default_smirks_patterns:
+            assert self._uninitialized_smirks_patterns is not None
             smirks_patterns = [
                 p.model_dump() if isinstance(p, SmirksPattern) else p
                 for p in self._custom_smirks_patterns
@@ -314,6 +337,7 @@ class TemplateReactionMapper(ReactionMapper):
                 "Attempting to initialize AgaveChem with no SMIRKS patterns"
             )
 
+        assert smirks_patterns is not None
         initialized_smirks_patterns: List[InitializedSmirksPattern] = []
         for pattern in smirks_patterns:
             pattern_priority = pattern.get(
@@ -374,6 +398,23 @@ class TemplateReactionMapper(ReactionMapper):
         self._initialized_smirks_patterns = initialized_smirks_patterns
 
         return
+
+    def _ensure_class_hierarchy(self) -> None:
+        """
+        Lazily load and build the reaction class hierarchy from ``reaction_classes.json``.
+
+        On first call, reads the bundled ``reaction_classes.json`` from the
+        package data directory and builds the nested hierarchy tree via
+        ``_build_class_hierarchy``.  Subsequent calls are no-ops.
+        """
+        if self._class_hierarchy is not None:
+            return
+
+        reaction_classes_file = files(
+            "agave_chem.datafiles.smirks_patterns"
+        ).joinpath("reaction_classes.json")
+        with reaction_classes_file.open("r") as f:
+            self._class_hierarchy = _build_class_hierarchy(json.load(f))
 
     def _initialize_template_data_from_child_patterns(
         self,
@@ -1599,6 +1640,8 @@ class TemplateReactionMapper(ReactionMapper):
         """
         Look up class names and descriptions via hierarchical tree traversal.
 
+        Ensures the class hierarchy is loaded before performing lookups.
+
         At each level (superclass → class → subclass → subsubclass) the exact
         ID is tried first, then ``"0"`` ("Unspecified") as a fallback.  If
         neither is found the remaining levels are left as empty strings.
@@ -1636,6 +1679,9 @@ class TemplateReactionMapper(ReactionMapper):
             if node is None and key != "0":
                 node = children.get("0")
             return node
+
+        self._ensure_class_hierarchy()
+        assert self._class_hierarchy is not None
 
         sc_node = _find_node(self._class_hierarchy, superclass_id)
         if sc_node is None:
@@ -1822,6 +1868,7 @@ class TemplateReactionMapper(ReactionMapper):
                 mapping result and the MCS mapping result.
         """
         self._initialize_smirks_patterns()
+        self._ensure_class_hierarchy()
 
         reaction_input: Optional[ReactionInput] = None
         if isinstance(reaction_smiles, ReactionInput):

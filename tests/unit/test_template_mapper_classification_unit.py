@@ -133,6 +133,26 @@ class TestInitializeSmirksPatterns:
     def mapper(self) -> TemplateReactionMapper:
         return TemplateReactionMapper(mapper_name="test_init")
 
+    def test_init_does_not_load_json(self):
+        """__init__ should not eagerly load JSON data files."""
+        mapper = TemplateReactionMapper(mapper_name="test_lazy")
+        assert mapper._uninitialized_smirks_patterns is None
+        assert mapper._initialized_smirks_patterns is None
+        assert mapper._class_hierarchy is None
+
+    def test_initialize_loads_json(self, mapper):
+        """_initialize_smirks_patterns should load patterns on first call."""
+        mapper._initialize_smirks_patterns()
+        assert mapper._uninitialized_smirks_patterns is not None
+        assert mapper._initialized_smirks_patterns is not None
+        assert len(mapper._initialized_smirks_patterns) > 0
+
+    def test_ensure_class_hierarchy_loads(self, mapper):
+        """_ensure_class_hierarchy should load hierarchy on first call."""
+        mapper._ensure_class_hierarchy()
+        assert mapper._class_hierarchy is not None
+        assert len(mapper._class_hierarchy) > 0
+
     def test_subsubclass_id_not_none_string(self, mapper):
         """subsubclass_id should be '' when JSON value is null, not 'None'."""
         mapper._initialize_smirks_patterns()

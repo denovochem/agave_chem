@@ -3790,7 +3790,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c;D3;H0;+0:2]-[Cl,Br,I].[*:4]-[S;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[S;H0;D2;+0:5]-[*:4]",
+    "smirks": "[Cu].[c;D3;H0;+0:2]-[Cl,Br,I].[*:4]-[S;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[S;H0;D2;+0:5]-[*:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000332",
@@ -3811,7 +3811,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c;D3;H0;+0:2]-[Cl,Br,I].[c;H0;D3;+0:4]-[O;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[O;H0;D2;+0:5]-[c;H0;D3;+0:4]",
+    "smirks": "[Cu].[c;D3;H0;+0:2]-[Cl,Br,I].[c;H0;D3;+0:4]-[O;H1;D1;+0:5]>>[c;D3;H0;+0:2]-[O;H0;D2;+0:5]-[c;H0;D3;+0:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000081",
@@ -4602,27 +4602,6 @@
     "subclass_id": 2,
     "subsubclass_id": null,
     "classification_uuid": "7369f003-67ec-5f06-bf32-95c23568ec66"
-  },
-  {
-    "name": "N-arylation (d-Hartwig/Ullmann-Goldberg)",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[Cl,Br,I]-[c;$(c1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):2].[N;$([N]-[#6])&!$(N=*)&!$([N-])&!$(N#*)&!$([ND3])&!$([ND4])&!$(N[O])&!$(N[C,S]=[S,O,N]),H2&$(Nc1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):3]>>[c:2]-[N:3]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000192",
-        "rxno_label": "Buchwald-Hartwig amination",
-        "rxno_definition": "A reaction in which an aryl halide or aryl triflate reacts with a primary or secondary amine in the presence of base to give a secondary or tertiary amine. It is catalysed by a palladium catalyst."
-      }
-    ],
-    "uuid": "4aaac95a-3900-4f16-8523-3e6febbd4447",
-    "superclass_id": 1,
-    "class_id": 2,
-    "subclass_id": 1,
-    "subsubclass_id": 1,
-    "classification_uuid": "fe08a610-d18d-5aeb-958f-0c50deeac328"
   },
   {
     "name": "Heck terminal vinyl (stereo unspecified)",
@@ -8158,7 +8137,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H2;D1;+0:3]>>[c;H0;D3;+0:1]-[N;H1;D2;+0:3]-[#6;+0:2]",
+    "smirks": "[Cu,Pd].[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H2;D1;+0:3]>>[c;H0;D3;+0:1]-[N;H1;D2;+0:3]-[#6;+0:2]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000192",
@@ -8179,7 +8158,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[N;H0;D3;+0:3]-[#6;+0:2]",
+    "smirks": "[Cu,Pd].[c;H0;D3;+0:1]-[F,Cl,Br,I].[#6;+0:2]-[N;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[N;H0;D3;+0:3]-[#6;+0:2]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000192",
@@ -8200,7 +8179,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[c;H0;D3;+0:1]-[F,Cl,Br,I].[#7;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[#7;H0;D3;+0:3]",
+    "smirks": "[Cu,Pd].[c;H0;D3;+0:1]-[F,Cl,Br,I].[#7;H1;D2;+0:3]>>[c;H0;D3;+0:1]-[#7;H0;D3;+0:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000192",
@@ -11200,27 +11179,6 @@
     "subclass_id": 1,
     "subsubclass_id": null,
     "classification_uuid": "25ef0fba-19f0-505a-a101-d9a573bb8b1d"
-  },
-  {
-    "name": "Buchwald-Hartwig amination",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[Cl,Br,I][c;$(c1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):2].[N;$(NC)&!$(N=*)&!$([N-])&!$(N#*)&!$([ND3])&!$([ND4])&!$(N[c,O])&!$(N[C,S]=[S,O,N]),H2&$(Nc1:[c,n]:[c,n]:[c,n]:[c,n]:[c,n]:1):3]>>[c:2][N:3]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000192",
-        "rxno_label": "Buchwald-Hartwig amination",
-        "rxno_definition": "A reaction in which an aryl halide or aryl triflate reacts with a primary or secondary amine in the presence of base to give a secondary or tertiary amine. It is catalysed by a palladium catalyst."
-      }
-    ],
-    "uuid": "022d9605-0836-47dd-8e96-75305023be58",
-    "superclass_id": 1,
-    "class_id": 2,
-    "subclass_id": 1,
-    "subsubclass_id": null,
-    "classification_uuid": "258741c0-7274-5299-ad8e-9fca77c092dc"
   },
   {
     "name": "Debus-Radziszewski imidazole synthesis",

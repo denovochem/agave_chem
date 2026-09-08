@@ -1,3 +1,4 @@
+import gzip
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -325,7 +326,7 @@ if __name__ == "__main__":
         / "agave_chem"
         / "datafiles"
         / "smirks_patterns"
-        / "smirks_patterns_with_children.json"
+        / "smirks_patterns_with_children.json.gz"
     )
-    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
+    with gzip.open(OUTPUT_FILE, "wt", encoding="utf-8") as f:
         json.dump(records_sorted, f, indent=2, ensure_ascii=False)
