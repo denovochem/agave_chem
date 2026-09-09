@@ -313,9 +313,10 @@ class TemplateReactionMapper(ReactionMapper):
             smirks_patterns_file = files(
                 "agave_chem.datafiles.smirks_patterns"
             ).joinpath("smirks_patterns_with_children.json.gz")
-            with smirks_patterns_file.open("rb") as f, gzip.open(
-                f, "rt", encoding="utf-8"
-            ) as gz:
+            with (
+                smirks_patterns_file.open("rb") as f,
+                gzip.open(f, "rt", encoding="utf-8") as gz,
+            ):
                 self._uninitialized_smirks_patterns = json.load(gz)
 
         if self._use_default_smirks_patterns and self._custom_smirks_patterns is None:
@@ -410,9 +411,9 @@ class TemplateReactionMapper(ReactionMapper):
         if self._class_hierarchy is not None:
             return
 
-        reaction_classes_file = files(
-            "agave_chem.datafiles.smirks_patterns"
-        ).joinpath("reaction_classes.json")
+        reaction_classes_file = files("agave_chem.datafiles.smirks_patterns").joinpath(
+            "reaction_classes.json"
+        )
         with reaction_classes_file.open("r") as f:
             self._class_hierarchy = _build_class_hierarchy(json.load(f))
 

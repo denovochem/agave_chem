@@ -4095,12 +4095,12 @@
     "classification_uuid": "68dd07fb-4576-55f0-ae48-08718f8aa316"
   },
   {
-    "name": "Borch Reductive Amination; Aldehyde reductive amination with primary amine",
+    "name": "Borch Reductive Amination; Aldehyde reductive amination with primary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4116,12 +4116,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Ketone reductive amination with primary amine",
+    "name": "Borch Reductive Amination; Ketone reductive amination with primary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;D1;H0;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H0;D3;+0:1](=[O;D1;H0;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4137,12 +4137,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Aldehyde reductive amination with secondary amine",
+    "name": "Borch Reductive Amination; Aldehyde reductive amination with secondary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:6]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:6]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:6]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:6]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4158,12 +4158,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Intramolecular dialdehyde + primary amine to cyclic amine",
+    "name": "Borch Reductive Amination; Intramolecular dialdehyde + primary amine to cyclic amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2]-[C;H1;D2;+0:5]=[O;D1;H0;+0].[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[C;H2;D2;+0:5]-[N;H0;D3;+0:4]-1-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2]-[C;H1;D2;+0:5]=[O;D1;H0;+0].[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[C;H2;D2;+0:5]-[N;H0;D3;+0:4]-1-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000347",
@@ -4179,12 +4179,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Aldehyde with primary amine",
+    "name": "Borch Reductive Amination; Aldehyde with primary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4200,12 +4200,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Ketone with primary amine",
+    "name": "Borch Reductive Amination; Ketone with primary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H0;D3;+0:1](=[O;H0;D1;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H0;D3;+0:1](=[O;H0;D1;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4221,12 +4221,12 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Aldehyde with secondary amine",
+    "name": "Borch Reductive Amination; Aldehyde with secondary amine (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:5]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:5]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:5]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000335",
@@ -4242,12 +4242,180 @@
     "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
   },
   {
-    "name": "Borch Reductive Amination; Intramolecular dialdehyde with primary amine (piperidine formation)",
+    "name": "Borch Reductive Amination; Intramolecular dialdehyde with primary amine (piperidine formation) (cyanoborohydride)",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2]-[*:6]-[*:7]-[C;H1;D2;+0:8](=[O;H0;D1;+0]).[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[*:6]-[*:7]-[C;H2;D2;+0:8]-[N;H0;D3;+0:4]1-[*:3]",
+    "smirks": "[BH3-]C#N.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2]-[*:6]-[*:7]-[C;H1;D2;+0:8](=[O;H0;D1;+0]).[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[*:6]-[*:7]-[C;H2;D2;+0:8]-[N;H0;D3;+0:4]1-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000616",
+        "rxno_label": "piperidine synthesis",
+        "rxno_definition": "A planned reaction in which one of the products contains a piperidine system that was not in any of the reactants."
+      }
+    ],
+    "uuid": "44d4c10b-546c-4f1a-b3f2-3cdd8b0640e4",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Aldehyde reductive amination with primary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "e9c392d9-bf12-4bd5-806b-a9938829edc6",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Ketone reductive amination with primary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H0;D3;+0:1](=[O;D1;H0;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "ca3b8021-11b0-4be6-8c30-f492a9bffed0",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Aldehyde reductive amination with secondary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:6]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:6]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "22e58347-541d-445d-9d48-b02c88aaf400",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Intramolecular dialdehyde + primary amine to cyclic amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;D1;H0;+0])-[*:2]-[C;H1;D2;+0:5]=[O;D1;H0;+0].[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[C;H2;D2;+0:5]-[N;H0;D3;+0:4]-1-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000347",
+        "rxno_label": "azacycle synthesis",
+        "rxno_definition": "A ring formation reaction where the intended product contains an azacycle that was not in any of the reactants."
+      }
+    ],
+    "uuid": "0ad30370-acc6-4ec1-832a-665006bc49cc",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Aldehyde with primary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H2;D2;+0:1]-[NH;D2;+0:4]-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "3530fc49-cb19-4758-bb0a-5ebdcb08bcd1",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Ketone with primary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H0;D3;+0:1](=[O;H0;D1;+0])(-[*:2])-[*:5].[*:3]-[NH2;D1;+0:4]>>[*:2]-[C;H1;D3;+0:1](-[*:5])-[NH;D2;+0:4]-[*:3]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "28f946c6-14ad-418a-b404-c860000fe360",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Aldehyde with secondary amine (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2].[*:3]-[NH;D2;+0:4]-[*:5]>>[*:2]-[C;H2;D2;+0:1]-[N;H0;D3;+0:4](-[*:3])-[*:5]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000335",
+        "rxno_label": "reductive amination",
+        "rxno_definition": "A functional group modification where a carbonyl oxygen is replaced by an amine."
+      }
+    ],
+    "uuid": "9b4a7714-bd35-4953-8cdb-c0fff5321681",
+    "superclass_id": 1,
+    "class_id": 1,
+    "subclass_id": 2,
+    "subsubclass_id": null,
+    "classification_uuid": "c9aa15e5-b5cb-52de-9319-3de3ae8a54ef"
+  },
+  {
+    "name": "Borch Reductive Amination; Intramolecular dialdehyde with primary amine (piperidine formation) (triacetoxyborohydride)",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[BH-](OC(=O)C)(OC(=O)C)OC(=O)C.[C;H1;D2;+0:1](=[O;H0;D1;+0])-[*:2]-[*:6]-[*:7]-[C;H1;D2;+0:8](=[O;H0;D1;+0]).[*:3]-[NH2;D1;+0:4]>>[C;H2;D2;+0:1]1-[*:2]-[*:6]-[*:7]-[C;H2;D2;+0:8]-[N;H0;D3;+0:4]1-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000616",
@@ -12122,7 +12290,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[Br,I,Cl;D1]-[C;X4;+0:1]-[*:2].[C;X4;+0:3]-[*:4]>>[*:4]-[C;X4;+0:3]-[C;X4;+0:1]-[*:2]",
+    "smirks": "[Cu].[Br,I,Cl;D1]-[C;X4;+0:1]-[*:2].[C;X4;+0:3]-[*:4]>>[*:4]-[C;X4;+0:3]-[C;X4;+0:1]-[*:2]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000603",
@@ -12143,7 +12311,7 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C:1]=[C;H1;+0:2]-[C;H0;+0:3](=[O;D1;+0:4])-[*:5].[C;X4;+0:6]-[*:7]>>[*:7]-[C;X4;+0:6]-[C:1]-[C;H2;+0:2]-[C;H0;+0:3](=[O;D1;+0:4])-[*:5]",
+    "smirks": "[Cu].[C:1]=[C;H1;+0:2]-[C;H0;+0:3](=[O;D1;+0:4])-[*:5].[C;X4;+0:6]-[*:7]>>[*:7]-[C;X4;+0:6]-[C:1]-[C;H2;+0:2]-[C;H0;+0:3](=[O;D1;+0:4])-[*:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000009",
@@ -22470,12 +22638,12 @@
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
-    "name": "Midland Asymmetric Reduction; Propargyl ketone asymmetric reduction",
+    "name": "Midland Asymmetric Reduction; Propargyl ketone asymmetric reduction fixthis",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[C:4]#[C:5]>>[*:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[C:4]#[C:5]",
+    "smirks": "[*]-B1C2CCCC1CCC2.[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[C:4]#[C:5]>>[*:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[C:4]#[C:5]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000037",
@@ -22491,12 +22659,12 @@
     "classification_uuid": "9603ac35-6b1f-557d-9e7d-0caa0a4e779f"
   },
   {
-    "name": "Midland Asymmetric Reduction; General ketone asymmetric reduction",
+    "name": "Midland Asymmetric Reduction; General ketone asymmetric reduction fixthis",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[*:4]>>[*:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[*:4]",
+    "smirks": "[*]-B1C2CCCC1CCC2.[*:1]-[C;H0;D3;+0:2](=[O;D1;H0;+0:3])-[*:4]>>[*:1]-[C;H1;D3;+0:2](-[O;H1;D1;+0:3])-[*:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000037",
@@ -37364,7 +37532,28 @@
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[C;H2;D2;+0:1]([*:2])[*:3].[Cl,Br,I]-[C;+0:4]>>[C;H1;D3;+0:1]([*:2])([*:3])-[C;+0:4]",
+    "smirks": "[Na]N.[C;H2;D2;+0:1]([*:2])[*:3].[Cl,Br,I]-[C;+0:4]>>[C;H1;D3;+0:1]([*:2])([*:3])-[C;+0:4]",
+    "rxno_classification": [
+      {
+        "rxno_id": "RXNO:0000002",
+        "rxno_label": "carbon-carbon coupling reaction",
+        "rxno_definition": "A reaction where a bond is formed between two carbon atoms."
+      }
+    ],
+    "uuid": "b4873c0b-d9f5-4482-965f-035ebacfe4c6",
+    "superclass_id": 4,
+    "class_id": 0,
+    "subclass_id": null,
+    "subsubclass_id": null,
+    "classification_uuid": "68dd07fb-4576-55f0-ae48-08718f8aa316"
+  },
+  {
+    "name": "Eisleb Alkylation; C-alkylation of active methylene compound with alkyl halide via NaNH2",
+    "priority": {
+      "priority_class": null,
+      "priority": null
+    },
+    "smirks": "[NH2-].[Na+].[C;H2;D2;+0:1]([*:2])[*:3].[Cl,Br,I]-[C;+0:4]>>[C;H1;D3;+0:1]([*:2])([*:3])-[C;+0:4]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000002",
