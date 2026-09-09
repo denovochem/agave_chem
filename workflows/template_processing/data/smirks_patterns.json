@@ -63,7 +63,7 @@
     "classification_uuid": "687512b0-a250-56fe-8037-0e92e26b11a2"
   },
   {
-    "name": "Esterification of Carboxylic Acids v1",
+    "name": "Esterification of Carboxylic Acids",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -84,7 +84,7 @@
     "classification_uuid": "4b76f157-73c7-5de2-82dd-2b06efbe2bff"
   },
   {
-    "name": "Esterification of Carboxylic Acids v2",
+    "name": "Esterification of Carboxylic Acids",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -105,7 +105,7 @@
     "classification_uuid": "4b76f157-73c7-5de2-82dd-2b06efbe2bff"
   },
   {
-    "name": "Esterification of Carboxylic Acids v3",
+    "name": "Esterification of Carboxylic Acids",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -252,7 +252,7 @@
     "classification_uuid": "3574c3b6-ee8c-5f9b-8ddf-da81b2e9192a"
   },
   {
-    "name": "O-alkylation of carboxylic acids with diazo compounds v1",
+    "name": "O-alkylation of carboxylic acids with diazo compounds",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -273,7 +273,7 @@
     "classification_uuid": "74786408-d4d3-5aed-a9bf-818fc042765b"
   },
   {
-    "name": "O-alkylation of carboxylic acids with diazo compounds v2",
+    "name": "O-alkylation of carboxylic acids with diazo compounds",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -315,7 +315,7 @@
     "classification_uuid": "857d4c4a-9dbe-5165-b0e0-26936669721a"
   },
   {
-    "name": "O-alkylation of carboxylic acids with diazo compounds v3",
+    "name": "O-alkylation of carboxylic acids with diazo compounds",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -336,7 +336,7 @@
     "classification_uuid": "74786408-d4d3-5aed-a9bf-818fc042765b"
   },
   {
-    "name": "O-alkylation of carboxylic acids with diazo compounds v4",
+    "name": "O-alkylation of carboxylic acids with diazo compounds",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -357,7 +357,7 @@
     "classification_uuid": "7e9dc6c0-085e-5820-9683-dba5df931385"
   },
   {
-    "name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones v1",
+    "name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -378,7 +378,7 @@
     "classification_uuid": "4865185d-6f43-5e7b-a218-00b9cf0a2da6"
   },
   {
-    "name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones v2",
+    "name": "Oxidation or Dehydrogenation of Alcohols to Aldehydes and Ketones",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -1683,7 +1683,7 @@
     "classification_uuid": "337637f9-ffa8-5d23-9a3e-b9422b4835ad"
   },
   {
-    "name": "Boc amine protection (ethyl Boc) fixthisName",
+    "name": "Ethyl chloroformate amine protection",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -2357,7 +2357,7 @@
     "classification_uuid": "994846dc-719b-5fad-b057-485ca3d3678e"
   },
   {
-    "name": "Suzuki coupling with sulfonic esters fixthisName",
+    "name": "Suzuki coupling with sulfonic esters",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -2378,7 +2378,7 @@
     "classification_uuid": "4c1be6a0-8617-5746-948f-8633539314a6"
   },
   {
-    "name": "Suzuki coupling with sulfonic esters fixthisName",
+    "name": "Suzuki coupling with sulfonic esters",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -2525,7 +2525,7 @@
     "classification_uuid": "8ac69dd6-1220-5277-b112-526c9a011d9f"
   },
   {
-    "name": "Petasis reaction with amines and boronic esters fixthis",
+    "name": "Petasis reaction with amines and boronic esters",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -2966,7 +2966,7 @@
     "classification_uuid": "8e32c1b1-8358-510e-9d4e-6e3efbc022cc"
   },
   {
-    "name": "Acyl iodides from alcohols fixthisName",
+    "name": "Acyl iodides from alcohols",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -3071,7 +3071,7 @@
     "classification_uuid": "493beb2e-cff3-5d11-aa34-8e022e53df1b"
   },
   {
-    "name": "Decarboxylation v1",
+    "name": "Decarboxylation",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -3092,7 +3092,7 @@
     "classification_uuid": "d79a2dd9-3e5d-579a-8f0a-b922e7bd241a"
   },
   {
-    "name": "Decarboxylation v2",
+    "name": "Decarboxylation",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -3197,7 +3197,7 @@
     "classification_uuid": "15b59077-eb90-57aa-a890-0b2a888a1379"
   },
   {
-    "name": "Friedel-Crafts alkylation with halide v1",
+    "name": "Friedel-Crafts alkylation with halide",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -3218,7 +3218,7 @@
     "classification_uuid": "15b59077-eb90-57aa-a890-0b2a888a1379"
   },
   {
-    "name": "Friedel-Crafts alkylation with halide v2 fixthisName",
+    "name": "Friedel-Crafts alkylation with halide",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -3993,27 +3993,6 @@
     "subclass_id": 1,
     "subsubclass_id": 6,
     "classification_uuid": "bad60be7-3e52-509b-951b-eca38a70179f"
-  },
-  {
-    "name": "Oxidation of amide to carboxylic acid fixthisName",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[N;+0]>>[C;H0;D3;+0:2](=[O;H0;D1;+0:3])-[O;H1;D1;+0:4]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000011",
-        "rxno_label": "functional group modification",
-        "rxno_definition": "A reaction in which a functional group undergoes a change that does not affect the number of atoms in (or connectivity of) the skeleton of the molecule."
-      }
-    ],
-    "uuid": "b92dbb63-5428-47a4-aad8-b867f767ea5b",
-    "superclass_id": 5,
-    "class_id": 13,
-    "subclass_id": 1,
-    "subsubclass_id": null,
-    "classification_uuid": "7ea8c6cf-6cff-5787-a04c-89f7dea475b8"
   },
   {
     "name": "Reduction of ester to primary alcohol",
@@ -6284,27 +6263,6 @@
     "classification_uuid": "dfaf6da4-98b0-5004-9782-89f7f7f3837d"
   },
   {
-    "name": "Ullmann condensation fixthisName",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[c;D3;+0:1]-[Cl,Br,I].[c;D3;+0:2]-[O;H1;D1;+0].[Cu]>>[c;D3;+0:1]-[c;D3;+0:2]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000081",
-        "rxno_label": "Ullmann condensation",
-        "rxno_definition": "A coupling reaction in which a phenol is coupled to an aryl halide to give a diaryl ether in the presence of a copper compound."
-      }
-    ],
-    "uuid": "1eaacc21-615d-4b54-b20e-9d3c1f4c420e",
-    "superclass_id": 4,
-    "class_id": 4,
-    "subclass_id": null,
-    "subsubclass_id": null,
-    "classification_uuid": "fc4cca6b-0bf2-5255-aeee-236732a1089c"
-  },
-  {
     "name": "Minisci (para)",
     "priority": {
       "priority_class": null,
@@ -6746,7 +6704,7 @@
     "classification_uuid": "f07de052-4312-5e23-ba9f-c2f2600f851a"
   },
   {
-    "name": "[3+2]-cycloaddition of diazoalkane and alpha-alkene fixthisName",
+    "name": "[3+2]-cycloaddition of diazoalkane and alpha-alkene",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -7145,7 +7103,7 @@
     "classification_uuid": "68dd07fb-4576-55f0-ae48-08718f8aa316"
   },
   {
-    "name": "Derived alcohol via homologation of aldehydes with formaldehyde fixthisName",
+    "name": "Derived alcohol via homologation of aldehydes with formaldehyde",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -7271,7 +7229,7 @@
     "classification_uuid": "a72edec8-6903-513e-a49a-9ab167224ab7"
   },
   {
-    "name": "Catellani reaction meta fixthisName",
+    "name": "Catellani reaction meta",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -7292,7 +7250,7 @@
     "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
   },
   {
-    "name": "Catellani reaction para fixthisName",
+    "name": "Catellani reaction para",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -7334,7 +7292,7 @@
     "classification_uuid": "a22ebed4-a74b-5cf4-af76-9c62593e4e33"
   },
   {
-    "name": "Catellani reaction generic fixthisName",
+    "name": "Catellani reaction generic",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -7712,12 +7670,12 @@
     "classification_uuid": "429f74b3-54cc-5c6c-9fbf-473efa217b63"
   },
   {
-    "name": "Tertiary amine nucleophilic substitution fixthisName",
+    "name": "Tertiary amine nucleophilic substitution",
     "priority": {
       "priority_class": null,
       "priority": null
     },
-    "smirks": "[*]-[N;D3+0:2].[*:3]-[F,Cl,Br,I]>>[N;D3+0:2]-[*:3]",
+    "smirks": "[*]-[N;D3;+0:2].[*:3]-[F,Cl,Br,I]>>[N;D3;+0:2]-[*:3]",
     "rxno_classification": [
       {
         "rxno_id": "RXNO:0000223",
@@ -8069,7 +8027,7 @@
     "classification_uuid": "f51397c4-2f77-5499-9a1f-6ad6409c9b2c"
   },
   {
-    "name": "Wohl-Ziegler ion carbonyl primary fixthisName",
+    "name": "Wohl-Ziegler ion carbonyl primary",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -8090,7 +8048,7 @@
     "classification_uuid": "f51397c4-2f77-5499-9a1f-6ad6409c9b2c"
   },
   {
-    "name": "Wohl-Ziegler ion carbonyl secondary fixthis",
+    "name": "Wohl-Ziegler ion carbonyl secondary",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -8153,7 +8111,7 @@
     "classification_uuid": "258741c0-7274-5299-ad8e-9fca77c092dc"
   },
   {
-    "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine (v1)",
+    "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -8174,7 +8132,7 @@
     "classification_uuid": "258741c0-7274-5299-ad8e-9fca77c092dc"
   },
   {
-    "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine (v2)",
+    "name": "Buchwald-Hartwig/Ullmann-Goldberg/N-arylation secondary amine",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -8279,7 +8237,7 @@
     "classification_uuid": "9599cff9-c622-5534-97fb-ff1ede928056"
   },
   {
-    "name": "Cleavage of methoxy thioethers to alcohols fixthisName",
+    "name": "Cleavage of methoxy thioethers to thiols",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -8300,7 +8258,7 @@
     "classification_uuid": "2511af00-b708-51b0-940c-0a4e8a7a4b19"
   },
   {
-    "name": "Cleavage of alkoxy thioethers to alcohols fixthisName",
+    "name": "Cleavage of alkoxy thioethers to alcohols",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -9476,7 +9434,7 @@
     "classification_uuid": "43370b20-2176-55a6-be64-345c0fab185a"
   },
   {
-    "name": "Directed ortho metalation of arenes fixthisName",
+    "name": "Directed ortho metalation of arenes",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -9959,7 +9917,7 @@
     "classification_uuid": "358bb713-f35f-5f13-bbeb-a9e4cc589617"
   },
   {
-    "name": "Urea synthesis via isocyanate and diazo fixthisName",
+    "name": "Urea synthesis via isocyanate and diazo",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -10484,7 +10442,7 @@
     "classification_uuid": "b3fcfbb1-31af-53ef-8782-dc260554d8c8"
   },
   {
-    "name": "Paal-Knorr pyrrole synthesis (fixthis?)",
+    "name": "Paal-Knorr pyrrole synthesis",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -10528,7 +10486,7 @@
 
 
   {
-    "name": "Fischer indole synthesis fixthis idea that C:6 is bad (radical) and kekulized smarts?!?",
+    "name": "Fischer indole synthesis",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -10719,7 +10677,7 @@
     "classification_uuid": "8ac69dd6-1220-5277-b112-526c9a011d9f"
   },
   {
-    "name": "Pictet-Spengler cyclization with piperidone fixthisName",
+    "name": "Pictet-Spengler cyclization with piperidone",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -11916,7 +11874,7 @@
     "classification_uuid": "101fc58e-e409-576a-86b4-97769460886d"
   },
   {
-    "name": "Friedel-Crafts acylation of alkynes fixthis",
+    "name": "Friedel-Crafts acylation of alkynes",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -12588,7 +12546,7 @@
     "classification_uuid": "0a328ca2-ec42-58cd-a166-2859551a5556"
   },
   {
-    "name": "Bouveault aldehyde synthesis fixthis",
+    "name": "Bouveault aldehyde synthesis",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -12672,7 +12630,7 @@
     "classification_uuid": "f0542401-244c-55c8-83bb-10dc7c98954e"
   },
   {
-    "name": "Amidoxime from nitrile and hydroxylamine fixthis",
+    "name": "Amidoxime from nitrile and hydroxylamine",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -12882,7 +12840,7 @@
     "classification_uuid": "d5d1a18c-4dc0-57b1-9225-c94d57547d83"
   },
   {
-    "name": "Acyl halide to primary amide (ammonia) fixthisName",
+    "name": "Acyl halide to primary amide",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -12987,7 +12945,7 @@
     "classification_uuid": "994846dc-719b-5fad-b057-485ca3d3678e"
   },
   {
-    "name": "Suzuki coupling with sulfonic esters fixthisName",
+    "name": "Suzuki coupling with sulfonic esters",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -13008,7 +12966,7 @@
     "classification_uuid": "4c1be6a0-8617-5746-948f-8633539314a6"
   },
   {
-    "name": "Suzuki coupling with sulfonic esters fixthisName",
+    "name": "Suzuki coupling with sulfonic esters",
     "priority": {
       "priority_class": null,
       "priority": null
@@ -13722,48 +13680,6 @@
     "classification_uuid": "9156af00-4160-5b43-8e48-81b27614053c"
   },
   {
-    "name": "Aldehyde SN2 fixthis",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[C;H1;D2;+0:2](=[O;H0;D1;+0:3]).[#6:4]-[Cl,Br,I]>>[C;+0:2](-[O;H1;D1;+0:3])-[#6:4]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000426",
-        "rxno_label": "aldehyde Barbier reaction",
-        "rxno_definition": "A joining reaction between an aldehyde and an alkyl halide or aryl halide or vinyl halide or allyl halide in the presence of metal to give a secondary alcohol."
-      }
-    ],
-    "uuid": "1d1a2167-6b59-4126-920f-c72df61989f4",
-    "superclass_id": 4,
-    "class_id": 1,
-    "subclass_id": 1,
-    "subsubclass_id": 7,
-    "classification_uuid": "1b25ebdf-8de7-5e72-89ee-a64e18cd8069"
-  },
-  {
-    "name": "Ketone SN2",
-    "priority": {
-      "priority_class": null,
-      "priority": null
-    },
-    "smirks": "[C;D3;+0:2](=[O;H0;D1;+0:3]).[#6:4]-[Cl,Br,I]>>[C;+0:2](-[O;H1;D1;+0:3])-[#6:4]",
-    "rxno_classification": [
-      {
-        "rxno_id": "RXNO:0000427",
-        "rxno_label": "ketone Barbier reaction",
-        "rxno_definition": "A joining reaction between an ketone and an alkyl halide or aryl halide or vinyl halide or allyl halide in the presence of metal to give a tertiary alcohol."
-      }
-    ],
-    "uuid": "f3400328-2081-45b9-bd93-8be1c1071c6c",
-    "superclass_id": 4,
-    "class_id": 1,
-    "subclass_id": 1,
-    "subsubclass_id": 7,
-    "classification_uuid": "ea982a6f-c38e-5b21-bfc7-c2d993273d9f"
-  },
-  {
     "name": "Alcohol to nitrate",
     "priority": {
       "priority_class": null,
@@ -14247,7 +14163,7 @@
     "classification_uuid": "d6029510-2390-5ae4-8e5d-b26be0440425"
   },
   {
-    "name": "Oxidative cleavage of alkene to carboxylic acid (metal-oxo) fixthisName",
+    "name": "Oxidation of aldehyde to carboxylic acid (metal oxide salt)",
     "priority": {
       "priority_class": null,
       "priority": null
