@@ -10,7 +10,7 @@
 
 > **Try the web demo:** [denovochem.com/demos/reaction-atom-mapper](https://denovochem.com/demos/reaction-atom-mapper)
 
-An open-source Python library for atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y). AgaveChem can also be used to classify reactions and is capable of mapping and automatically balancing unbalanced reactions.
+An open-source Python library for classification and atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
 
 **AgaveChem mappers**:
 
@@ -20,7 +20,7 @@ An open-source Python library for atom-to-atom mapping (AAM) of chemical reactio
 
 - **Identical fragment mapper**: Maps fragments appearing structurally unchanged on both sides of the reaction (counter-ions, solvents, spectator reagents).
 
-- **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and ~90% of all product atoms in this dataset.
+- **Neural mapper**: An ALBERT model trained in two phases - unsupervised masked language model (MLM) pre-training followed by supervised fine-tuning with a direct attention alignment objective against generated "ground truth" maps from the other three mappers. The supervised training data for the second phase is generated automatically from ~0.97M filtered Lowe USPTO reactions; the other three mappers fully map ~63% of reactions and ~90% of all product atoms in this dataset. The neural mapper is capable of mapping and automatically balancing unbalanced reactions.
 
 These mappers can be used individually, or called as a pipeline using `map_reactions()`.
 

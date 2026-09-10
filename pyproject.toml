@@ -51,6 +51,7 @@ agave_chem = [
     "datafiles/models/supervised_albert_model/*.safetensors",
     "datafiles/models/supervised_albert_model/*.pt",
     "datafiles/smirks_patterns/*.json",
+    "datafiles/smirks_patterns/*.json.gz",
 ]
 
 [tool.setuptools.dynamic]

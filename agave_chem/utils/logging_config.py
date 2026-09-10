@@ -25,9 +25,14 @@ ERROR_FORMAT = (
 LOG_LEVELS = {
     "development": "DEBUG",
     "testing": "INFO",
-    "production": "WARNING",
-    "default": "WARNING",
+    "production": "ERROR",
+    "default": "ERROR",
 }
+
+# Silence the library by default so importing agave_chem does not produce
+# log output.  Users can call configure_logging() or enable_library_logging()
+# to re-enable logging at the desired level.
+logger.disable("agave_chem")
 
 
 def configure_logging(
@@ -79,6 +84,7 @@ def configure_logging(
     sys.excepthook = handle_exception
 
     logger.remove()
+    logger.enable("agave_chem")
 
     logger.add(
         sys.stderr,
@@ -110,7 +116,7 @@ def configure_logging(
             str(error_log_file),
             rotation=rotation,
             retention=retention,
-            level="WARNING",
+            level="ERROR",
             format=ERROR_FORMAT,
             enqueue=False,
             backtrace=True,
@@ -141,4 +147,9 @@ def enable_library_logging() -> None:
     logger.enable("agave_chem")
 
 
-__all__ = ["configure_logging", "logger"]
+__all__ = [
+    "configure_logging",
+    "disable_library_logging",
+    "enable_library_logging",
+    "logger",
+]
