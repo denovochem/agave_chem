@@ -32,8 +32,8 @@ These mappers can be used individually, or called as a pipeline using `map_react
 | [RXNMapperv2](https://chemrxiv.org/doi/pdf/10.26434/chemrxiv.15005247/v1) | 89.59% |
 | [GraphormerMapper](https://pubs.acs.org/jcisd8/article-abstract/62/14/3307/850123/Bidirectional-Graphormer-for-Reactivity?redirectedFrom=fulltext) | 89.76% |
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
-| AgaveChem (neural only) | 91.87% |
-| AgaveChem (using `map_reactions()`) | 92.72% |
+| AgaveChem (neural only) | 91.52% |
+| AgaveChem (using `map_reactions()`) | 91.74% |
 
 ## Requirements
 
