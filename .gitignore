@@ -52,6 +52,7 @@
 !agave_chem/mappers/mcs/
 !agave_chem/mappers/mcs/__init__.py
 !agave_chem/mappers/mcs/mcs_mapper.py
+!agave_chem/mappers/mcs/parallel_mcs_mapper.py
 
 !agave_chem/mappers/template/
 !agave_chem/mappers/template/__init__.py
@@ -155,6 +156,8 @@
 !tests/integration/uspto_1k_reactions.txt
 !tests/unit/test_*.py
 !tests/integration/test_*.py
+!tests/unit/test_parallel_mcs_mapper_unit.py
+!tests/unit/test_parallel_template_mapper_unit.py
 !tests/unit/test_albert_mapper_unsupervised_unit.py
 !tests/unit/test_albert_mapper_supervised_unit.py
 !tests/unit/test_unsupervised_training_unit.py

@@ -492,7 +492,12 @@ class NeuralReactionMapper(ReactionMapper):
             atom_dict.update(mol_atom_dict)
         return atom_dict, atom_dict_neighbors
 
-    def _get_symmetric_atom_indices(self, mols: List[Chem.Mol]) -> Dict[int, List[int]]:
+    def _get_symmetric_atom_indices(
+        self,
+        mols: List[Chem.Mol],
+        consider_tautomer_symmetry: bool = True,
+        consider_transform_symmetry: bool = True,
+    ) -> Dict[int, List[int]]:
         """
         Identify sets of topologically equivalent atoms across a list of molecules.
 
@@ -506,6 +511,10 @@ class NeuralReactionMapper(ReactionMapper):
 
         Args:
             mols (List[Chem.Mol]): A list of RDKit molecule objects.
+            consider_tautomer_symmetry (bool): If True, atoms that interconvert via
+                tautomerism are treated as symmetrically equivalent.
+            consider_transform_symmetry (bool): If True, apply functional group
+                normalization transforms before computing symmetry classes.
 
         Returns:
             Dict[int, List[int]]: A mapping from each globally-offset atom index
@@ -520,7 +529,11 @@ class NeuralReactionMapper(ReactionMapper):
             if mol_smiles in seen_smiles_and_symmetry_classes:
                 mol_symmetry_classes = seen_smiles_and_symmetry_classes[mol_smiles]
             else:
-                raw_classes = get_symmetry_class_from_mol(mol)
+                raw_classes = get_symmetry_class_from_mol(
+                    mol,
+                    consider_tautomers=consider_tautomer_symmetry,
+                    consider_transforms=consider_transform_symmetry,
+                )
                 mol_symmetry_classes = [ele + (i + 1) * 1000 for ele in raw_classes]
                 seen_smiles_and_symmetry_classes[mol_smiles] = mol_symmetry_classes
 
@@ -704,6 +717,8 @@ class NeuralReactionMapper(ReactionMapper):
         one_to_one_correspondence: bool = True,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
+        consider_tautomer_symmetry: bool = True,
+        consider_transform_symmetry: bool = True,
     ) -> Tuple[str, float, Dict[str, int]]:
         """
         Assign atom-to-atom map numbers to a reaction SMILES using a pre-computed
@@ -786,8 +801,16 @@ class NeuralReactionMapper(ReactionMapper):
         orig_reactants_to_products_attn = reactants_to_products_attn.copy()
         orig_products_to_reactants_attn = products_to_reactants_attn.copy()
 
-        reactants_symmetric_indices = self._get_symmetric_atom_indices(reactants_mols)
-        products_symmetric_indices = self._get_symmetric_atom_indices(products_mols)
+        reactants_symmetric_indices = self._get_symmetric_atom_indices(
+            reactants_mols,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
+        )
+        products_symmetric_indices = self._get_symmetric_atom_indices(
+            products_mols,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
+        )
 
         orig_attn = self._symmetry_aware_confidence(
             orig_products_to_reactants_attn,
@@ -1045,6 +1068,8 @@ class NeuralReactionMapper(ReactionMapper):
         # canonicalize_reaction_smiles: bool = True,
         reactants_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
         products_atom_idx_to_orig_mapping: Optional[Dict[int, int]] = None,
+        consider_tautomer_symmetry: bool = True,
+        consider_transform_symmetry: bool = True,
     ) -> Tuple[ReactionMapperResult, Optional[str]]:
         """
         Assign atom mappings from a pre-computed log-attention matrix and token list.
@@ -1126,6 +1151,8 @@ class NeuralReactionMapper(ReactionMapper):
             one_to_one_correspondence=one_to_one_correspondence,
             reactants_atom_idx_to_orig_mapping=reactants_atom_idx_to_orig_mapping,
             products_atom_idx_to_orig_mapping=products_atom_idx_to_orig_mapping,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
         )
 
         expanded_rxn_smiles: Optional[str] = None
@@ -1271,6 +1298,8 @@ class NeuralReactionMapper(ReactionMapper):
         rxn_smiles: Union[str, ReactionInput],
         one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
+        consider_tautomer_symmetry: bool = True,
+        consider_transform_symmetry: bool = True,
     ) -> ReactionMapperResult:
         """
         Map a single reaction SMILES string using the neural mapper.
@@ -1296,6 +1325,8 @@ class NeuralReactionMapper(ReactionMapper):
             cast(Union[List[str], List[ReactionInput]], [rxn_smiles]),
             one_to_one_correspondence=one_to_one_correspondence,
             start_from_partial_map=start_from_partial_map,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
         )[0]
 
     def map_reactions(
@@ -1304,6 +1335,8 @@ class NeuralReactionMapper(ReactionMapper):
         one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
         start_from_partial_map: bool = False,
         batch_size: int = 32,
+        consider_tautomer_symmetry: bool = True,
+        consider_transform_symmetry: bool = True,
     ) -> List[ReactionMapperResult]:
         """
         Map a list of reaction SMILES strings using batched neural network inference.
@@ -1330,6 +1363,13 @@ class NeuralReactionMapper(ReactionMapper):
             start_from_partial_map (bool): If True, extracts and preserves existing atom
                 map numbers before remapping.
             batch_size (int): Number of reactions to process in a single forward pass.
+            consider_tautomer_symmetry (bool): If True, atoms that interconvert via
+                tautomerism are treated as symmetrically equivalent during
+                post-processing. Disabling this reduces CPU-bound tautomer
+                enumeration at the cost of less accurate symmetry handling.
+            consider_transform_symmetry (bool): If True, apply functional group
+                normalization transforms before computing symmetry classes.
+                Disabling this skips the normalization step for speed.
 
         Returns:
             List[ReactionMapperResult]: A list of mapping results, one per input
@@ -1435,6 +1475,8 @@ class NeuralReactionMapper(ReactionMapper):
                     one_to_one_correspondence=o2o,
                     reactants_atom_idx_to_orig_mapping=reactants_map,
                     products_atom_idx_to_orig_mapping=products_map,
+                    consider_tautomer_symmetry=consider_tautomer_symmetry,
+                    consider_transform_symmetry=consider_transform_symmetry,
                 )
                 results[orig_idx] = result
                 if expanded_rxn_smiles is not None:
@@ -1466,6 +1508,8 @@ class NeuralReactionMapper(ReactionMapper):
                     attn=attn,
                     tokens=tokens,
                     one_to_one_correspondence=True,
+                    consider_tautomer_symmetry=consider_tautomer_symmetry,
+                    consider_transform_symmetry=consider_transform_symmetry,
                 )
                 if retry_result.selected_mapping:
                     retry_result.original_smiles = orig_rxn_smiles

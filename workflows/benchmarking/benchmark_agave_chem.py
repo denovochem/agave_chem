@@ -171,7 +171,7 @@ def _benchmark_pipeline(
         batch_gold = gold_reactions[batch_start : batch_start + batch_size]
 
         try:
-            results = map_reactions(batch_unmapped, batch_size=batch_size)
+            results = map_reactions(batch_unmapped)
         except Exception as e:
             print(f"  Batch {batch_start} failed: {e}")
             results = []

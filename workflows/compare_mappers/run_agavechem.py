@@ -70,7 +70,7 @@ def main() -> None:
             batch = reactions[batch_start : batch_start + args.batch_size]
             t0 = time.time()
             try:
-                results = pipeline_map_reactions(batch, batch_size=args.batch_size)
+                results = pipeline_map_reactions(batch)
             except Exception as e:
                 print(f"  Batch {batch_start} failed: {e}")
                 results = []

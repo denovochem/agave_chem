@@ -21,8 +21,7 @@ from agave_chem.utils.reaction_balancing import (
 def _validate_and_normalize_input(
     reaction_list: Union[str, List[str]],
     mappers_list: Optional[List[ReactionMapper]],
-    batch_size: int,
-) -> Tuple[List[str], List[ReactionMapper], int]:
+) -> Tuple[List[str], List[ReactionMapper]]:
     """
     Validate and normalize inputs for reaction mapping.
 
@@ -34,18 +33,15 @@ def _validate_and_normalize_input(
             a list of reaction SMILES strings.
         mappers_list (Optional[List[ReactionMapper]]): A list of ReactionMapper
             instances, or None.
-        batch_size (int): Number of reactions to process per batch.
 
     Returns:
-        Tuple[List[str], List[ReactionMapper], int]: The normalized reaction list
-            (deduplicated, order-preserved), the mappers list, and the batch size.
+        Tuple[List[str], List[ReactionMapper]]: The normalized reaction list
+            (deduplicated, order-preserved) and the mappers list.
 
     Raises:
         ValueError: If reaction_list is empty, contains non-strings, or if
             mappers_list is empty or has duplicate mapper names.
-        TypeError: If a mapper is not a ReactionMapper instance, or if
-            batch_size is not an integer.
-        ValueError: If batch_size is not between 1 and 1000.
+        TypeError: If a mapper is not a ReactionMapper instance.
     """
     if isinstance(reaction_list, str):
         reaction_list = [reaction_list]
@@ -83,12 +79,7 @@ def _validate_and_normalize_input(
             raise ValueError(f"Duplicate mapper name: {mapper.mapper_name}.")
         seen_mappers.append(mapper.mapper_name)
 
-    if not isinstance(batch_size, int):
-        raise TypeError("Invalid input: batch_size must be an integer.")
-    if batch_size <= 0 or batch_size > 1000:
-        raise ValueError("Invalid input: batch_size must be an integer between 1-1000.")
-
-    return reaction_list, mappers_list, batch_size
+    return reaction_list, mappers_list
 
 
 @lru_cache(maxsize=1)
@@ -113,10 +104,39 @@ def _get_default_mappers() -> Tuple[ReactionMapper, ...]:
     )
 
 
+def _get_default_mappers_parallel(num_processes: int) -> Tuple[ReactionMapper, ...]:
+    """
+    Create the default set of reaction mappers with parallel template mapping.
+
+    Returns a tuple of ReactionMapper instances (neural + parallel template)
+    used when no explicit mappers_list is provided to ``map_reactions`` and
+    ``num_processes > 1``.  The neural mapper remains serial because it is
+    GPU-bound.
+
+    Args:
+        num_processes (int): Number of worker processes for the parallel
+            template mapper.
+
+    Returns:
+        Tuple[ReactionMapper, ...]: A tuple containing the default
+            NeuralReactionMapper and ParallelTemplateReactionMapper instances.
+    """
+    from agave_chem.mappers.neural.neural_mapper import NeuralReactionMapper
+    from agave_chem.mappers.template.parallel_template_mapper import (
+        ParallelTemplateReactionMapper,
+    )
+
+    return (
+        NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1),
+        ParallelTemplateReactionMapper("template_parallel", workers=num_processes),
+    )
+
+
 def _prepare_reaction_inputs(
     reaction_list: List[str],
     identical_fragment_mapper: IdenticalFragmentMapper,
     mcs_mapper: Optional[MCSReactionMapper] = None,
+    num_processes: int = 1,
 ) -> Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
     """
     Pre-compute ``ReactionInput`` objects for a batch of reactions.
@@ -132,34 +152,53 @@ def _prepare_reaction_inputs(
         mcs_mapper (Optional[MCSReactionMapper]): If provided, used to compute
             a partial MCS mapping for each reaction.  If None, MCS and island
             detection are skipped.
+        num_processes (int): When > 1 and ``mcs_mapper`` is not None,
+            parallelize MCS mapping across worker processes.
 
     Returns:
         Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
             - List of ``ReactionInput`` objects, one per input reaction.
             - Per-reaction lists of identical-fragment mapping pairs for
               later re-addition.
+
     """
     stripped_rxns, identical_fragments_mapping_list = (
         identical_fragment_mapper.create_identical_fragments_mapping_list(reaction_list)
     )
 
+    # Run MCS mapping (serial or parallel) and build ReactionInput objects.
+    if mcs_mapper is not None:
+        if num_processes > 1:
+            from agave_chem.mappers.mcs.parallel_mcs_mapper import (
+                ParallelMCSReactionMapper,
+            )
+
+            parallel_mcs = ParallelMCSReactionMapper(
+                "mcs_preprocess_parallel", workers=num_processes
+            )
+            mcs_results: List[Optional[ReactionMapperResult]] = list(
+                parallel_mcs.map_reactions(stripped_rxns)
+            )
+        else:
+            mcs_results = [mcs_mapper.map_reaction(s) for s in stripped_rxns]
+    else:
+        mcs_results = [None] * len(stripped_rxns)
+
     reaction_inputs: List[ReactionInput] = []
-    for original_smiles, stripped_smiles, identical_fragments in zip(
-        reaction_list, stripped_rxns, identical_fragments_mapping_list
+    for original_smiles, stripped_smiles, identical_fragments, mcs_result in zip(
+        reaction_list, stripped_rxns, identical_fragments_mapping_list, mcs_results
     ):
         mcs_mapped_smiles: Optional[str] = None
         islands: Dict[int, Set[int]] = {}
 
-        if mcs_mapper is not None:
-            mcs_result = mcs_mapper.map_reaction(stripped_smiles)
-            if mcs_result.selected_mapping:
-                mcs_mapped_smiles = mcs_result.selected_mapping
-                try:
-                    islands = compute_unmapped_product_atom_islands(
-                        mcs_mapped_smiles.split(">>")[1]
-                    )
-                except ValueError:
-                    islands = {}
+        if mcs_result is not None and mcs_result.selected_mapping:
+            mcs_mapped_smiles = mcs_result.selected_mapping
+            try:
+                islands = compute_unmapped_product_atom_islands(
+                    mcs_mapped_smiles.split(">>")[1]
+                )
+            except ValueError:
+                islands = {}
 
         o2o = determine_one_to_one_correspondence(stripped_smiles, islands)
 
@@ -302,13 +341,12 @@ def _extract_confidence(
 def map_reactions_using_mappers(
     reaction_list: Union[str, List[str]],
     mappers_list: List[ReactionMapper],
-    batch_size: int,
     return_detailed_mapper_info: bool = False,
+    num_processes: int = 1,
 ) -> List[AgaveChemMapperResult]:
     """
-    Run multiple reaction mappers over a list of reactions with batch processing.
+    Run multiple reaction mappers over a list of reactions.
 
-    For each mapper, reactions are processed in batches of ``batch_size``.
     Identical fragments are stripped before mapping and re-added afterward.
     The final mapping for each reaction is the last non-empty result across all
     mappers (in order).
@@ -318,12 +356,15 @@ def map_reactions_using_mappers(
             a list of reaction SMILES strings.
         mappers_list (List[ReactionMapper]): A list of ReactionMapper instances
             to run.  Must be non-empty with unique mapper names.
-        batch_size (int): Number of reactions to process per batch (1-1000).
         return_detailed_mapper_info (bool): If True, populate
             ``AgaveChemMapperResult.mapper_results`` with per-mapper
             ``ReactionMapperResult`` objects (including template classification
             metadata).  If False (default), ``mapper_results`` is left empty to
             reduce result size for callers that only need ``final_mapping``.
+        num_processes (int): Number of worker processes for parallel execution.
+            When > 1, parallelizes MCS pre-processing in
+            ``_prepare_reaction_inputs``.  Parallel-capable mappers in
+            ``mappers_list`` use their own worker pools independently.
 
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
@@ -338,8 +379,8 @@ def map_reactions_using_mappers(
             ``return_detailed_mapper_info`` is True, ``mapper_results`` also
             contains per-mapper ``ReactionMapperResult`` objects.
     """
-    reaction_list, mappers_list, batch_size = _validate_and_normalize_input(
-        reaction_list, mappers_list, batch_size
+    reaction_list, mappers_list = _validate_and_normalize_input(
+        reaction_list, mappers_list
     )
 
     all_mapper_results_by_reaction: List[List[ReactionMapperResult]] = [
@@ -352,28 +393,24 @@ def map_reactions_using_mappers(
     )
     mcs_mapper = MCSReactionMapper("mcs_orchestrator", 0) if needs_mcs else None
 
-    # Pre-compute ReactionInput objects once per batch (not per mapper)
-    # to avoid duplicate MCS and identical-fragment work.
-    batched_inputs: List[
-        Tuple[List[ReactionInput], List[List[Tuple[str, str]]], int]
-    ] = []
-    for i in range(0, len(reaction_list), batch_size):
-        chunk = reaction_list[i : i + batch_size]
-        reaction_inputs, identical_fragments_mapping_list = _prepare_reaction_inputs(
-            chunk, identical_fragment_mapper, mcs_mapper
-        )
-        batched_inputs.append((reaction_inputs, identical_fragments_mapping_list, i))
+    # Pre-compute ReactionInput objects once (not per mapper) to avoid
+    # duplicate MCS and identical-fragment work.
+    reaction_inputs, identical_fragments_mapping_list = _prepare_reaction_inputs(
+        reaction_list,
+        identical_fragment_mapper,
+        mcs_mapper,
+        num_processes=num_processes,
+    )
 
     for mapper in mappers_list:
-        for reaction_inputs, identical_fragments_mapping_list, i in batched_inputs:
-            out = mapper.map_reactions(reaction_inputs)
-            _resolve_identical_fragments(
-                out,
-                identical_fragments_mapping_list,
-                identical_fragment_mapper,
-                i,
-                all_mapper_results_by_reaction,
-            )
+        out = mapper.map_reactions(reaction_inputs)
+        _resolve_identical_fragments(
+            out,
+            identical_fragments_mapping_list,
+            identical_fragment_mapper,
+            0,
+            all_mapper_results_by_reaction,
+        )
 
     results: List[AgaveChemMapperResult] = []
     for original_reaction, mapper_results in zip(
@@ -412,8 +449,8 @@ def map_reactions(
     reaction_list: Union[str, List[str]],
     mappers_list: Optional[List[ReactionMapper]] = None,
     mapping_selection_mode: Union[str, Callable] = "weighted",
-    batch_size: int = 500,
     return_detailed_mapper_info: bool = False,
+    num_processes: int = 1,
 ) -> List[AgaveChemMapperResult]:
     """
     Map atom-to-atom correspondences for a list of reaction SMILES strings.
@@ -432,13 +469,15 @@ def map_reactions(
         mapping_selection_mode (Union[str, Callable]): Strategy for selecting the
             final mapping across mappers.  Currently validated but not yet
             implemented; reserved for future use.
-        batch_size (int): Number of reactions to process per batch (1-1000).
-            Defaults to 500.
         return_detailed_mapper_info (bool): If True, populate
             ``AgaveChemMapperResult.mapper_results`` with per-mapper
             ``ReactionMapperResult`` objects (including template classification
             metadata).  If False (default), ``mapper_results`` is left empty to
             reduce result size for callers that only need ``final_mapping``.
+        num_processes (int): Number of worker processes for parallel execution.
+            When 1 (default), all mappers run serially.  When > 1, MCS
+            pre-processing is parallelized and default mappers (when
+            ``mappers_list`` is None) are constructed as parallel variants.
 
     Returns:
         List[AgaveChemMapperResult]: One result per input reaction, in the same
@@ -456,14 +495,21 @@ def map_reactions(
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
             mappers_list is empty or has duplicate mapper names, if
-            mapping_selection_mode is not a string or callable, or if batch_size
-            is out of range.
+            mapping_selection_mode is not a string or callable, or if
+            num_processes is less than 1.
         TypeError: If a mapper is not a ReactionMapper instance, if
-            mapping_selection_mode is not a string or callable, or if batch_size
-            is not an integer.
+            mapping_selection_mode is not a string or callable.
     """
+    if not isinstance(num_processes, int) or num_processes < 1:
+        raise ValueError(
+            "Invalid input: num_processes must be a positive integer (>= 1)."
+        )
+
     if not mappers_list:
-        mappers_list = list(_get_default_mappers())
+        if num_processes > 1:
+            mappers_list = list(_get_default_mappers_parallel(num_processes))
+        else:
+            mappers_list = list(_get_default_mappers())
 
     if not isinstance(mapping_selection_mode, str) and not callable(
         mapping_selection_mode
@@ -475,6 +521,6 @@ def map_reactions(
     return map_reactions_using_mappers(
         reaction_list,
         mappers_list,
-        batch_size,
         return_detailed_mapper_info=return_detailed_mapper_info,
+        num_processes=num_processes,
     )
