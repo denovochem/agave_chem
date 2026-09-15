@@ -155,7 +155,11 @@ class AgaveChemMapperResult(BaseModel):
             mapper.  Only populated when the caller passes
             ``return_detailed_mapper_info=True`` to ``map_reactions`` or
             ``map_reactions_using_mappers``; otherwise left empty to reduce
-            result size.
+            result size.  When MCS pre-processing is run (i.e. at least one
+            neural or template mapper is present) and no explicit MCS mapper is
+            in ``mappers_list``, the MCS ``ReactionMapperResult`` (with
+            ``mapping_type="mcs"``) is prepended to this list for informational
+            purposes; it does not affect ``final_mapping``.
         confidence (Optional[float]): Confidence score from the neural mapper
             for the ``final_mapping``, computed as the product of per-atom
             assignment probabilities.  ``None`` when no neural mapper is used

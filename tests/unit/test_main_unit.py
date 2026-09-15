@@ -205,6 +205,174 @@ class TestMapReactionsUsingMappers:
         assert results[0].original_reaction == "CC>>CC"
 
 
+class TestMcsInDetailedMapperInfo:
+    """Tests for MCS result injection into mapper_results."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_identical_fragment_mapper(self):
+        """Replace IdenticalFragmentMapper with a pass-through to avoid SMILES parsing."""
+        with patch(
+            "agave_chem.main.IdenticalFragmentMapper",
+            _PassThroughIdenticalFragmentMapper,
+        ):
+            yield
+
+    def test_mcs_included_when_detailed_info_true(self):
+        """MCS result is prepended to mapper_results when return_detailed_mapper_info=True
+        and MCS was run as pre-processing (neural mapper present, no explicit MCS mapper)."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+        assert results[0].mapper_results[1].mapping_type == "neural"
+
+    def test_mcs_not_included_when_detailed_info_false(self):
+        """MCS result is not included when return_detailed_mapper_info=False."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(["CC>>CC"], [neural])
+        assert results[0].mapper_results == []
+
+    def test_mcs_not_included_when_explicit_mcs_mapper(self):
+        """MCS result is not prepended when user explicitly passes an MCS mapper,
+        since that result is already in mapper_results."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        mcs_mapper = _StubMapper(
+            mapper_name="mcs_explicit", mapper_type="mcs", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [mcs_mapper], return_detailed_mapper_info=True
+            )
+        # Only the explicit MCS mapper result, no prepended pre-processing MCS
+        assert len(results[0].mapper_results) == 1
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+
+    def test_mcs_not_included_when_mcs_not_run(self):
+        """No MCS result when needs_mcs is False (no neural/template mappers)."""
+        stub = _StubMapper(mapper_name="stub", mapper_type="stub", mappings=["map1"])
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [None],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [stub], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 1
+        assert results[0].mapper_results[0].mapping_type == "stub"
+
+    def test_mcs_does_not_affect_final_mapping(self):
+        """final_mapping stays empty when neural/template both return empty,
+        even though MCS has a non-empty mapping."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(mapper_name="neural", mapper_type="neural", mappings=[""])
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert results[0].final_mapping == ""
+        # MCS is still in mapper_results for informational purposes
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+
+    def test_mcs_result_with_empty_mapping_still_included(self):
+        """MCS result with empty selected_mapping is still included in mapper_results."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == ""
+
+
 # ---------------------------------------------------------------------------
 # map_reactions
 # ---------------------------------------------------------------------------

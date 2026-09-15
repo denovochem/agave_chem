@@ -142,7 +142,11 @@ def _prepare_reaction_inputs(
     identical_fragment_mapper: IdenticalFragmentMapper,
     mcs_mapper: Optional[MCSReactionMapper] = None,
     num_processes: int = 1,
-) -> Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
+) -> Tuple[
+    List[ReactionInput],
+    List[List[Tuple[str, str]]],
+    List[Optional[ReactionMapperResult]],
+]:
     """
     Pre-compute ``ReactionInput`` objects for a batch of reactions.
 
@@ -161,11 +165,13 @@ def _prepare_reaction_inputs(
             parallelize MCS mapping across worker processes.
 
     Returns:
-        Tuple[List[ReactionInput], List[List[Tuple[str, str]]]]:
+        Tuple[List[ReactionInput], List[List[Tuple[str, str]]],
+            List[Optional[ReactionMapperResult]]]:
             - List of ``ReactionInput`` objects, one per input reaction.
             - Per-reaction lists of identical-fragment mapping pairs for
               later re-addition.
-
+            - Per-reaction MCS ``ReactionMapperResult`` objects (or ``None``
+              when MCS was not run).
     """
     stripped_rxns, identical_fragments_mapping_list = (
         identical_fragment_mapper.create_identical_fragments_mapping_list(reaction_list)
@@ -218,7 +224,7 @@ def _prepare_reaction_inputs(
             )
         )
 
-    return reaction_inputs, identical_fragments_mapping_list
+    return reaction_inputs, identical_fragments_mapping_list, mcs_results
 
 
 def _resolve_identical_fragments(
@@ -382,7 +388,11 @@ def map_reactions_using_mappers(
             ``classification_info`` are populated when a template mapper matches
             ``final_mapping``; empty otherwise.  When
             ``return_detailed_mapper_info`` is True, ``mapper_results`` also
-            contains per-mapper ``ReactionMapperResult`` objects.
+            contains per-mapper ``ReactionMapperResult`` objects.  When MCS
+            pre-processing is run (i.e. at least one neural or template mapper
+            is present) and no explicit MCS mapper is in ``mappers_list``, the
+            MCS ``ReactionMapperResult`` is prepended to ``mapper_results`` for
+            informational purposes; it does not affect ``final_mapping``.
     """
     reaction_list, mappers_list = _validate_and_normalize_input(
         reaction_list, mappers_list
@@ -400,11 +410,20 @@ def map_reactions_using_mappers(
 
     # Pre-compute ReactionInput objects once (not per mapper) to avoid
     # duplicate MCS and identical-fragment work.
-    reaction_inputs, identical_fragments_mapping_list = _prepare_reaction_inputs(
-        reaction_list,
-        identical_fragment_mapper,
-        mcs_mapper,
-        num_processes=num_processes,
+    reaction_inputs, identical_fragments_mapping_list, mcs_results = (
+        _prepare_reaction_inputs(
+            reaction_list,
+            identical_fragment_mapper,
+            mcs_mapper,
+            num_processes=num_processes,
+        )
+    )
+
+    # MCS results are only injected into mapper_results when the user did not
+    # explicitly pass an MCS mapper — the MCS was run as pre-processing for
+    # neural/template mappers, and the user may want to inspect it.
+    has_explicit_mcs_mapper = any(
+        mapper._mapper_type == "mcs" for mapper in mappers_list
     )
 
     for mapper in mappers_list:
@@ -418,8 +437,8 @@ def map_reactions_using_mappers(
         )
 
     results: List[AgaveChemMapperResult] = []
-    for original_reaction, mapper_results in zip(
-        reaction_list, all_mapper_results_by_reaction
+    for reaction_idx, (original_reaction, mapper_results) in enumerate(
+        zip(reaction_list, all_mapper_results_by_reaction)
     ):
         final_mapping = ""
         for mapper_result in reversed(mapper_results):
@@ -444,7 +463,23 @@ def map_reactions_using_mappers(
         if confidence is not None:
             result_kwargs["confidence"] = confidence
         if return_detailed_mapper_info:
-            result_kwargs["mapper_results"] = mapper_results
+            detailed_results = list(mapper_results)
+            # Prepend MCS result for informational purposes when MCS was run
+            # as pre-processing (not when the user explicitly passed an MCS
+            # mapper, since that result is already in mapper_results).
+            if not has_explicit_mcs_mapper:
+                mcs_result = mcs_results[reaction_idx]
+                if mcs_result is not None:
+                    if (
+                        mcs_result.selected_mapping
+                        and identical_fragments_mapping_list[reaction_idx]
+                    ):
+                        mcs_result.selected_mapping = identical_fragment_mapper.resolve_identical_fragments_mapping_list(
+                            [mcs_result.selected_mapping],
+                            [identical_fragments_mapping_list[reaction_idx]],
+                        )[0]
+                    detailed_results = [mcs_result] + detailed_results
+            result_kwargs["mapper_results"] = detailed_results
         results.append(AgaveChemMapperResult(**result_kwargs))
 
     return results
@@ -495,7 +530,11 @@ def map_reactions(
             ``classification_info`` are populated when a template mapper matches
             ``final_mapping``; empty otherwise.  When
             ``return_detailed_mapper_info`` is True, ``mapper_results`` also
-            contains per-mapper ``ReactionMapperResult`` objects.
+            contains per-mapper ``ReactionMapperResult`` objects.  When MCS
+            pre-processing is run (i.e. at least one neural or template mapper
+            is present) and no explicit MCS mapper is in ``mappers_list``, the
+            MCS ``ReactionMapperResult`` is prepended to ``mapper_results`` for
+            informational purposes; it does not affect ``final_mapping``.
 
     Raises:
         ValueError: If reaction_list is empty or contains non-strings, if
