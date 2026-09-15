@@ -112,6 +112,149 @@ class TestMethodSignatures:
         with pytest.raises(TypeError):
             mapper.map_reactions(["CC>>CC"], used_atom_divisor=2)
 
+    def test_map_reaction_does_not_accept_start_from_partial_map(self, mapper):
+        with pytest.raises(TypeError):
+            mapper.map_reaction("CC>>CC", start_from_partial_map=True)
+
+    def test_map_reactions_does_not_accept_start_from_partial_map(self, mapper):
+        with pytest.raises(TypeError):
+            mapper.map_reactions(["CC>>CC"], start_from_partial_map=True)
+
+
+class TestNumProcesses:
+    """Verify num_processes constructor parameter and MCS batching behavior."""
+
+    def test_default_num_processes(self, mapper):
+        assert mapper._num_processes == 1
+
+    def test_custom_num_processes(self):
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            m = NeuralReactionMapper(mapper_name="test", num_processes=4)
+            assert m._num_processes == 4
+
+    @pytest.fixture
+    def _mock_inference(self, mapper):
+        """Mock inference and mapping to avoid needing the real model."""
+        from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            result = ReactionMapperResult(
+                original_smiles=rxn_smiles,
+                selected_mapping=rxn_smiles,
+                possible_mappings={},
+                mapping_type="neural",
+                mapping_score=1.0,
+                additional_info=[{}],
+            )
+            return result, None
+
+        with (
+            patch.object(
+                mapper, "_get_attention_matrices_batch", side_effect=_fake_batch
+            ),
+            patch.object(mapper, "_map_from_attention", side_effect=_fake_map),
+        ):
+            yield
+
+    def test_explicit_o2o_skips_mcs(self, mapper, _mock_inference):
+        """When one_to_one_correspondence is True/False, MCS is never called."""
+        with (
+            patch.object(mapper, "_resolve_one_to_one_correspondence") as mock_resolve,
+            patch.object(mapper, "_compute_o2o_from_mcs_result") as mock_compute,
+        ):
+            mapper.map_reactions(["CC>>CC", "CCC>>CCC"], one_to_one_correspondence=True)
+            mock_resolve.assert_not_called()
+            mock_compute.assert_not_called()
+
+    def test_reaction_input_skips_mcs(self, mapper, _mock_inference):
+        """When ReactionInput is provided with o2o, MCS is never called."""
+        from agave_chem.mappers.types import ReactionInput
+
+        ri = ReactionInput(
+            stripped_smiles="CC>>CC",
+            one_to_one_correspondence=True,
+        )
+        with (
+            patch.object(mapper, "_resolve_one_to_one_correspondence") as mock_resolve,
+            patch.object(mapper, "_compute_o2o_from_mcs_result") as mock_compute,
+        ):
+            mapper.map_reactions([ri])
+            mock_resolve.assert_not_called()
+            mock_compute.assert_not_called()
+
+    def test_serial_mcs_matches_parallel_mcs(self):
+        """Serial and parallel MCS resolution produce identical o2o flags."""
+        from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+        rxns = [
+            "CCCCCO>>CCCCCO",
+            "CC(=O)Oc1ccccc1OC(C)=O.O=[N+]([O-])O>>O=[N+]([O-])c1cc(O)c(O)c([N+](=O)[O-])c1",
+            "CCO>>CCO",
+        ]
+
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            result = ReactionMapperResult(
+                original_smiles=rxn_smiles,
+                selected_mapping=rxn_smiles,
+                possible_mappings={},
+                mapping_type="neural",
+                mapping_score=1.0,
+                additional_info=[{}],
+            )
+            return result, None
+
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+
+            serial_mapper = NeuralReactionMapper(mapper_name="serial", num_processes=1)
+            parallel_mapper = NeuralReactionMapper(
+                mapper_name="parallel", num_processes=2
+            )
+
+            with (
+                patch.object(
+                    serial_mapper,
+                    "_get_attention_matrices_batch",
+                    side_effect=_fake_batch,
+                ),
+                patch.object(
+                    serial_mapper, "_map_from_attention", side_effect=_fake_map
+                ),
+                patch.object(
+                    parallel_mapper,
+                    "_get_attention_matrices_batch",
+                    side_effect=_fake_batch,
+                ),
+                patch.object(
+                    parallel_mapper, "_map_from_attention", side_effect=_fake_map
+                ),
+            ):
+                serial_results = serial_mapper.map_reactions(rxns)
+                parallel_results = parallel_mapper.map_reactions(rxns)
+
+            for s, p in zip(serial_results, parallel_results):
+                assert s.original_smiles == p.original_smiles
+                assert s.selected_mapping == p.selected_mapping
+
+    def test_auto_o2o_calls_mcs(self, mapper, _mock_inference):
+        """When o2o is 'auto' and no ReactionInput, MCS is called."""
+        with patch.object(
+            mapper, "_compute_o2o_from_mcs_result", wraps=mapper._compute_o2o_from_mcs_result
+        ) as mock_compute:
+            mapper.map_reactions(["CC>>CC", "CCC>>CCC"])
+            assert mock_compute.call_count == 2
+
 
 class TestMapReactionInvalidInput:
     """Verify that invalid input returns a default result."""

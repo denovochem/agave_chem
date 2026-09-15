@@ -106,16 +106,17 @@ def _get_default_mappers() -> Tuple[ReactionMapper, ...]:
 
 def _get_default_mappers_parallel(num_processes: int) -> Tuple[ReactionMapper, ...]:
     """
-    Create the default set of reaction mappers with parallel template mapping.
+    Create the default set of reaction mappers with parallel mapping.
 
     Returns a tuple of ReactionMapper instances (neural + parallel template)
     used when no explicit mappers_list is provided to ``map_reactions`` and
-    ``num_processes > 1``.  The neural mapper remains serial because it is
-    GPU-bound.
+    ``num_processes > 1``.  The neural mapper receives ``num_processes`` to
+    parallelize MCS pre-processing for standalone usage; when used via
+    ``map_reactions_using_mappers``, ``ReactionInput`` objects carry
+    pre-computed o2o flags so the parallel MCS path is not triggered.
 
     Args:
-        num_processes (int): Number of worker processes for the parallel
-            template mapper.
+        num_processes (int): Number of worker processes for parallel mappers.
 
     Returns:
         Tuple[ReactionMapper, ...]: A tuple containing the default
@@ -127,7 +128,11 @@ def _get_default_mappers_parallel(num_processes: int) -> Tuple[ReactionMapper, .
     )
 
     return (
-        NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1),
+        NeuralReactionMapper(
+            mapper_name="neural_mapper",
+            mapper_weight=1,
+            num_processes=num_processes,
+        ),
         ParallelTemplateReactionMapper("template_parallel", workers=num_processes),
     )
 

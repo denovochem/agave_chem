@@ -96,6 +96,7 @@ class NeuralReactionMapper(ReactionMapper):
         adjacent_atom_multiplier: float = 10,
         identical_adjacent_atom_multiplier: float = 10,
         used_atom_divisor: float = 10,
+        num_processes: int = 1,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -116,6 +117,11 @@ class NeuralReactionMapper(ReactionMapper):
                 reactant atoms that are already mapped when
                 one_to_one_correspondence is False. Lower values increase the
                 likelihood of detecting oversubscription.
+            num_processes (int): Number of worker processes for parallel MCS
+                pre-processing when ``one_to_one_correspondence`` is ``"auto"``
+                and no ``ReactionInput`` is provided. When 1 (default), MCS runs
+                serially. When > 1, MCS is parallelized via
+                ``ParallelMCSReactionMapper``.
         """
 
         super().__init__("neural", mapper_name, mapper_weight)
@@ -141,6 +147,7 @@ class NeuralReactionMapper(ReactionMapper):
 
         self._tokenizer = CustomTokenizer(smiles_token_to_id_dict)
         self._mcs_mapper: Optional[MCSReactionMapper] = None
+        self._num_processes = num_processes
 
     def _encode_atom(self, atom: Chem.Atom) -> List[int]:
         """
@@ -940,67 +947,6 @@ class NeuralReactionMapper(ReactionMapper):
 
         return mapped_rxn_smiles, confidence, oversubscribed_dict
 
-    def get_data_from_partially_mapped_smiles(self, rxn_smiles):
-        reactants_str, products_str = self._split_reaction_components(rxn_smiles)
-        reactants_mols = [
-            Chem.MolFromSmiles(reactant) for reactant in reactants_str.split(".")
-        ]
-        products_mols = [
-            Chem.MolFromSmiles(product) for product in products_str.split(".")
-        ]
-
-        reactants_atom_idx_to_orig_mapping = {}
-        reactants_atom_dict = {}
-        reactants_atom_dict_neighbors = {}
-        reactant_atom_num = 0
-        for mol in reactants_mols:
-            for atom in mol.GetAtoms():
-                reactants_atom_dict[reactant_atom_num] = atom
-                reactants_atom_idx_to_orig_mapping[reactant_atom_num] = (
-                    atom.GetAtomMapNum()
-                )
-                reactants_atom_dict_neighbors[reactant_atom_num] = [
-                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
-                ]
-                atom.SetAtomMapNum(0)
-                reactant_atom_num += 1
-
-        products_atom_idx_to_orig_mapping = {}
-        products_atom_dict = {}
-        products_atom_dict_neighbors = {}
-        product_atom_num = 0
-        for mol in products_mols:
-            for atom in mol.GetAtoms():
-                products_atom_dict[product_atom_num] = atom
-                products_atom_idx_to_orig_mapping[product_atom_num] = (
-                    atom.GetAtomMapNum()
-                )
-                products_atom_dict_neighbors[product_atom_num] = [
-                    neighbor.GetIdx() for neighbor in atom.GetNeighbors()
-                ]
-                atom.SetAtomMapNum(0)
-                product_atom_num += 1
-
-        unmapped_reactants_strings = [
-            Chem.MolToSmiles(reactant, canonical=False) for reactant in reactants_mols
-        ]
-
-        unmapped_products_strings = [
-            Chem.MolToSmiles(product, canonical=False) for product in products_mols
-        ]
-
-        unmapped_rxn = (
-            ".".join(unmapped_reactants_strings)
-            + ">>"
-            + ".".join(unmapped_products_strings)
-        )
-
-        return (
-            unmapped_rxn,
-            reactants_atom_idx_to_orig_mapping,
-            products_atom_idx_to_orig_mapping,
-        )
-
     def _get_attention_matrices_batch(
         self,
         texts: List[str],
@@ -1241,6 +1187,37 @@ class NeuralReactionMapper(ReactionMapper):
 
         return ".".join(kept_frags) + ">>" + products_str
 
+    def _compute_o2o_from_mcs_result(
+        self,
+        rxn_smiles: str,
+        mcs_result: ReactionMapperResult,
+    ) -> bool:
+        """
+        Determine ``one_to_one_correspondence`` from an MCS mapping result.
+
+        Computes unmapped product atom islands from the MCS-mapped SMILES and
+        calls :func:`determine_one_to_one_correspondence`.
+
+        Args:
+            rxn_smiles (str): The original unmapped reaction SMILES.
+            mcs_result (ReactionMapperResult): MCS mapping result. If the
+                mapping is empty, no islands are computed and the default
+                o2o determination is applied.
+
+        Returns:
+            bool: The resolved ``one_to_one_correspondence`` flag.
+        """
+        islands: Dict[int, Set[int]] = {}
+        if mcs_result.selected_mapping:
+            try:
+                islands = compute_unmapped_product_atom_islands(
+                    mcs_result.selected_mapping.split(">>")[1]
+                )
+            except ValueError:
+                islands = {}
+
+        return determine_one_to_one_correspondence(rxn_smiles, islands)
+
     def _resolve_one_to_one_correspondence(
         self,
         rxn_smiles: str,
@@ -1253,8 +1230,7 @@ class NeuralReactionMapper(ReactionMapper):
         When the flag is ``"auto"``, the method uses pre-computed data from
         ``reaction_input`` if available, or lazily instantiates an
         ``MCSReactionMapper`` to compute the MCS mapping and unmapped atom
-        islands, then calls
-        :func:`determine_one_to_one_correspondence`.
+        islands, then delegates to :meth:`_compute_o2o_from_mcs_result`.
 
         Args:
             rxn_smiles (str): The reaction SMILES to evaluate.
@@ -1282,22 +1258,12 @@ class NeuralReactionMapper(ReactionMapper):
             )
 
         mcs_result = self._mcs_mapper.map_reaction(rxn_smiles)
-        islands: Dict[int, Set[int]] = {}
-        if mcs_result.selected_mapping:
-            try:
-                islands = compute_unmapped_product_atom_islands(
-                    mcs_result.selected_mapping.split(">>")[1]
-                )
-            except ValueError:
-                islands = {}
-
-        return determine_one_to_one_correspondence(rxn_smiles, islands)
+        return self._compute_o2o_from_mcs_result(rxn_smiles, mcs_result)
 
     def map_reaction(
         self,
         rxn_smiles: Union[str, ReactionInput],
         one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
-        start_from_partial_map: bool = False,
         consider_tautomer_symmetry: bool = True,
         consider_transform_symmetry: bool = True,
     ) -> ReactionMapperResult:
@@ -1314,8 +1280,6 @@ class NeuralReactionMapper(ReactionMapper):
                 oversubscription for reaction balancing.  If ``"auto"`` (the
                 default), the flag is determined per-reaction using atom-count
                 imbalance and MCS-based island detection.
-            start_from_partial_map (bool): If True, extracts and preserves existing atom
-                map numbers from the input SMILES before remapping.
 
         Returns:
             ReactionMapperResult: Mapping result. On failure returns a result with an
@@ -1324,16 +1288,97 @@ class NeuralReactionMapper(ReactionMapper):
         return self.map_reactions(
             cast(Union[List[str], List[ReactionInput]], [rxn_smiles]),
             one_to_one_correspondence=one_to_one_correspondence,
-            start_from_partial_map=start_from_partial_map,
             consider_tautomer_symmetry=consider_tautomer_symmetry,
             consider_transform_symmetry=consider_transform_symmetry,
         )[0]
+
+    def _run_inference_and_post_process(
+        self,
+        smiles_list: List[str],
+        o2o_flags: List[bool],
+        batch_size: int,
+        consider_tautomer_symmetry: bool,
+        consider_transform_symmetry: bool,
+    ) -> Tuple[List[ReactionMapperResult], List[Optional[str]]]:
+        """
+        Run batched GPU inference and per-reaction CPU post-processing.
+
+        Pre-tokenizes inputs, sorts by sequence length to minimize padding
+        waste, batches through the model, and calls ``_map_from_attention``
+        for each result. Results and expanded SMILES are returned in the
+        same order as the input.
+
+        Args:
+            smiles_list (List[str]): Reaction SMILES strings to process.
+            o2o_flags (List[bool]): Per-reaction ``one_to_one_correspondence``
+                flags, aligned with ``smiles_list``.
+            batch_size (int): Number of reactions per GPU forward pass.
+            consider_tautomer_symmetry (bool): If True, consider tautomer
+                symmetry during post-processing.
+            consider_transform_symmetry (bool): If True, apply functional
+                group normalization transforms during post-processing.
+
+        Returns:
+            Tuple[List[ReactionMapperResult], List[Optional[str]]]:
+                - List of mapping results, one per input, in the same order.
+                - List of expanded reaction SMILES (or None for reactions
+                  without oversubscription), in the same order.
+        """
+        n = len(smiles_list)
+        results: List[ReactionMapperResult] = [
+            ReactionMapperResult(
+                original_smiles="",
+                selected_mapping="",
+                possible_mappings={},
+                mapping_type=self._mapper_type,
+                mapping_score=None,
+                additional_info=[{}],
+            )
+            for _ in range(n)
+        ]
+        expanded_list: List[Optional[str]] = [None] * n
+
+        if n == 0:
+            return results, expanded_list
+
+        # Pre-tokenize (without padding) to get sequence lengths for sorting.
+        # This is cheap (regex tokenization) compared to the model forward pass.
+        pre_enc = self._tokenizer(
+            smiles_list,
+            max_length=self._sequence_max_length,
+            truncation=True,
+            padding=False,
+        )
+        lengths = [len(ids) for ids in pre_enc["input_ids"]]
+        sorted_order = sorted(range(n), key=lambda i: lengths[i])
+
+        for batch_start in range(0, n, batch_size):
+            batch_indices = sorted_order[batch_start : batch_start + batch_size]
+            batch_smiles = [smiles_list[i] for i in batch_indices]
+            attn_tokens_list = self._get_attention_matrices_batch(
+                texts=batch_smiles,
+                max_length=self._sequence_max_length,
+            )
+            for local_idx, orig_idx in enumerate(batch_indices):
+                attn, tokens = attn_tokens_list[local_idx]
+                result, expanded_rxn = self._map_from_attention(
+                    rxn_smiles=smiles_list[orig_idx],
+                    attn=attn,
+                    tokens=tokens,
+                    one_to_one_correspondence=o2o_flags[orig_idx],
+                    consider_tautomer_symmetry=consider_tautomer_symmetry,
+                    consider_transform_symmetry=consider_transform_symmetry,
+                )
+                results[orig_idx] = result
+                if expanded_rxn is not None:
+                    expanded_list[orig_idx] = canonicalize_reaction_smiles(expanded_rxn)
+
+        return results, expanded_list
 
     def map_reactions(
         self,
         reaction_list: Union[List[str], List[ReactionInput]],
         one_to_one_correspondence: Union[bool, Literal["auto"]] = "auto",
-        start_from_partial_map: bool = False,
         batch_size: int = 32,
         consider_tautomer_symmetry: bool = True,
         consider_transform_symmetry: bool = True,
@@ -1360,8 +1405,6 @@ class NeuralReactionMapper(ReactionMapper):
                 using atom-count imbalance and MCS-based island detection.
                 When ``ReactionInput`` objects are provided, their
                 pre-computed ``one_to_one_correspondence`` field is used.
-            start_from_partial_map (bool): If True, extracts and preserves existing atom
-                map numbers before remapping.
             batch_size (int): Number of reactions to process in a single forward pass.
             consider_tautomer_symmetry (bool): If True, atoms that interconvert via
                 tautomerism are treated as symmetrically equivalent during
@@ -1370,6 +1413,13 @@ class NeuralReactionMapper(ReactionMapper):
             consider_transform_symmetry (bool): If True, apply functional group
                 normalization transforms before computing symmetry classes.
                 Disabling this skips the normalization step for speed.
+
+        Note:
+            When ``one_to_one_correspondence`` is ``"auto"`` and raw SMILES
+            strings (not ``ReactionInput``) are provided, MCS pre-processing is
+            run to determine the o2o flag per reaction. When the mapper is
+            constructed with ``num_processes > 1``, this MCS pre-processing is
+            parallelized via ``ParallelMCSReactionMapper``.
 
         Returns:
             List[ReactionMapperResult]: A list of mapping results, one per input
@@ -1392,13 +1442,12 @@ class NeuralReactionMapper(ReactionMapper):
             for _ in reaction_list
         ]
 
-        # Preprocess: validate, resolve one_to_one_correspondence per reaction,
-        # and optionally strip existing partial maps
-        prepared: List[
-            Optional[
-                Tuple[str, bool, Optional[Dict[int, int]], Optional[Dict[int, int]]]
-            ]
-        ] = []
+        # Preprocess: validate and resolve one_to_one_correspondence per reaction.
+        # Reactions needing MCS (o2o=="auto", no ReactionInput) are collected
+        # and batched through MCS in one pass rather than one at a time.
+        prepared: List[Optional[Tuple[str, bool]]] = []
+        mcs_needed: List[Tuple[int, str]] = []  # (prepared_index, rxn_smiles)
+
         for item in reaction_list:
             reaction_input: Optional[ReactionInput] = None
             if isinstance(item, ReactionInput):
@@ -1412,113 +1461,92 @@ class NeuralReactionMapper(ReactionMapper):
                 prepared.append(None)
                 continue
 
-            resolved_o2o = self._resolve_one_to_one_correspondence(
-                rxn_smiles,
-                one_to_one_correspondence,
-                reaction_input,
-            )
+            if one_to_one_correspondence != "auto":
+                prepared.append((rxn_smiles, one_to_one_correspondence))
+            elif reaction_input is not None:
+                prepared.append((rxn_smiles, reaction_input.one_to_one_correspondence))
+            else:
+                mcs_needed.append((len(prepared), rxn_smiles))
+                prepared.append(None)
 
-            reactants_atom_idx_to_orig_mapping = None
-            products_atom_idx_to_orig_mapping = None
-            if start_from_partial_map:
-                (
-                    rxn_smiles,
-                    reactants_atom_idx_to_orig_mapping,
-                    products_atom_idx_to_orig_mapping,
-                ) = self.get_data_from_partially_mapped_smiles(rxn_smiles)
-            prepared.append(
-                (
-                    rxn_smiles,
-                    resolved_o2o,
-                    reactants_atom_idx_to_orig_mapping,
-                    products_atom_idx_to_orig_mapping,
+        # Batch MCS resolution for reactions that need it
+        if mcs_needed:
+            smiles_for_mcs = [s for _, s in mcs_needed]
+            if self._num_processes > 1:
+                from agave_chem.mappers.mcs.parallel_mcs_mapper import (
+                    ParallelMCSReactionMapper,
                 )
-            )
 
-        valid_pairs = [(i, p) for i, p in enumerate(prepared) if p is not None]
-        valid_smiles = [p[0] for _, p in valid_pairs]
+                parallel_mcs = ParallelMCSReactionMapper(
+                    "mcs_neural_auto", workers=self._num_processes
+                )
+                mcs_results = parallel_mcs.map_reactions(smiles_for_mcs)
+            else:
+                if self._mcs_mapper is None:
+                    self._mcs_mapper = MCSReactionMapper(
+                        mapper_name="mcs_auto",
+                        mapper_weight=0,
+                    )
+                mcs_results = [self._mcs_mapper.map_reaction(s) for s in smiles_for_mcs]
+
+            assert len(mcs_results) == len(mcs_needed), (
+                f"MCS returned {len(mcs_results)} results for "
+                f"{len(mcs_needed)} reactions"
+            )
+            for (prep_idx, rxn_smiles), mcs_result in zip(mcs_needed, mcs_results):
+                resolved_o2o = self._compute_o2o_from_mcs_result(rxn_smiles, mcs_result)
+                prepared[prep_idx] = (rxn_smiles, resolved_o2o)
+
+        valid_indices = [i for i, p in enumerate(prepared) if p is not None]
+        valid_smiles = [cast(Tuple[str, bool], prepared[i])[0] for i in valid_indices]
+        valid_o2o = [cast(Tuple[str, bool], prepared[i])[1] for i in valid_indices]
 
         if not valid_smiles:
             return results
 
-        # Pre-tokenize (without padding) to get sequence lengths for sorting.
-        # This is cheap (regex tokenization) compared to the model forward pass.
-        pre_enc = self._tokenizer(
-            valid_smiles,
-            max_length=self._sequence_max_length,
-            truncation=True,
-            padding=False,
+        # First pass: batched inference + post-processing
+        pass_results, expanded_list = self._run_inference_and_post_process(
+            smiles_list=valid_smiles,
+            o2o_flags=valid_o2o,
+            batch_size=batch_size,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
         )
-        lengths = [len(ids) for ids in pre_enc["input_ids"]]
-        sorted_order = sorted(range(len(valid_pairs)), key=lambda i: lengths[i])
-        sorted_pairs = [valid_pairs[i] for i in sorted_order]
-        sorted_smiles = [p[0] for _, p in sorted_pairs]
 
-        # First pass: stream batches through inference and mapping
+        # Place first-pass results and collect oversubscription cases
         oversubscribed_cases: List[Tuple[int, str, str]] = []
-        for batch_start in range(0, len(sorted_smiles), batch_size):
-            batch = sorted_smiles[batch_start : batch_start + batch_size]
-            batch_pairs = sorted_pairs[batch_start : batch_start + batch_size]
-            attn_tokens_list = self._get_attention_matrices_batch(
-                texts=batch,
-                max_length=self._sequence_max_length,
-            )
-            for local_idx, (
-                orig_idx,
-                (rxn_smiles, o2o, reactants_map, products_map),
-            ) in enumerate(batch_pairs):
-                attn, tokens = attn_tokens_list[local_idx]
-                result, expanded_rxn_smiles = self._map_from_attention(
-                    rxn_smiles=rxn_smiles,
-                    attn=attn,
-                    tokens=tokens,
-                    one_to_one_correspondence=o2o,
-                    reactants_atom_idx_to_orig_mapping=reactants_map,
-                    products_atom_idx_to_orig_mapping=products_map,
-                    consider_tautomer_symmetry=consider_tautomer_symmetry,
-                    consider_transform_symmetry=consider_transform_symmetry,
+        for local_idx, orig_idx in enumerate(valid_indices):
+            results[orig_idx] = pass_results[local_idx]
+            expanded = expanded_list[local_idx]
+            if expanded is not None:
+                oversubscribed_cases.append(
+                    (orig_idx, valid_smiles[local_idx], expanded)
                 )
-                results[orig_idx] = result
-                if expanded_rxn_smiles is not None:
-                    expanded_rxn_smiles = canonicalize_reaction_smiles(
-                        expanded_rxn_smiles
-                    )
-                    oversubscribed_cases.append(
-                        (orig_idx, rxn_smiles, expanded_rxn_smiles)
-                    )
 
         if not oversubscribed_cases:
             return results
 
-        # Second pass: stream expanded reactions with one_to_one_correspondence=True
+        # Second pass: retry oversubscribed reactions with one_to_one_correspondence=True
         expanded_smiles = [expanded for _, _, expanded in oversubscribed_cases]
-        for batch_start in range(0, len(expanded_smiles), batch_size):
-            batch = expanded_smiles[batch_start : batch_start + batch_size]
-            batch_cases = oversubscribed_cases[batch_start : batch_start + batch_size]
-            attn_tokens_list = self._get_attention_matrices_batch(
-                texts=batch,
-                max_length=self._sequence_max_length,
-            )
-            for local_idx, (orig_idx, orig_rxn_smiles, expanded_rxn) in enumerate(
-                batch_cases
-            ):
-                attn, tokens = attn_tokens_list[local_idx]
-                retry_result, _ = self._map_from_attention(
-                    rxn_smiles=expanded_rxn,
-                    attn=attn,
-                    tokens=tokens,
-                    one_to_one_correspondence=True,
-                    consider_tautomer_symmetry=consider_tautomer_symmetry,
-                    consider_transform_symmetry=consider_transform_symmetry,
+        retry_o2o = [True] * len(expanded_smiles)
+
+        retry_results, _ = self._run_inference_and_post_process(
+            smiles_list=expanded_smiles,
+            o2o_flags=retry_o2o,
+            batch_size=batch_size,
+            consider_tautomer_symmetry=consider_tautomer_symmetry,
+            consider_transform_symmetry=consider_transform_symmetry,
+        )
+
+        # Merge retry results back, stripping unused reactant fragments
+        for i, (orig_idx, orig_rxn_smiles, _) in enumerate(oversubscribed_cases):
+            retry_result = retry_results[i]
+            if retry_result.selected_mapping:
+                retry_result.original_smiles = orig_rxn_smiles
+                retry_result.selected_mapping = self._strip_unmapped_reactant_fragments(
+                    retry_result.selected_mapping,
+                    orig_rxn_smiles,
                 )
-                if retry_result.selected_mapping:
-                    retry_result.original_smiles = orig_rxn_smiles
-                    retry_result.selected_mapping = (
-                        self._strip_unmapped_reactant_fragments(
-                            retry_result.selected_mapping,
-                            orig_rxn_smiles,
-                        )
-                    )
-                    results[orig_idx] = retry_result
+                results[orig_idx] = retry_result
 
         return results

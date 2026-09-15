@@ -12,6 +12,8 @@
 
 An open-source Python library for classification and atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
 
+> **Note:** This library is under active development and the API may change between releases. Users should pin to a specific version (e.g., `pip install agave-chem==X.Y.Z`) for stability in production environments.
+
 **AgaveChem mappers**:
 
 - **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno) ontology classifications.
