@@ -158,7 +158,9 @@ class TestNumProcesses:
             patch.object(
                 mapper, "_get_attention_matrices_batch", side_effect=_fake_batch
             ),
-            patch.object(mapper, "_map_from_attention", side_effect=_fake_map),
+            patch.object(
+                mapper._post_processor, "map_from_attention", side_effect=_fake_map
+            ),
         ):
             yield
 
@@ -166,7 +168,9 @@ class TestNumProcesses:
         """When one_to_one_correspondence is True/False, MCS is never called."""
         with (
             patch.object(mapper, "_resolve_one_to_one_correspondence") as mock_resolve,
-            patch.object(mapper, "_compute_o2o_from_mcs_result") as mock_compute,
+            patch.object(
+                mapper._post_processor, "compute_o2o_from_mcs_result"
+            ) as mock_compute,
         ):
             mapper.map_reactions(["CC>>CC", "CCC>>CCC"], one_to_one_correspondence=True)
             mock_resolve.assert_not_called()
@@ -182,16 +186,22 @@ class TestNumProcesses:
         )
         with (
             patch.object(mapper, "_resolve_one_to_one_correspondence") as mock_resolve,
-            patch.object(mapper, "_compute_o2o_from_mcs_result") as mock_compute,
+            patch.object(
+                mapper._post_processor, "compute_o2o_from_mcs_result"
+            ) as mock_compute,
         ):
             mapper.map_reactions([ri])
             mock_resolve.assert_not_called()
             mock_compute.assert_not_called()
 
     def test_serial_mcs_matches_parallel_mcs(self):
-        """Serial and parallel MCS resolution produce identical o2o flags."""
-        from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+        """Serial and parallel MCS resolution produce identical o2o flags.
 
+        Uses real ``map_from_attention`` with tokens that lack a reaction
+        separator, so both paths return empty results — the test verifies
+        that MCS resolution (o2o flags) is consistent between serial and
+        parallel modes.
+        """
         rxns = [
             "CCCCCO>>CCCCCO",
             "CC(=O)Oc1ccccc1OC(C)=O.O=[N+]([O-])O>>O=[N+]([O-])c1cc(O)c(O)c([N+](=O)[O-])c1",
@@ -200,17 +210,6 @@ class TestNumProcesses:
 
         def _fake_batch(texts, **kwargs):
             return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
-
-        def _fake_map(rxn_smiles, **kwargs):
-            result = ReactionMapperResult(
-                original_smiles=rxn_smiles,
-                selected_mapping=rxn_smiles,
-                possible_mappings={},
-                mapping_type="neural",
-                mapping_score=1.0,
-                additional_info=[{}],
-            )
-            return result, None
 
         with patch(
             "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
@@ -229,15 +228,9 @@ class TestNumProcesses:
                     side_effect=_fake_batch,
                 ),
                 patch.object(
-                    serial_mapper, "_map_from_attention", side_effect=_fake_map
-                ),
-                patch.object(
                     parallel_mapper,
                     "_get_attention_matrices_batch",
                     side_effect=_fake_batch,
-                ),
-                patch.object(
-                    parallel_mapper, "_map_from_attention", side_effect=_fake_map
                 ),
             ):
                 serial_results = serial_mapper.map_reactions(rxns)
@@ -250,7 +243,9 @@ class TestNumProcesses:
     def test_auto_o2o_calls_mcs(self, mapper, _mock_inference):
         """When o2o is 'auto' and no ReactionInput, MCS is called."""
         with patch.object(
-            mapper, "_compute_o2o_from_mcs_result", wraps=mapper._compute_o2o_from_mcs_result
+            mapper._post_processor,
+            "compute_o2o_from_mcs_result",
+            wraps=mapper._post_processor.compute_o2o_from_mcs_result,
         ) as mock_compute:
             mapper.map_reactions(["CC>>CC", "CCC>>CCC"])
             assert mock_compute.call_count == 2
@@ -298,7 +293,9 @@ class TestResultOrderPreservation:
             patch.object(
                 mapper, "_get_attention_matrices_batch", side_effect=_fake_batch
             ),
-            patch.object(mapper, "_map_from_attention", side_effect=_fake_map),
+            patch.object(
+                mapper._post_processor, "map_from_attention", side_effect=_fake_map
+            ),
         ):
             yield
 
@@ -348,7 +345,7 @@ class TestApplyNoisyOr:
         """Two atoms both at 0.99 → noisy-OR ≈ 0.9901."""
         attn = np.array([[0.99, 0.01], [0.01, 0.99]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         # Column 0: 1 - (1-0.99)(1-0.01) = 1 - 0.0099 = 0.9901
         assert result[0, 0] == pytest.approx(0.9901, abs=1e-4)
         assert result[1, 0] == pytest.approx(0.9901, abs=1e-4)
@@ -357,7 +354,7 @@ class TestApplyNoisyOr:
         """One atom at 0.99, other at 0.01 → noisy-OR ≈ 0.99."""
         attn = np.array([[0.99, 0.01], [0.99, 0.01]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         expected = 1 - (1 - 0.99) * (1 - 0.01)
         assert result[0, 0] == pytest.approx(expected, abs=1e-6)
         assert result[1, 0] == pytest.approx(expected, abs=1e-6)
@@ -366,7 +363,7 @@ class TestApplyNoisyOr:
         """Two atoms both at 0.50 → noisy-OR = 0.75."""
         attn = np.array([[0.50, 0.50], [0.50, 0.50]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         expected = 1 - (1 - 0.50) * (1 - 0.50)
         assert result[0, 0] == pytest.approx(expected, abs=1e-6)
         assert result[1, 0] == pytest.approx(expected, abs=1e-6)
@@ -375,21 +372,21 @@ class TestApplyNoisyOr:
         """Two atoms both at 1.0 → noisy-OR = 1.0 (never exceeds 1)."""
         attn = np.array([[1.0, 1.0], [1.0, 1.0]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         assert result.max() <= 1.0
         assert result[0, 0] == pytest.approx(1.0, abs=1e-6)
 
     def test_noisy_or_no_symmetry(self, mapper):
         """Empty symmetric_indices → unchanged."""
         attn = np.array([[0.3, 0.7], [0.6, 0.4]])
-        result = mapper._apply_noisy_or(attn, {}, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, {}, axis=1)
         np.testing.assert_array_equal(result, attn)
 
     def test_noisy_or_axis_0(self, mapper):
         """Axis 0 combines rows (product atoms)."""
         attn = np.array([[0.50, 0.30], [0.50, 0.30]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=0)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=0)
         # Row 0 and 1 both become: 1 - (1-0.5)(1-0.5) = 0.75 for col 0
         # and 1 - (1-0.3)(1-0.3) = 0.51 for col 1
         assert result[0, 0] == pytest.approx(0.75, abs=1e-6)
@@ -401,7 +398,7 @@ class TestApplyNoisyOr:
         """Atoms not in any symmetric group are unchanged."""
         attn = np.array([[0.50, 0.50, 0.20], [0.50, 0.50, 0.20], [0.10, 0.10, 0.80]])
         sym = {0: [1], 1: [0]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         # Column 2 (atom index 2) is not in any symmetric group
         assert result[0, 2] == pytest.approx(0.20, abs=1e-6)
         assert result[2, 2] == pytest.approx(0.80, abs=1e-6)
@@ -410,7 +407,7 @@ class TestApplyNoisyOr:
         """Three symmetric atoms at 0.5 each → noisy-OR = 1 - 0.5^3 = 0.875."""
         attn = np.array([[0.5, 0.5, 0.5]])
         sym = {0: [1, 2], 1: [0, 2], 2: [0, 1]}
-        result = mapper._apply_noisy_or(attn, sym, axis=1)
+        result = mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         expected = 1 - (1 - 0.5) ** 3
         assert result[0, 0] == pytest.approx(expected, abs=1e-6)
         assert result[0, 1] == pytest.approx(expected, abs=1e-6)
@@ -421,7 +418,7 @@ class TestApplyNoisyOr:
         attn = np.array([[0.50, 0.50], [0.50, 0.50]])
         original = attn.copy()
         sym = {0: [1], 1: [0]}
-        mapper._apply_noisy_or(attn, sym, axis=1)
+        mapper._post_processor._apply_noisy_or(attn, sym, axis=1)
         np.testing.assert_array_equal(attn, original)
 
 
@@ -437,7 +434,7 @@ class TestSymmetryAwareConfidence:
         """No symmetric atoms → result equals p2r (r2p is not used)."""
         p2r = np.array([[0.8, 0.2], [0.3, 0.7]])
         r2p = np.array([[0.6, 0.4], [0.1, 0.9]])
-        result = mapper._symmetry_aware_confidence(p2r, r2p, {}, {})
+        result = mapper._post_processor._symmetry_aware_confidence(p2r, r2p, {}, {})
         np.testing.assert_array_almost_equal(result, p2r)
 
     def test_reactant_symmetry_only(self, mapper):
@@ -446,7 +443,9 @@ class TestSymmetryAwareConfidence:
         r2p = np.array([[0.99, 0.01], [0.99, 0.01]])  # r2p should be ignored
         r_sym = {0: [1], 1: [0]}
         p_sym = {}
-        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        result = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p, r_sym, p_sym
+        )
         # p2r: sum axis=1 → [[1.0, 1.0], [0.6, 0.6]], clamp → same, noisy-OR p_sym(empty) → same
         assert result[0, 0] == pytest.approx(1.0, abs=1e-6)
         assert result[0, 1] == pytest.approx(1.0, abs=1e-6)
@@ -459,7 +458,9 @@ class TestSymmetryAwareConfidence:
         r2p = np.array([[0.99, 0.01], [0.99, 0.01]])  # r2p should be ignored
         r_sym = {}
         p_sym = {0: [1], 1: [0]}
-        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        result = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p, r_sym, p_sym
+        )
         # p2r: sum r_sym(empty) → no change, noisy-OR p_sym axis=0:
         #   col 0: 1-(1-0.5)(1-0.5)=0.75, col 1: 1-(1-0.3)(1-0.3)=0.51
         assert result[0, 0] == pytest.approx(0.75, abs=1e-6)
@@ -473,7 +474,9 @@ class TestSymmetryAwareConfidence:
         r2p = np.array([[0.99, 0.01], [0.99, 0.01]])  # r2p should be ignored
         r_sym = {0: [1], 1: [0]}
         p_sym = {0: [1], 1: [0]}
-        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        result = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p, r_sym, p_sym
+        )
         # p2r: sum axis=1 → 1.0 everywhere, then noisy-OR axis=0 → 1.0
         assert result.max() <= 1.0
         np.testing.assert_array_almost_equal(result, np.ones((2, 2)))
@@ -484,7 +487,9 @@ class TestSymmetryAwareConfidence:
         r2p = np.array([[0.80, 0.20], [0.60, 0.40], [0.10, 0.90]])
         r_sym = {0: [1], 1: [0]}
         p_sym = {0: [2], 2: [0]}
-        result = mapper._symmetry_aware_confidence(p2r, r2p, r_sym, p_sym)
+        result = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p, r_sym, p_sym
+        )
         assert result.min() >= 0.0
         assert result.max() <= 1.0
 
@@ -495,8 +500,12 @@ class TestSymmetryAwareConfidence:
         p_sym = {}
         r2p_a = np.array([[0.99, 0.01], [0.99, 0.01]])
         r2p_b = np.array([[0.01, 0.99], [0.01, 0.99]])
-        result_a = mapper._symmetry_aware_confidence(p2r, r2p_a, r_sym, p_sym)
-        result_b = mapper._symmetry_aware_confidence(p2r, r2p_b, r_sym, p_sym)
+        result_a = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p_a, r_sym, p_sym
+        )
+        result_b = mapper._post_processor._symmetry_aware_confidence(
+            p2r, r2p_b, r_sym, p_sym
+        )
         np.testing.assert_array_equal(result_a, result_b)
 
     def test_one_to_one_flag_does_not_affect_result(self, mapper):
@@ -505,10 +514,144 @@ class TestSymmetryAwareConfidence:
         r2p = np.array([[0.99, 0.01], [0.99, 0.01]])
         r_sym = {0: [1], 1: [0]}
         p_sym = {}
-        result_true = mapper._symmetry_aware_confidence(
+        result_true = mapper._post_processor._symmetry_aware_confidence(
             p2r, r2p, r_sym, p_sym, one_to_one_correspondence=True
         )
-        result_false = mapper._symmetry_aware_confidence(
+        result_false = mapper._post_processor._symmetry_aware_confidence(
             p2r, r2p, r_sym, p_sym, one_to_one_correspondence=False
         )
         np.testing.assert_array_equal(result_true, result_false)
+
+
+class TestInferenceBatchSize:
+    """Verify inference_batch_size constructor parameter and call-time override."""
+
+    def test_default_inference_batch_size(self, mapper):
+        assert mapper._inference_batch_size == 32
+
+    def test_custom_inference_batch_size(self):
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            m = NeuralReactionMapper(mapper_name="test", inference_batch_size=64)
+            assert m._inference_batch_size == 64
+
+    def test_call_time_override(self, mapper, monkeypatch):
+        """Call-time inference_batch_size overrides constructor default."""
+        captured_sizes: list[int] = []
+
+        def _fake_batch(texts, **kwargs):
+            captured_sizes.append(len(texts))
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+
+        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC", "CCCCC>>CCCCC"]
+        mapper.map_reactions(
+            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        )
+        assert all(sz == 2 for sz in captured_sizes)
+
+    def test_different_batch_sizes_produce_same_results(self, mapper, monkeypatch):
+        """Different inference_batch_size values produce identical mapping results."""
+        call_count = 0
+
+        def _fake_batch(texts, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+
+        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC", "CCCCC>>CCCCC"]
+        results_1 = mapper.map_reactions(
+            rxns, inference_batch_size=1, one_to_one_correspondence=True
+        )
+        results_4 = mapper.map_reactions(
+            rxns, inference_batch_size=4, one_to_one_correspondence=True
+        )
+
+        for r1, r4 in zip(results_1, results_4):
+            assert r1.original_smiles == r4.original_smiles
+            assert r1.selected_mapping == r4.selected_mapping
+
+
+class TestSerialVsParallelPostProcessing:
+    """Verify serial and parallel post-processing produce identical results."""
+
+    def test_serial_matches_parallel_post_processing(self):
+        """Mock GPU inference, run with num_processes=1 and num_processes>1,
+        assert identical results.
+
+        Uses real ``map_from_attention`` with tokens that lack a reaction
+        separator, so both paths return empty results — verifying that
+        parallel execution preserves order and structure.
+        """
+        rxns = [
+            "CC>>CC",
+            "CCC>>CCC",
+            "CCCC>>CCCC",
+            "CCCCO>>CCCCO",
+        ]
+
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+
+            serial_mapper = NeuralReactionMapper(mapper_name="serial", num_processes=1)
+            parallel_mapper = NeuralReactionMapper(
+                mapper_name="parallel", num_processes=2
+            )
+
+            for m in (serial_mapper, parallel_mapper):
+                patch.object(
+                    m, "_get_attention_matrices_batch", side_effect=_fake_batch
+                ).start()
+
+            serial_results = serial_mapper.map_reactions(
+                rxns, one_to_one_correspondence=True
+            )
+            parallel_results = parallel_mapper.map_reactions(
+                rxns, one_to_one_correspondence=True
+            )
+
+            for s, p in zip(serial_results, parallel_results):
+                assert s.original_smiles == p.original_smiles
+                assert s.selected_mapping == p.selected_mapping

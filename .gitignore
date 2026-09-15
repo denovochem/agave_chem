@@ -66,6 +66,7 @@
 !agave_chem/mappers/neural/constants.py
 !agave_chem/mappers/neural/tokenizer.py
 !agave_chem/mappers/neural/model.py
+!agave_chem/mappers/neural/post_processor.py
 
 !agave_chem/utils/
 !agave_chem/utils/__init__.py
@@ -164,6 +165,7 @@
 !tests/unit/test_supervised_training_unit.py
 !tests/unit/test_layer_head_identification_unit.py
 !tests/unit/test_cli_utils_unit.py
+!tests/unit/test_neural_post_processor_unit.py
 
 
 # !manuscript/
