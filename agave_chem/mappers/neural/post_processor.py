@@ -1191,7 +1191,7 @@ class NeuralPostProcessor(ReactionMapper):
 
         return determine_one_to_one_correspondence(rxn_smiles, islands)
 
-    def create_worker_pool(self, num_processes: int) -> mp.Pool:
+    def create_worker_pool(self, num_processes: int) -> "mp.pool.Pool":
         """
         Create a reusable ``multiprocessing.Pool`` for parallel post-processing.
 
@@ -1205,7 +1205,7 @@ class NeuralPostProcessor(ReactionMapper):
             num_processes (int): Number of worker processes.
 
         Returns:
-            mp.Pool: A multiprocessing pool ready for use with
+            mp.pool.Pool: A multiprocessing pool ready for use with
                 ``post_process_batch``.
         """
         return mp.Pool(
@@ -1224,7 +1224,7 @@ class NeuralPostProcessor(ReactionMapper):
         self,
         tasks: List[_PostProcessTask],
         num_processes: int = 1,
-        pool: Optional[mp.Pool] = None,
+        pool: Optional["mp.pool.Pool"] = None,
     ) -> List[Tuple[ReactionMapperResult, Optional[str]]]:
         """
         Post-process a batch of attention matrices into mapping results.
@@ -1241,7 +1241,7 @@ class NeuralPostProcessor(ReactionMapper):
                 consider_tautomer_symmetry, consider_transform_symmetry).
             num_processes (int): Number of worker processes for parallel
                 post-processing. When 1, runs serially in-process.
-            pool (Optional[mp.Pool]): A pre-existing pool to reuse. When
+            pool (Optional[mp.pool.Pool]): A pre-existing pool to reuse. When
                 provided, the pool is used instead of creating a new one and
                 ``num_processes`` is ignored. The caller is responsible for
                 closing the pool.

@@ -609,6 +609,177 @@ class TestInferenceBatchSize:
             assert r1.selected_mapping == r4.selected_mapping
 
 
+class TestCpuBatchSize:
+    """Verify cpu_batch_size constructor parameter and behavior."""
+
+    def test_default_cpu_batch_size(self, mapper):
+        assert mapper._cpu_batch_size == 1024
+
+    def test_custom_cpu_batch_size(self):
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            m = NeuralReactionMapper(mapper_name="test", cpu_batch_size=64)
+            assert m._cpu_batch_size == 64
+
+    def test_cpu_batch_size_controls_pool_submission(self, mapper, monkeypatch):
+        """Verify that cpu_batch_size controls how many tasks are submitted
+        to post_process_batch at once."""
+        captured_task_counts: list[int] = []
+
+        original_post_process_batch = mapper._post_processor.post_process_batch
+
+        def _tracking_post_process_batch(tasks, **kwargs):
+            captured_task_counts.append(len(tasks))
+            return original_post_process_batch(tasks, **kwargs)
+
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+        monkeypatch.setattr(
+            mapper._post_processor, "post_process_batch", _tracking_post_process_batch
+        )
+
+        # 10 reactions, inference_batch_size=2 (5 GPU batches),
+        # cpu_batch_size=1024 (default) → all 10 tasks flush at once
+        rxns = [
+            "CC>>CC",
+            "CCC>>CCC",
+            "CCCC>>CCCC",
+            "CCCCC>>CCCCC",
+            "CCCCCC>>CCCCCC",
+            "CCCCCCC>>CCCCCCC",
+            "CCO>>CCO",
+            "CCCO>>CCCO",
+            "CCCCO>>CCCCO",
+            "CCCCCO>>CCCCCO",
+        ]
+        mapper.map_reactions(
+            rxns,
+            inference_batch_size=2,
+            one_to_one_correspondence=True,
+        )
+
+        # With cpu_batch_size=1024 (default), all 10 tasks flush at once
+        assert captured_task_counts == [10]
+
+    def test_small_cpu_batch_size_flushes_multiple_times(self, mapper, monkeypatch):
+        """With a small cpu_batch_size, tasks are flushed in multiple chunks."""
+        captured_task_counts: list[int] = []
+
+        original_post_process_batch = mapper._post_processor.post_process_batch
+
+        def _tracking_post_process_batch(tasks, **kwargs):
+            captured_task_counts.append(len(tasks))
+            return original_post_process_batch(tasks, **kwargs)
+
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+        monkeypatch.setattr(
+            mapper._post_processor, "post_process_batch", _tracking_post_process_batch
+        )
+
+        # Override cpu_batch_size to 4
+        mapper._cpu_batch_size = 4
+
+        # 10 reactions, inference_batch_size=2 (5 GPU batches),
+        # cpu_batch_size=4 → flushes: [4, 4, 2]
+        rxns = [
+            "CC>>CC",
+            "CCC>>CCC",
+            "CCCC>>CCCC",
+            "CCCCC>>CCCCC",
+            "CCCCCC>>CCCCCC",
+            "CCCCCCC>>CCCCCCC",
+            "CCO>>CCO",
+            "CCCO>>CCCO",
+            "CCCCO>>CCCCO",
+            "CCCCCO>>CCCCCO",
+        ]
+        mapper.map_reactions(
+            rxns,
+            inference_batch_size=2,
+            one_to_one_correspondence=True,
+        )
+
+        assert captured_task_counts == [4, 4, 2]
+
+    def test_different_cpu_batch_sizes_produce_same_results(self, mapper, monkeypatch):
+        """Different cpu_batch_size values produce identical mapping results."""
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        def _fake_map(rxn_smiles, **kwargs):
+            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+
+        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC", "CCCCC>>CCCCC"]
+
+        mapper._cpu_batch_size = 1
+        results_1 = mapper.map_reactions(
+            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        )
+
+        mapper._cpu_batch_size = 1024
+        results_1024 = mapper.map_reactions(
+            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        )
+
+        for r1, r1024 in zip(results_1, results_1024):
+            assert r1.original_smiles == r1024.original_smiles
+            assert r1.selected_mapping == r1024.selected_mapping
+
+
 class TestSerialVsParallelPostProcessing:
     """Verify serial and parallel post-processing produce identical results."""
 

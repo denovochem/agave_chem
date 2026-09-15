@@ -13,7 +13,10 @@ from agave_chem.mappers.neural.model import (
     AlbertWithAttentionAlignment,
     SupervisedConfig,
 )
-from agave_chem.mappers.neural.post_processor import NeuralPostProcessor
+from agave_chem.mappers.neural.post_processor import (
+    NeuralPostProcessor,
+    _PostProcessTask,
+)
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
 from agave_chem.mappers.reaction_mapper import ReactionMapper
 from agave_chem.mappers.types import ReactionInput, ReactionMapperResult
@@ -77,7 +80,8 @@ class NeuralReactionMapper(ReactionMapper):
         identical_adjacent_atom_multiplier: float = 10,
         used_atom_divisor: float = 10,
         num_processes: int = 1,
-        inference_batch_size: int = 1024,
+        inference_batch_size: int = 32,
+        cpu_batch_size: int = 1024,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -104,7 +108,10 @@ class NeuralReactionMapper(ReactionMapper):
                 ``ParallelMCSReactionMapper`` and CPU post-processing is
                 parallelized via ``NeuralPostProcessor.post_process_batch``.
             inference_batch_size (int): Number of reactions per GPU forward pass.
-                Can be overridden per-call via ``map_reactions``. Defaults to 1024.
+                Can be overridden per-call via ``map_reactions``. Defaults to 32.
+            cpu_batch_size (int): Number of tasks submitted to the CPU
+                post-processing pool at once. Larger values reduce IPC
+                overhead when ``num_processes > 1``. Defaults to 1024.
         """
 
         super().__init__("neural", mapper_name, mapper_weight)
@@ -132,6 +139,7 @@ class NeuralReactionMapper(ReactionMapper):
         self._mcs_mapper: Optional[MCSReactionMapper] = None
         self._num_processes = num_processes
         self._inference_batch_size = inference_batch_size
+        self._cpu_batch_size = cpu_batch_size
         self._post_processor = NeuralPostProcessor(
             adjacent_atom_multiplier=adjacent_atom_multiplier,
             identical_adjacent_atom_multiplier=identical_adjacent_atom_multiplier,
@@ -281,22 +289,23 @@ class NeuralReactionMapper(ReactionMapper):
         num_processes: int,
         consider_tautomer_symmetry: bool,
         consider_transform_symmetry: bool,
-        pool: Optional["mp.Pool"] = None,
+        pool: Optional["mp.pool.Pool"] = None,
+        cpu_batch_size: int = 1024,
     ) -> Tuple[List[ReactionMapperResult], List[Optional[str]]]:
         """
         Run batched GPU inference and parallel CPU post-processing.
 
         GPU inference processes ``inference_batch_size`` reactions per forward
-        pass. After each GPU batch, CPU post-processing (attention alignment,
-        atom assignment) is applied to the batch's results. When
-        ``num_processes > 1``, post-processing is parallelized across a
-        ``multiprocessing.Pool`` of worker processes, each with its own
+        pass. CPU post-processing tasks are accumulated across GPU batches and
+        submitted to the pool in chunks of ``cpu_batch_size`` to amortize IPC
+        overhead. When ``num_processes > 1``, post-processing is parallelized
+        across a ``multiprocessing.Pool`` of worker processes, each with its own
         ``NeuralPostProcessor`` instance.
 
         Pre-tokenizes inputs, sorts by sequence length to minimize padding
         waste, batches through the model, and calls
-        ``NeuralPostProcessor.post_process_batch`` for each batch. Results and
-        expanded SMILES are returned in the same order as the input.
+        ``NeuralPostProcessor.post_process_batch`` for each CPU batch. Results
+        and expanded SMILES are returned in the same order as the input.
 
         Args:
             smiles_list (List[str]): Reaction SMILES strings to process.
@@ -309,10 +318,12 @@ class NeuralReactionMapper(ReactionMapper):
                 symmetry during post-processing.
             consider_transform_symmetry (bool): If True, apply functional
                 group normalization transforms during post-processing.
-            pool (Optional[mp.Pool]): A pre-existing worker pool to reuse
+            pool (Optional[mp.pool.Pool]): A pre-existing worker pool to reuse
                 across all GPU batches. When provided, avoids creating and
                 destroying a pool per batch. The caller is responsible for
                 closing the pool.
+            cpu_batch_size (int): Number of post-processing tasks submitted to
+                the pool at once. Larger values reduce IPC overhead.
 
         Returns:
             Tuple[List[ReactionMapperResult], List[Optional[str]]]:
@@ -348,6 +359,27 @@ class NeuralReactionMapper(ReactionMapper):
         lengths = [len(ids) for ids in pre_enc["input_ids"]]
         sorted_order = sorted(range(n), key=lambda i: lengths[i])
 
+        # Accumulate post-processing tasks across GPU batches and submit them
+        # to the pool in chunks of cpu_batch_size to reduce IPC overhead.
+        pending_tasks: List[_PostProcessTask] = []
+        pending_indices: List[int] = []
+
+        def _flush_pending() -> None:
+            if not pending_tasks:
+                return
+            batch_results = self._post_processor.post_process_batch(
+                tasks=pending_tasks,
+                num_processes=num_processes,
+                pool=pool,
+            )
+            for i, orig_idx in enumerate(pending_indices):
+                result, expanded_rxn = batch_results[i]
+                results[orig_idx] = result
+                if expanded_rxn is not None:
+                    expanded_list[orig_idx] = canonicalize_reaction_smiles(expanded_rxn)
+            pending_tasks.clear()
+            pending_indices.clear()
+
         for batch_start in range(0, n, inference_batch_size):
             batch_indices = sorted_order[
                 batch_start : batch_start + inference_batch_size
@@ -358,29 +390,23 @@ class NeuralReactionMapper(ReactionMapper):
                 max_length=self._sequence_max_length,
             )
 
-            tasks = [
-                (
-                    smiles_list[orig_idx],
-                    attn_tokens_list[local_idx][0],
-                    attn_tokens_list[local_idx][1],
-                    o2o_flags[orig_idx],
-                    consider_tautomer_symmetry,
-                    consider_transform_symmetry,
-                )
-                for local_idx, orig_idx in enumerate(batch_indices)
-            ]
-
-            batch_results = self._post_processor.post_process_batch(
-                tasks=tasks,
-                num_processes=num_processes,
-                pool=pool,
-            )
-
             for local_idx, orig_idx in enumerate(batch_indices):
-                result, expanded_rxn = batch_results[local_idx]
-                results[orig_idx] = result
-                if expanded_rxn is not None:
-                    expanded_list[orig_idx] = canonicalize_reaction_smiles(expanded_rxn)
+                pending_tasks.append(
+                    (
+                        smiles_list[orig_idx],
+                        attn_tokens_list[local_idx][0],
+                        attn_tokens_list[local_idx][1],
+                        o2o_flags[orig_idx],
+                        consider_tautomer_symmetry,
+                        consider_transform_symmetry,
+                    )
+                )
+                pending_indices.append(orig_idx)
+
+            if len(pending_tasks) >= cpu_batch_size:
+                _flush_pending()
+
+        _flush_pending()
 
         return results, expanded_list
 
@@ -396,12 +422,14 @@ class NeuralReactionMapper(ReactionMapper):
         """
         Map a list of reaction SMILES strings using batched neural network inference.
 
-        GPU inference and CPU post-processing are decoupled: the GPU processes
-        ``inference_batch_size`` reactions per forward pass, then CPU
-        post-processing (attention alignment, atom assignment) runs on each
-        batch's results. When ``num_processes > 1``, CPU post-processing is
-        parallelized across worker processes, each with its own
-        ``NeuralPostProcessor`` instance.
+        GPU inference and CPU post-processing are decoupled. The GPU processes
+        ``inference_batch_size`` reactions per forward pass. Post-processing
+        tasks (attention alignment, atom assignment) are accumulated across
+        GPU batches and submitted to the worker pool in chunks of
+        ``cpu_batch_size`` to amortize IPC overhead. When ``num_processes > 1``,
+        CPU post-processing is parallelized across worker processes, each with
+        its own ``NeuralPostProcessor`` instance. A single pool is created for
+        the entire call and reused across both inference passes.
 
         Reactions are pre-tokenized and sorted by sequence length before
         batching to minimize padding waste. Each batch's attention matrices
@@ -424,7 +452,7 @@ class NeuralReactionMapper(ReactionMapper):
                 pre-computed ``one_to_one_correspondence`` field is used.
             inference_batch_size (Optional[int]): Number of reactions per GPU
                 forward pass. If None, uses the value set at construction time
-                (default 1024).
+                (default 32).
             num_processes (Optional[int]): Number of worker processes for
                 parallel CPU post-processing and MCS pre-processing. If None,
                 uses the value set at construction time. When 1, post-processing
@@ -442,7 +470,9 @@ class NeuralReactionMapper(ReactionMapper):
             strings (not ``ReactionInput``) are provided, MCS pre-processing is
             run to determine the o2o flag per reaction. When ``num_processes``
             is greater than 1, both MCS pre-processing and CPU post-processing
-            are parallelized across worker processes.
+            are parallelized across worker processes. The ``cpu_batch_size``
+            constructor parameter controls how many post-processing tasks are
+            submitted to the pool at once (default 1024).
 
         Returns:
             List[ReactionMapperResult]: A list of mapping results, one per input
@@ -537,7 +567,7 @@ class NeuralReactionMapper(ReactionMapper):
         # Create a reusable worker pool for parallel post-processing.
         # The pool is shared across both inference passes to avoid the
         # overhead of creating and destroying a pool per GPU batch.
-        worker_pool: Optional[mp.Pool] = None
+        worker_pool: Optional["mp.pool.Pool"] = None
         if eff_num_processes > 1:
             worker_pool = self._post_processor.create_worker_pool(eff_num_processes)
 
@@ -551,6 +581,7 @@ class NeuralReactionMapper(ReactionMapper):
                 consider_tautomer_symmetry=consider_tautomer_symmetry,
                 consider_transform_symmetry=consider_transform_symmetry,
                 pool=worker_pool,
+                cpu_batch_size=self._cpu_batch_size,
             )
 
             # Place first-pass results and collect oversubscription cases
@@ -578,6 +609,7 @@ class NeuralReactionMapper(ReactionMapper):
                 consider_tautomer_symmetry=consider_tautomer_symmetry,
                 consider_transform_symmetry=consider_transform_symmetry,
                 pool=worker_pool,
+                cpu_batch_size=self._cpu_batch_size,
             )
         finally:
             if worker_pool is not None:
