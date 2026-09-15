@@ -1,3 +1,4 @@
+import multiprocessing as mp
 from importlib.resources import files
 from pathlib import Path
 from typing import List, Literal, Optional, Tuple, Union, cast
@@ -76,7 +77,7 @@ class NeuralReactionMapper(ReactionMapper):
         identical_adjacent_atom_multiplier: float = 10,
         used_atom_divisor: float = 10,
         num_processes: int = 1,
-        inference_batch_size: int = 32,
+        inference_batch_size: int = 1024,
     ):
         """
         Initialize the NeuralReactionMapper instance.
@@ -103,7 +104,7 @@ class NeuralReactionMapper(ReactionMapper):
                 ``ParallelMCSReactionMapper`` and CPU post-processing is
                 parallelized via ``NeuralPostProcessor.post_process_batch``.
             inference_batch_size (int): Number of reactions per GPU forward pass.
-                Can be overridden per-call via ``map_reactions``. Defaults to 32.
+                Can be overridden per-call via ``map_reactions``. Defaults to 1024.
         """
 
         super().__init__("neural", mapper_name, mapper_weight)
@@ -280,6 +281,7 @@ class NeuralReactionMapper(ReactionMapper):
         num_processes: int,
         consider_tautomer_symmetry: bool,
         consider_transform_symmetry: bool,
+        pool: Optional["mp.Pool"] = None,
     ) -> Tuple[List[ReactionMapperResult], List[Optional[str]]]:
         """
         Run batched GPU inference and parallel CPU post-processing.
@@ -307,6 +309,10 @@ class NeuralReactionMapper(ReactionMapper):
                 symmetry during post-processing.
             consider_transform_symmetry (bool): If True, apply functional
                 group normalization transforms during post-processing.
+            pool (Optional[mp.Pool]): A pre-existing worker pool to reuse
+                across all GPU batches. When provided, avoids creating and
+                destroying a pool per batch. The caller is responsible for
+                closing the pool.
 
         Returns:
             Tuple[List[ReactionMapperResult], List[Optional[str]]]:
@@ -367,6 +373,7 @@ class NeuralReactionMapper(ReactionMapper):
             batch_results = self._post_processor.post_process_batch(
                 tasks=tasks,
                 num_processes=num_processes,
+                pool=pool,
             )
 
             for local_idx, orig_idx in enumerate(batch_indices):
@@ -417,7 +424,7 @@ class NeuralReactionMapper(ReactionMapper):
                 pre-computed ``one_to_one_correspondence`` field is used.
             inference_batch_size (Optional[int]): Number of reactions per GPU
                 forward pass. If None, uses the value set at construction time
-                (default 32).
+                (default 1024).
             num_processes (Optional[int]): Number of worker processes for
                 parallel CPU post-processing and MCS pre-processing. If None,
                 uses the value set at construction time. When 1, post-processing
@@ -527,41 +534,55 @@ class NeuralReactionMapper(ReactionMapper):
         if not valid_smiles:
             return results
 
-        # First pass: batched inference + post-processing
-        pass_results, expanded_list = self._run_inference_and_post_process(
-            smiles_list=valid_smiles,
-            o2o_flags=valid_o2o,
-            inference_batch_size=eff_batch_size,
-            num_processes=eff_num_processes,
-            consider_tautomer_symmetry=consider_tautomer_symmetry,
-            consider_transform_symmetry=consider_transform_symmetry,
-        )
+        # Create a reusable worker pool for parallel post-processing.
+        # The pool is shared across both inference passes to avoid the
+        # overhead of creating and destroying a pool per GPU batch.
+        worker_pool: Optional[mp.Pool] = None
+        if eff_num_processes > 1:
+            worker_pool = self._post_processor.create_worker_pool(eff_num_processes)
 
-        # Place first-pass results and collect oversubscription cases
-        oversubscribed_cases: List[Tuple[int, str, str]] = []
-        for local_idx, orig_idx in enumerate(valid_indices):
-            results[orig_idx] = pass_results[local_idx]
-            expanded = expanded_list[local_idx]
-            if expanded is not None:
-                oversubscribed_cases.append(
-                    (orig_idx, valid_smiles[local_idx], expanded)
-                )
+        try:
+            # First pass: batched inference + post-processing
+            pass_results, expanded_list = self._run_inference_and_post_process(
+                smiles_list=valid_smiles,
+                o2o_flags=valid_o2o,
+                inference_batch_size=eff_batch_size,
+                num_processes=eff_num_processes,
+                consider_tautomer_symmetry=consider_tautomer_symmetry,
+                consider_transform_symmetry=consider_transform_symmetry,
+                pool=worker_pool,
+            )
 
-        if not oversubscribed_cases:
-            return results
+            # Place first-pass results and collect oversubscription cases
+            oversubscribed_cases: List[Tuple[int, str, str]] = []
+            for local_idx, orig_idx in enumerate(valid_indices):
+                results[orig_idx] = pass_results[local_idx]
+                expanded = expanded_list[local_idx]
+                if expanded is not None:
+                    oversubscribed_cases.append(
+                        (orig_idx, valid_smiles[local_idx], expanded)
+                    )
 
-        # Second pass: retry oversubscribed reactions with one_to_one_correspondence=True
-        expanded_smiles = [expanded for _, _, expanded in oversubscribed_cases]
-        retry_o2o = [True] * len(expanded_smiles)
+            if not oversubscribed_cases:
+                return results
 
-        retry_results, _ = self._run_inference_and_post_process(
-            smiles_list=expanded_smiles,
-            o2o_flags=retry_o2o,
-            inference_batch_size=eff_batch_size,
-            num_processes=eff_num_processes,
-            consider_tautomer_symmetry=consider_tautomer_symmetry,
-            consider_transform_symmetry=consider_transform_symmetry,
-        )
+            # Second pass: retry oversubscribed reactions with one_to_one_correspondence=True
+            expanded_smiles = [expanded for _, _, expanded in oversubscribed_cases]
+            retry_o2o = [True] * len(expanded_smiles)
+
+            retry_results, _ = self._run_inference_and_post_process(
+                smiles_list=expanded_smiles,
+                o2o_flags=retry_o2o,
+                inference_batch_size=eff_batch_size,
+                num_processes=eff_num_processes,
+                consider_tautomer_symmetry=consider_tautomer_symmetry,
+                consider_transform_symmetry=consider_transform_symmetry,
+                pool=worker_pool,
+            )
+        finally:
+            if worker_pool is not None:
+                worker_pool.close()
+                worker_pool.join()
 
         # Merge retry results back, stripping unused reactant fragments
         for i, (orig_idx, orig_rxn_smiles, _) in enumerate(oversubscribed_cases):

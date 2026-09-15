@@ -1191,19 +1191,49 @@ class NeuralPostProcessor(ReactionMapper):
 
         return determine_one_to_one_correspondence(rxn_smiles, islands)
 
+    def create_worker_pool(self, num_processes: int) -> mp.Pool:
+        """
+        Create a reusable ``multiprocessing.Pool`` for parallel post-processing.
+
+        The pool is initialized with worker processes that each hold a
+        ``NeuralPostProcessor`` instance configured with the same scoring
+        heuristics as this instance. The caller is responsible for closing
+        the pool when done (e.g., via a ``with`` statement or explicit
+        ``pool.close()`` / ``pool.join()``).
+
+        Args:
+            num_processes (int): Number of worker processes.
+
+        Returns:
+            mp.Pool: A multiprocessing pool ready for use with
+                ``post_process_batch``.
+        """
+        return mp.Pool(
+            processes=num_processes,
+            initializer=_init_worker,
+            initargs=(
+                self._adjacent_atom_multiplier,
+                self._identical_adjacent_atom_multiplier,
+                self._used_atom_divisor,
+                self._sequence_max_length,
+                self._mapper_type,
+            ),
+        )
+
     def post_process_batch(
         self,
         tasks: List[_PostProcessTask],
         num_processes: int = 1,
+        pool: Optional[mp.Pool] = None,
     ) -> List[Tuple[ReactionMapperResult, Optional[str]]]:
         """
         Post-process a batch of attention matrices into mapping results.
 
         When ``num_processes`` is 1, runs serially in-process using this
-        instance. When ``num_processes > 1``, spawns a ``multiprocessing.Pool``
-        of worker processes, each with its own ``NeuralPostProcessor``
-        configured with the same scoring heuristics. Results are returned in
-        the same order as ``tasks``.
+        instance. When ``num_processes > 1``, distributes work across a
+        ``multiprocessing.Pool`` of worker processes, each with its own
+        ``NeuralPostProcessor`` configured with the same scoring heuristics.
+        Results are returned in the same order as ``tasks``.
 
         Args:
             tasks (List[_PostProcessTask]): One task per reaction, each
@@ -1211,12 +1241,16 @@ class NeuralPostProcessor(ReactionMapper):
                 consider_tautomer_symmetry, consider_transform_symmetry).
             num_processes (int): Number of worker processes for parallel
                 post-processing. When 1, runs serially in-process.
+            pool (Optional[mp.Pool]): A pre-existing pool to reuse. When
+                provided, the pool is used instead of creating a new one and
+                ``num_processes`` is ignored. The caller is responsible for
+                closing the pool.
 
         Returns:
             List[Tuple[ReactionMapperResult, Optional[str]]]: Mapping results
                 and expanded SMILES, in the same order as ``tasks``.
         """
-        if num_processes <= 1:
+        if num_processes <= 1 and pool is None:
             return [
                 self.map_from_attention(
                     rxn_smiles=rxn,
@@ -1229,6 +1263,9 @@ class NeuralPostProcessor(ReactionMapper):
                 for rxn, attn, tokens, o2o, taut_sym, transform_sym in tasks
             ]
 
+        if pool is not None:
+            return list(pool.map(_post_process_one, tasks, chunksize=1))
+
         with mp.Pool(
             processes=num_processes,
             initializer=_init_worker,
@@ -1239,5 +1276,5 @@ class NeuralPostProcessor(ReactionMapper):
                 self._sequence_max_length,
                 self._mapper_type,
             ),
-        ) as pool:
-            return list(pool.map(_post_process_one, tasks, chunksize=1))
+        ) as p:
+            return list(p.map(_post_process_one, tasks, chunksize=1))
