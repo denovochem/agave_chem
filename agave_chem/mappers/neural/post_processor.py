@@ -80,7 +80,7 @@ def _init_worker(
 
 
 # Task type: (rxn_smiles, attn, tokens, o2o_flag, tautomer_sym, transform_sym)
-_PostProcessTask = Tuple[
+PostProcessTask = Tuple[
     str,  # rxn_smiles
     np.ndarray,  # attn matrix
     List[str],  # tokens
@@ -91,7 +91,7 @@ _PostProcessTask = Tuple[
 
 
 def _post_process_one(
-    task: _PostProcessTask,
+    task: PostProcessTask,
 ) -> Tuple[ReactionMapperResult, Optional[str]]:
     """
     Post-process a single reaction's attention matrix into a mapping result.
@@ -99,7 +99,7 @@ def _post_process_one(
     Uses the module-level ``_post_processor`` initialised by ``_init_worker``.
 
     Args:
-        task (_PostProcessTask): Tuple of (rxn_smiles, attn, tokens,
+        task (PostProcessTask): Tuple of (rxn_smiles, attn, tokens,
             one_to_one_correspondence, consider_tautomer_symmetry,
             consider_transform_symmetry).
 
@@ -1222,7 +1222,7 @@ class NeuralPostProcessor(ReactionMapper):
 
     def post_process_batch(
         self,
-        tasks: List[_PostProcessTask],
+        tasks: List[PostProcessTask],
         num_processes: int = 1,
         pool: Optional["mp.pool.Pool"] = None,
     ) -> List[Tuple[ReactionMapperResult, Optional[str]]]:
@@ -1236,7 +1236,7 @@ class NeuralPostProcessor(ReactionMapper):
         Results are returned in the same order as ``tasks``.
 
         Args:
-            tasks (List[_PostProcessTask]): One task per reaction, each
+            tasks (List[PostProcessTask]): One task per reaction, each
                 containing (rxn_smiles, attn, tokens, one_to_one_correspondence,
                 consider_tautomer_symmetry, consider_transform_symmetry).
             num_processes (int): Number of worker processes for parallel

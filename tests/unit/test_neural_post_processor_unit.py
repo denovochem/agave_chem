@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from agave_chem.mappers.neural.post_processor import NeuralPostProcessor
+from agave_chem.mappers.neural.post_processor import NeuralPostProcessor, _init_worker
 
 
 @pytest.fixture
@@ -261,5 +261,71 @@ class TestPostProcessBatch:
 
         assert len(serial_results) == len(parallel_results)
         for s, p in zip(serial_results, parallel_results):
+            assert s[0].original_smiles == p[0].original_smiles
+            assert s[0].selected_mapping == p[0].selected_mapping
+
+    def test_pool_parameter_reuses_provided_pool(self, pp):
+        """When a pool is provided, it is used and returns results in order.
+
+        Uses real ``map_from_attention`` with tokens that lack a reaction
+        separator, so results are empty — verifying that the pool path
+        preserves order and structure.
+        """
+        import multiprocessing as mp
+
+        tasks = [
+            ("CC>>CC", np.zeros((2, 2)), ["C", "C"], True, True, True),
+            ("CCC>>CCC", np.zeros((2, 2)), ["C", "C"], True, True, True),
+        ]
+
+        pool = mp.Pool(
+            processes=2,
+            initializer=_init_worker,
+            initargs=(
+                pp._adjacent_atom_multiplier,
+                pp._identical_adjacent_atom_multiplier,
+                pp._used_atom_divisor,
+                pp._sequence_max_length,
+                pp._mapper_type,
+            ),
+        )
+        try:
+            results = pp.post_process_batch(tasks, pool=pool)
+            assert len(results) == 2
+        finally:
+            pool.close()
+            pool.join()
+
+    def test_pool_parameter_matches_serial(self, pp):
+        """Results from a provided pool match serial results."""
+        import multiprocessing as mp
+
+        tasks = [
+            ("CC>>CC", np.zeros((2, 2)), ["C", "C"], True, True, True),
+            ("CCC>>CCC", np.zeros((2, 2)), ["C", "C"], True, True, True),
+            ("CCCC>>CCCC", np.zeros((2, 2)), ["C", "C"], True, True, True),
+        ]
+
+        serial_results = pp.post_process_batch(tasks, num_processes=1)
+
+        pool = mp.Pool(
+            processes=2,
+            initializer=_init_worker,
+            initargs=(
+                pp._adjacent_atom_multiplier,
+                pp._identical_adjacent_atom_multiplier,
+                pp._used_atom_divisor,
+                pp._sequence_max_length,
+                pp._mapper_type,
+            ),
+        )
+        try:
+            pool_results = pp.post_process_batch(tasks, pool=pool)
+        finally:
+            pool.close()
+            pool.join()
+
+        assert len(serial_results) == len(pool_results)
+        for s, p in zip(serial_results, pool_results):
             assert s[0].original_smiles == p[0].original_smiles
             assert s[0].selected_mapping == p[0].selected_mapping

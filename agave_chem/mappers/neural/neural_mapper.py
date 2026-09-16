@@ -15,7 +15,7 @@ from agave_chem.mappers.neural.model import (
 )
 from agave_chem.mappers.neural.post_processor import (
     NeuralPostProcessor,
-    _PostProcessTask,
+    PostProcessTask,
 )
 from agave_chem.mappers.neural.tokenizer import CustomTokenizer
 from agave_chem.mappers.reaction_mapper import ReactionMapper
@@ -361,7 +361,7 @@ class NeuralReactionMapper(ReactionMapper):
 
         # Accumulate post-processing tasks across GPU batches and submit them
         # to the pool in chunks of cpu_batch_size to reduce IPC overhead.
-        pending_tasks: List[_PostProcessTask] = []
+        pending_tasks: List[PostProcessTask] = []
         pending_indices: List[int] = []
 
         def _flush_pending() -> None:
@@ -432,10 +432,12 @@ class NeuralReactionMapper(ReactionMapper):
         the entire call and reused across both inference passes.
 
         Reactions are pre-tokenized and sorted by sequence length before
-        batching to minimize padding waste. Each batch's attention matrices
-        are consumed for atom mapping immediately after inference and
-        discarded before the next batch, avoiding the need to hold all
-        matrices in memory simultaneously.
+        batching to minimize padding waste. Attention matrices from GPU
+        inference are accumulated across batches and held in memory until
+        ``cpu_batch_size`` tasks have been collected, at which point they are
+        submitted to the post-processing pool and released. This trades
+        higher peak memory (up to ``cpu_batch_size`` matrices) for reduced
+        IPC overhead.
 
         Uses the scoring heuristics and sequence_max_length configured
         on the NeuralReactionMapper instance at construction time.

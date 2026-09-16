@@ -612,142 +612,155 @@ class TestInferenceBatchSize:
 class TestCpuBatchSize:
     """Verify cpu_batch_size constructor parameter and behavior."""
 
-    def test_default_cpu_batch_size(self, mapper):
-        assert mapper._cpu_batch_size == 1024
+    @pytest.fixture
+    def fake_batch(self):
+        """Return a fake _get_attention_matrices_batch that returns dummy data."""
 
-    def test_custom_cpu_batch_size(self):
+        def _fake_batch(texts, **kwargs):
+            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+
+        return _fake_batch
+
+    @pytest.fixture
+    def fake_map(self):
+        """Return a fake map_from_attention that echoes the input SMILES."""
+        from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+        def _fake_map(rxn_smiles, **kwargs):
+            return (
+                ReactionMapperResult(
+                    original_smiles=rxn_smiles,
+                    selected_mapping=rxn_smiles,
+                    possible_mappings={},
+                    mapping_type="neural",
+                    mapping_score=1.0,
+                    additional_info=[{}],
+                ),
+                None,
+            )
+
+        return _fake_map
+
+    @staticmethod
+    def _make_mapper(cpu_batch_size: int) -> NeuralReactionMapper:
+        """Create a NeuralReactionMapper with a specific cpu_batch_size."""
         with patch(
             "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
         ) as mock_load:
             mock_load.return_value = None
-            m = NeuralReactionMapper(mapper_name="test", cpu_batch_size=64)
-            assert m._cpu_batch_size == 64
-
-    def test_cpu_batch_size_controls_pool_submission(self, mapper, monkeypatch):
-        """Verify that cpu_batch_size controls how many tasks are submitted
-        to post_process_batch at once."""
-        captured_task_counts: list[int] = []
-
-        original_post_process_batch = mapper._post_processor.post_process_batch
-
-        def _tracking_post_process_batch(tasks, **kwargs):
-            captured_task_counts.append(len(tasks))
-            return original_post_process_batch(tasks, **kwargs)
-
-        def _fake_batch(texts, **kwargs):
-            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
-
-        def _fake_map(rxn_smiles, **kwargs):
-            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
-
-            return (
-                ReactionMapperResult(
-                    original_smiles=rxn_smiles,
-                    selected_mapping=rxn_smiles,
-                    possible_mappings={},
-                    mapping_type="neural",
-                    mapping_score=1.0,
-                    additional_info=[{}],
-                ),
-                None,
+            return NeuralReactionMapper(
+                mapper_name="test", cpu_batch_size=cpu_batch_size
             )
 
-        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
-        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
-        monkeypatch.setattr(
-            mapper._post_processor, "post_process_batch", _tracking_post_process_batch
-        )
+    TEST_RXNS_10: tuple[str, ...] = (
+        "CC>>CC",
+        "CCC>>CCC",
+        "CCCC>>CCCC",
+        "CCCCC>>CCCCC",
+        "CCCCCC>>CCCCCC",
+        "CCCCCCC>>CCCCCCC",
+        "CCO>>CCO",
+        "CCCO>>CCCO",
+        "CCCCO>>CCCCO",
+        "CCCCCO>>CCCCCO",
+    )
 
-        # 10 reactions, inference_batch_size=2 (5 GPU batches),
-        # cpu_batch_size=1024 (default) → all 10 tasks flush at once
-        rxns = [
-            "CC>>CC",
-            "CCC>>CCC",
-            "CCCC>>CCCC",
-            "CCCCC>>CCCCC",
-            "CCCCCC>>CCCCCC",
-            "CCCCCCC>>CCCCCCC",
-            "CCO>>CCO",
-            "CCCO>>CCCO",
-            "CCCCO>>CCCCO",
-            "CCCCCO>>CCCCCO",
-        ]
+    def test_default_cpu_batch_size(self, mapper):
+        assert mapper._cpu_batch_size == 1024
+
+    def test_custom_cpu_batch_size(self):
+        m = self._make_mapper(cpu_batch_size=64)
+        assert m._cpu_batch_size == 64
+
+    def test_cpu_batch_size_controls_pool_submission(
+        self, mapper, monkeypatch, fake_batch, fake_map
+    ):
+        """With default cpu_batch_size=1024, all 10 tasks flush at once."""
+        captured_task_counts: list[int] = []
+
+        original = mapper._post_processor.post_process_batch
+
+        def _tracking(tasks, **kwargs):
+            captured_task_counts.append(len(tasks))
+            return original(tasks, **kwargs)
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", fake_map)
+        monkeypatch.setattr(mapper._post_processor, "post_process_batch", _tracking)
+
         mapper.map_reactions(
-            rxns,
+            self.TEST_RXNS_10,
             inference_batch_size=2,
             one_to_one_correspondence=True,
         )
 
-        # With cpu_batch_size=1024 (default), all 10 tasks flush at once
         assert captured_task_counts == [10]
 
-    def test_small_cpu_batch_size_flushes_multiple_times(self, mapper, monkeypatch):
-        """With a small cpu_batch_size, tasks are flushed in multiple chunks."""
+    def test_small_cpu_batch_size_flushes_multiple_times(
+        self, monkeypatch, fake_batch, fake_map
+    ):
+        """With cpu_batch_size=4, 10 tasks flush as [4, 4, 2]."""
+        mapper = self._make_mapper(cpu_batch_size=4)
         captured_task_counts: list[int] = []
 
-        original_post_process_batch = mapper._post_processor.post_process_batch
+        original = mapper._post_processor.post_process_batch
 
-        def _tracking_post_process_batch(tasks, **kwargs):
+        def _tracking(tasks, **kwargs):
             captured_task_counts.append(len(tasks))
-            return original_post_process_batch(tasks, **kwargs)
+            return original(tasks, **kwargs)
 
-        def _fake_batch(texts, **kwargs):
-            return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", fake_map)
+        monkeypatch.setattr(mapper._post_processor, "post_process_batch", _tracking)
 
-        def _fake_map(rxn_smiles, **kwargs):
-            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
-
-            return (
-                ReactionMapperResult(
-                    original_smiles=rxn_smiles,
-                    selected_mapping=rxn_smiles,
-                    possible_mappings={},
-                    mapping_type="neural",
-                    mapping_score=1.0,
-                    additional_info=[{}],
-                ),
-                None,
-            )
-
-        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
-        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
-        monkeypatch.setattr(
-            mapper._post_processor, "post_process_batch", _tracking_post_process_batch
-        )
-
-        # Override cpu_batch_size to 4
-        mapper._cpu_batch_size = 4
-
-        # 10 reactions, inference_batch_size=2 (5 GPU batches),
-        # cpu_batch_size=4 → flushes: [4, 4, 2]
-        rxns = [
-            "CC>>CC",
-            "CCC>>CCC",
-            "CCCC>>CCCC",
-            "CCCCC>>CCCCC",
-            "CCCCCC>>CCCCCC",
-            "CCCCCCC>>CCCCCCC",
-            "CCO>>CCO",
-            "CCCO>>CCCO",
-            "CCCCO>>CCCCO",
-            "CCCCCO>>CCCCCO",
-        ]
         mapper.map_reactions(
-            rxns,
+            self.TEST_RXNS_10,
             inference_batch_size=2,
             one_to_one_correspondence=True,
         )
 
         assert captured_task_counts == [4, 4, 2]
 
-    def test_different_cpu_batch_sizes_produce_same_results(self, mapper, monkeypatch):
+    def test_different_cpu_batch_sizes_produce_same_results(
+        self, monkeypatch, fake_batch, fake_map
+    ):
         """Different cpu_batch_size values produce identical mapping results."""
+        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC", "CCCCC>>CCCCC"]
+
+        mapper_small = self._make_mapper(cpu_batch_size=1)
+        mapper_large = self._make_mapper(cpu_batch_size=1024)
+
+        for m in (mapper_small, mapper_large):
+            monkeypatch.setattr(m, "_get_attention_matrices_batch", fake_batch)
+            monkeypatch.setattr(m._post_processor, "map_from_attention", fake_map)
+
+        results_1 = mapper_small.map_reactions(
+            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        )
+        results_1024 = mapper_large.map_reactions(
+            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        )
+
+        for r1, r1024 in zip(results_1, results_1024):
+            assert r1.original_smiles == r1024.original_smiles
+            assert r1.selected_mapping == r1024.selected_mapping
+
+
+class TestPoolLifecycle:
+    """Verify pool creation, reuse, and cleanup in map_reactions."""
+
+    @pytest.fixture
+    def fake_batch(self):
         def _fake_batch(texts, **kwargs):
             return [(np.zeros((2, 2)), ["C", "C"])] * len(texts)
 
-        def _fake_map(rxn_smiles, **kwargs):
-            from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+        return _fake_batch
 
+    @pytest.fixture
+    def fake_map(self):
+        from agave_chem.mappers.reaction_mapper import ReactionMapperResult
+
+        def _fake_map(rxn_smiles, **kwargs):
             return (
                 ReactionMapperResult(
                     original_smiles=rxn_smiles,
@@ -760,24 +773,134 @@ class TestCpuBatchSize:
                 None,
             )
 
-        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _fake_batch)
-        monkeypatch.setattr(mapper._post_processor, "map_from_attention", _fake_map)
+        return _fake_map
 
-        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC", "CCCCC>>CCCCC"]
+    def test_pool_created_once_and_closed(self, monkeypatch, fake_batch, fake_map):
+        """When num_processes > 1, create_worker_pool is called exactly once
+        and the pool is closed after map_reactions returns."""
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            mapper = NeuralReactionMapper(mapper_name="test", num_processes=2)
 
-        mapper._cpu_batch_size = 1
-        results_1 = mapper.map_reactions(
-            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", fake_map)
+
+        create_calls: list[int] = []
+
+        class _FakePool:
+            def __init__(self):
+                self.closed = False
+                self.joined = False
+
+            def map(self, func, iterable, chunksize=None):
+                return [
+                    mapper._post_processor.map_from_attention(
+                        rxn_smiles=task[0],
+                        attn=task[1],
+                        tokens=task[2],
+                        one_to_one_correspondence=task[3],
+                        consider_tautomer_symmetry=task[4],
+                        consider_transform_symmetry=task[5],
+                    )
+                    for task in iterable
+                ]
+
+            def close(self):
+                self.closed = True
+
+            def join(self):
+                self.joined = True
+
+        fake_pool = _FakePool()
+
+        def _tracking_create(num_processes):
+            create_calls.append(num_processes)
+            return fake_pool
+
+        monkeypatch.setattr(
+            mapper._post_processor, "create_worker_pool", _tracking_create
         )
 
-        mapper._cpu_batch_size = 1024
-        results_1024 = mapper.map_reactions(
-            rxns, inference_batch_size=2, one_to_one_correspondence=True
+        rxns = ["CC>>CC", "CCC>>CCC", "CCCC>>CCCC"]
+        mapper.map_reactions(rxns, one_to_one_correspondence=True)
+
+        assert len(create_calls) == 1
+        assert create_calls[0] == 2
+        assert fake_pool.closed
+        assert fake_pool.joined
+
+    def test_pool_closed_on_exception(self, monkeypatch, fake_batch, fake_map):
+        """Pool is closed even when an exception occurs during inference."""
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            mapper = NeuralReactionMapper(mapper_name="test", num_processes=2)
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", fake_map)
+
+        class _FakePool:
+            def __init__(self):
+                self.closed = False
+                self.joined = False
+
+            def map(self, func, iterable, chunksize=None):
+                return [func(item) for item in iterable]
+
+            def close(self):
+                self.closed = True
+
+            def join(self):
+                self.joined = True
+
+        fake_pool = _FakePool()
+
+        def _return_fake_pool(num_processes):
+            return fake_pool
+
+        monkeypatch.setattr(
+            mapper._post_processor, "create_worker_pool", _return_fake_pool
         )
 
-        for r1, r1024 in zip(results_1, results_1024):
-            assert r1.original_smiles == r1024.original_smiles
-            assert r1.selected_mapping == r1024.selected_mapping
+        def _raising_batch(texts, **kwargs):
+            raise RuntimeError("GPU inference failed")
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", _raising_batch)
+
+        rxns = ["CC>>CC", "CCC>>CCC"]
+        with pytest.raises(RuntimeError, match="GPU inference failed"):
+            mapper.map_reactions(rxns, one_to_one_correspondence=True)
+
+        assert fake_pool.closed
+        assert fake_pool.joined
+
+    def test_no_pool_created_for_serial(self, monkeypatch, fake_batch, fake_map):
+        """When num_processes=1, create_worker_pool is never called."""
+        with patch(
+            "agave_chem.mappers.neural.neural_mapper.load_neural_albert_model"
+        ) as mock_load:
+            mock_load.return_value = None
+            mapper = NeuralReactionMapper(mapper_name="test", num_processes=1)
+
+        monkeypatch.setattr(mapper, "_get_attention_matrices_batch", fake_batch)
+        monkeypatch.setattr(mapper._post_processor, "map_from_attention", fake_map)
+
+        create_calls: list[int] = []
+
+        def _tracking_create(num_processes):
+            create_calls.append(num_processes)
+
+        monkeypatch.setattr(
+            mapper._post_processor, "create_worker_pool", _tracking_create
+        )
+
+        rxns = ["CC>>CC", "CCC>>CCC"]
+        mapper.map_reactions(rxns, one_to_one_correspondence=True)
+
+        assert create_calls == []
 
 
 class TestSerialVsParallelPostProcessing:
