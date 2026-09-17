@@ -37,6 +37,8 @@ These mappers can be used individually, or called as a pipeline using `map_react
 | AgaveChem (neural only) | 91.52% |
 | AgaveChem (using `map_reactions()`) | 91.74% |
 
+> **Caveat:** The 1,758-reaction golden dataset ([Chen et al., 2024](https://www.nature.com/articles/s41467-024-46364-y)) was not used as training data for any AgaveChem mapper. However, it was inspected during development to identify failure cases and iteratively improve templates and mapper logic. It should therefore be regarded as a **validation set**. We plan to release a separate test set in the future.
+
 ## Requirements
 
 - Python (version >= 3.10)

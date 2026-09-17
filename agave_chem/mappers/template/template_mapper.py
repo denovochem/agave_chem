@@ -1367,7 +1367,7 @@ class TemplateReactionMapper(ReactionMapper):
                     reactant_mol = Chem.MolFromSmarts(reactant_fragment_str)
                     if not reactant_mol:
                         return False
-                    reactant_mol.UpdatePropertyCache()
+                    reactant_mol.UpdatePropertyCache(strict=False)
                     if reactant_mol.HasSubstructMatch(query_mol):
                         found_match = True
                         break
