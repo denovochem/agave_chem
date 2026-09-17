@@ -515,6 +515,10 @@ class TemplateReactionMapper(ReactionMapper):
                 SMILES string and values are lists of the enumerated tautomer SMILES strings
                 for each fragment.
 
+        Note:
+            If tautomer enumeration fails for a fragment (e.g., due to a
+            KekulizeException or AtomValenceException), that fragment is
+            mapped to an empty list, matching the behavior for unparseable SMILES.
         """
         enumerated_smiles_dict: Dict[str, List[str]] = {}
         for fragment_str in smiles.split("."):
@@ -524,7 +528,13 @@ class TemplateReactionMapper(ReactionMapper):
                 enumerated_smiles_dict[fragment_str] = []
                 continue
 
-            enumerated_fragment_mols = list(self._tautomer_enumerator.Enumerate(mol))
+            try:
+                enumerated_fragment_mols = list(
+                    self._tautomer_enumerator.Enumerate(mol)
+                )
+            except (Chem.KekulizeException, Chem.AtomValenceException):
+                enumerated_smiles_dict[fragment_str] = []
+                continue
             enumerated_fragment_smiles = [
                 Chem.MolToSmiles(frag_mol) for frag_mol in enumerated_fragment_mols
             ]
@@ -1347,6 +1357,8 @@ class TemplateReactionMapper(ReactionMapper):
         Note:
             Fragments without wildcards ("*") are skipped from substructure matching.
             If any SMARTS parsing fails, the method returns False immediately.
+            Reactant molecules are parsed as SMARTS and use non-strict property
+            cache updates to handle hypervalent atoms (e.g., P with valence 5).
         """
         unmapped_found_fragments = [
             unmapped_fragment[0] for unmapped_fragment in found_fragments
@@ -1367,7 +1379,7 @@ class TemplateReactionMapper(ReactionMapper):
                     reactant_mol = Chem.MolFromSmarts(reactant_fragment_str)
                     if not reactant_mol:
                         return False
-                    reactant_mol.UpdatePropertyCache()
+                    reactant_mol.UpdatePropertyCache(strict=False)
                     if reactant_mol.HasSubstructMatch(query_mol):
                         found_match = True
                         break
@@ -1414,9 +1426,12 @@ class TemplateReactionMapper(ReactionMapper):
 
                     # TODO: Is this even needed if we just take all possible fragments in _validate_and_map_missing_fragments?
                     if len(tautomer_list) > 1:
-                        mapped_enumerated_tautomers = list(
-                            self._tautomer_enumerator.Enumerate(Chem.MolFromSmiles(out))
-                        )
+                        try:
+                            mapped_enumerated_tautomers = list(
+                                self._tautomer_enumerator.Enumerate(Chem.MolFromSmiles(out))
+                            )
+                        except (Chem.KekulizeException, Chem.AtomValenceException):
+                            mapped_enumerated_tautomers = []
                         for mapped_enumerated_tautomer in mapped_enumerated_tautomers:
                             unmapped_tautomer_copy = Chem.Mol(
                                 mapped_enumerated_tautomer

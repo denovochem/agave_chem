@@ -33,6 +33,7 @@ LOG_LEVELS = {
 # log output.  Users can call configure_logging() or enable_library_logging()
 # to re-enable logging at the desired level.
 logger.disable("agave_chem")
+logger.disable("rdchiral")
 
 
 def configure_logging(
@@ -141,10 +142,12 @@ def configure_logging(
 
 def disable_library_logging() -> None:
     logger.disable("agave_chem")
+    logger.disable("rdchiral")
 
 
 def enable_library_logging() -> None:
     logger.enable("agave_chem")
+    logger.enable("rdchiral")
 
 
 __all__ = [

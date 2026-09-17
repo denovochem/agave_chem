@@ -1913,8 +1913,8 @@ token_atom_identity_dict = {
     "[Mg-]": 12,
     "[Ne]": 10,
     "[Re+2]": 75,
-    "[*:2]": 0,
-    "[*:1]": 0,
+    "[*:2]": 999,
+    "[*:1]": 999,
     "[Rh-3]": 45,
     "[FH+]": 9,
     "[Ge-]": 32,
@@ -2321,7 +2321,7 @@ token_atom_identity_dict = {
     "[SH5]": 16,
     "[VH]": 23,
     "~": 0,
-    "*": 0,
+    "*": 999,
 }
 
 assert set(token_atom_identity_dict.keys()) == set(smiles_token_to_id_dict.keys())

@@ -319,6 +319,12 @@ def resolve_symmtery_class_for_tautomers(mol: Chem.Mol) -> List[int]:
         List[int]: A list of integer symmetry class labels, one per atom in the
             input molecule, where atoms that can interconvert via tautomerism
             share the same class label.
+
+    Note:
+        If tautomer enumeration fails (e.g., due to a KekulizeException or
+        AtomValenceException on a molecule that cannot be kekulized or has
+        invalid valence), the function falls back to returning the non-tautomer
+        canonical ranks.
     """
     reference_mol = Chem.Mol(mol)
     reference_mol_canonical_ranks = list(
@@ -327,7 +333,10 @@ def resolve_symmtery_class_for_tautomers(mol: Chem.Mol) -> List[int]:
     mol_with_atom_maps = Chem.Mol(mol)
     for atom in mol_with_atom_maps.GetAtoms():
         atom.SetAtomMapNum(atom.GetIdx() + 1)
-    tautomers_with_atom_maps = list(_TAUTOMER_ENUMERATOR.Enumerate(mol_with_atom_maps))
+    try:
+        tautomers_with_atom_maps = list(_TAUTOMER_ENUMERATOR.Enumerate(mol_with_atom_maps))
+    except (Chem.KekulizeException, Chem.AtomValenceException):
+        return reference_mol_canonical_ranks
 
     for tautomer_with_atom_map in tautomers_with_atom_maps:
         tautomer = Chem.Mol(tautomer_with_atom_map)
