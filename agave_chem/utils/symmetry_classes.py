@@ -334,7 +334,9 @@ def resolve_symmtery_class_for_tautomers(mol: Chem.Mol) -> List[int]:
     for atom in mol_with_atom_maps.GetAtoms():
         atom.SetAtomMapNum(atom.GetIdx() + 1)
     try:
-        tautomers_with_atom_maps = list(_TAUTOMER_ENUMERATOR.Enumerate(mol_with_atom_maps))
+        tautomers_with_atom_maps = list(
+            _TAUTOMER_ENUMERATOR.Enumerate(mol_with_atom_maps)
+        )
     except (Chem.KekulizeException, Chem.AtomValenceException):
         return reference_mol_canonical_ranks
 

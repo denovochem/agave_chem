@@ -1428,7 +1428,9 @@ class TemplateReactionMapper(ReactionMapper):
                     if len(tautomer_list) > 1:
                         try:
                             mapped_enumerated_tautomers = list(
-                                self._tautomer_enumerator.Enumerate(Chem.MolFromSmiles(out))
+                                self._tautomer_enumerator.Enumerate(
+                                    Chem.MolFromSmiles(out)
+                                )
                             )
                         except (Chem.KekulizeException, Chem.AtomValenceException):
                             mapped_enumerated_tautomers = []
