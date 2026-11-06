@@ -8,6 +8,7 @@ module-level convenience wrapper around the same pool logic.
 """
 
 import multiprocessing as mp
+import os
 from typing import List, Optional, Union
 
 from agave_chem.mappers.reaction_mapper import ReactionMapper
@@ -43,16 +44,17 @@ def _init_worker(apply_multiple_smirks: bool, num_smirks_to_apply: int) -> None:
     _num_smirks_to_apply = num_smirks_to_apply
 
 
-def _map_one(rxn: str) -> ReactionMapperResult:
+def _map_one(rxn: Union[str, ReactionInput]) -> ReactionMapperResult:
     """
-    Atom-map a single reaction SMILES string using the worker-local mapper.
+    Atom-map a single reaction using the worker-local mapper.
 
     Uses the module-level ``_template_mapper`` initialised by ``_init_worker``.
     Returns the full ``ReactionMapperResult`` so that ``classification_info``
     and ``possible_mappings`` are preserved across process boundaries.
 
     Args:
-        rxn (str): Reaction SMILES string to map.
+        rxn (Union[str, ReactionInput]): Reaction SMILES string or
+            ``ReactionInput`` object to map.
 
     Returns:
         ReactionMapperResult: Template-based mapping result, including
@@ -78,7 +80,7 @@ class ParallelTemplateReactionMapper(ReactionMapper):
         self,
         mapper_name: str,
         mapper_weight: float = 3,
-        workers: int = 8,
+        workers: Optional[int] = None,
         chunksize: int = 50,
         apply_multiple_smirks: bool = True,
         num_smirks_to_apply: int = 2,
@@ -89,7 +91,8 @@ class ParallelTemplateReactionMapper(ReactionMapper):
         Args:
             mapper_name (str): Unique name for this mapper instance.
             mapper_weight (float): Weight used for mapper selection (0–1000).
-            workers (int): Number of worker processes in the pool.
+            workers (Optional[int]): Number of worker processes. Defaults to
+                ``min(os.cpu_count() or 1, 16)``.
             chunksize (int): Number of reactions sent to each worker per chunk.
             apply_multiple_smirks (bool): Whether to apply multiple SMIRKS
                 patterns to the same reaction.
@@ -97,7 +100,7 @@ class ParallelTemplateReactionMapper(ReactionMapper):
                 reaction.
         """
         super().__init__("template", mapper_name, mapper_weight)
-        self._workers = workers
+        self._workers = workers or min(os.cpu_count() or 1, 16)
         self._chunksize = chunksize
         self._apply_multiple_smirks = apply_multiple_smirks
         self._num_smirks_to_apply = num_smirks_to_apply
@@ -161,18 +164,23 @@ class ParallelTemplateReactionMapper(ReactionMapper):
                 same order as ``reaction_smiles_list``. Reactions that fail to
                 map have an empty string for ``selected_mapping``.
         """
-        smiles_list = [self._get_smiles(item) for item in reaction_smiles_list]
         with mp.Pool(
             processes=self._workers,
             initializer=_init_worker,
             initargs=(self._apply_multiple_smirks, self._num_smirks_to_apply),
         ) as pool:
-            return list(pool.imap(_map_one, smiles_list, chunksize=self._chunksize))
+            return list(
+                pool.imap(
+                    _map_one,  # type: ignore[arg-type]
+                    reaction_smiles_list,
+                    chunksize=self._chunksize,
+                )
+            )
 
 
 def map_reactions_parallel_template(
     reaction_smiles: List[str],
-    workers: int = 8,
+    workers: Optional[int] = None,
     chunksize: int = 50,
     apply_multiple_smirks: bool = True,
     num_smirks_to_apply: int = 2,
@@ -187,7 +195,8 @@ def map_reactions_parallel_template(
 
     Args:
         reaction_smiles (List[str]): Reaction SMILES strings to map.
-        workers (int): Number of worker processes.
+        workers (Optional[int]): Number of worker processes. Defaults to
+            ``min(os.cpu_count() or 1, 16)``.
         chunksize (int): Number of reactions sent to each worker per chunk.
         apply_multiple_smirks (bool): Whether to apply multiple SMIRKS patterns
             to the same reaction.
@@ -196,13 +205,15 @@ def map_reactions_parallel_template(
 
     Returns:
         List[ReactionMapperResult]: Template-based mapping results in the same
-        order as ``reaction_smiles``, including ``classification_info`` and
-        ``possible_mappings``. Reactions that fail to map have an empty string
-        for ``selected_mapping``.
+            order as ``reaction_smiles``, including ``classification_info`` and
+            ``possible_mappings``. Reactions that fail to map have an empty string
+            for ``selected_mapping``.
     """
-    with mp.Pool(
-        processes=workers,
-        initializer=_init_worker,
-        initargs=(apply_multiple_smirks, num_smirks_to_apply),
-    ) as pool:
-        return list(pool.imap(_map_one, reaction_smiles, chunksize=chunksize))
+    mapper = ParallelTemplateReactionMapper(
+        "template_parallel_convenience",
+        workers=workers,
+        chunksize=chunksize,
+        apply_multiple_smirks=apply_multiple_smirks,
+        num_smirks_to_apply=num_smirks_to_apply,
+    )
+    return mapper.map_reactions(reaction_smiles)

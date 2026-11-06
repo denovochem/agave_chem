@@ -80,76 +80,49 @@ class TestValidateAndNormalizeInput:
         return [_StubMapper(mapper_name="a"), _StubMapper(mapper_name="b")]
 
     def test_string_input_normalized_to_single_element_list(self, valid_mappers):
-        rxns, mappers, batch = _validate_and_normalize_input(
-            "CC>>CC", valid_mappers, 100
-        )
+        rxns, mappers = _validate_and_normalize_input("CC>>CC", valid_mappers)
         assert rxns == ["CC>>CC"]
         assert mappers == valid_mappers
-        assert batch == 100
 
     def test_list_input_passes_through(self, valid_mappers):
-        rxns, _, _ = _validate_and_normalize_input(
-            ["CC>>CC", "CCO>>CCO"], valid_mappers, 100
-        )
+        rxns, _ = _validate_and_normalize_input(["CC>>CC", "CCO>>CCO"], valid_mappers)
         assert rxns == ["CC>>CC", "CCO>>CCO"]
 
     def test_empty_list_raises(self, valid_mappers):
         with pytest.raises(ValueError, match="non-empty list of strings"):
-            _validate_and_normalize_input([], valid_mappers, 100)
+            _validate_and_normalize_input([], valid_mappers)
 
     def test_non_string_element_raises(self, valid_mappers):
         with pytest.raises(TypeError, match="non-empty list of strings"):
-            _validate_and_normalize_input(["CC>>CC", 42], valid_mappers, 100)
+            _validate_and_normalize_input(["CC>>CC", 42], valid_mappers)
 
     def test_non_list_non_string_input_raises(self, valid_mappers):
         with pytest.raises(TypeError, match="non-empty list of strings"):
-            _validate_and_normalize_input(42, valid_mappers, 100)
+            _validate_and_normalize_input(42, valid_mappers)
 
     def test_duplicates_removed_order_preserved(self, valid_mappers):
-        rxns, _, _ = _validate_and_normalize_input(
+        rxns, _ = _validate_and_normalize_input(
             ["CC>>CC", "CCO>>CCO", "CC>>CC", "CCC>>CCC"],
             valid_mappers,
-            100,
         )
         assert rxns == ["CC>>CC", "CCO>>CCO", "CCC>>CCC"]
 
     def test_empty_mappers_list_raises(self):
         with pytest.raises(ValueError, match="non-empty list of ReactionMapper"):
-            _validate_and_normalize_input(["CC>>CC"], [], 100)
+            _validate_and_normalize_input(["CC>>CC"], [])
 
     def test_none_mappers_list_raises(self):
         with pytest.raises(ValueError, match="non-empty list of ReactionMapper"):
-            _validate_and_normalize_input(["CC>>CC"], None, 100)
+            _validate_and_normalize_input(["CC>>CC"], None)
 
     def test_non_reaction_mapper_instance_raises(self):
         with pytest.raises(TypeError, match="not an instance of ReactionMapper"):
-            _validate_and_normalize_input(["CC>>CC"], ["not_a_mapper"], 100)
+            _validate_and_normalize_input(["CC>>CC"], ["not_a_mapper"])
 
     def test_duplicate_mapper_names_raises(self):
         mappers = [_StubMapper(mapper_name="dup"), _StubMapper(mapper_name="dup")]
         with pytest.raises(ValueError, match="Duplicate mapper name: dup"):
-            _validate_and_normalize_input(["CC>>CC"], mappers, 100)
-
-    def test_non_int_batch_size_raises_type_error(self, valid_mappers):
-        with pytest.raises(TypeError, match="batch_size must be an integer"):
-            _validate_and_normalize_input(["CC>>CC"], valid_mappers, "100")
-
-    def test_batch_size_zero_raises(self, valid_mappers):
-        with pytest.raises(ValueError, match="between 1-1000"):
-            _validate_and_normalize_input(["CC>>CC"], valid_mappers, 0)
-
-    def test_batch_size_negative_raises(self, valid_mappers):
-        with pytest.raises(ValueError, match="between 1-1000"):
-            _validate_and_normalize_input(["CC>>CC"], valid_mappers, -1)
-
-    def test_batch_size_over_1000_raises(self, valid_mappers):
-        with pytest.raises(ValueError, match="between 1-1000"):
-            _validate_and_normalize_input(["CC>>CC"], valid_mappers, 1001)
-
-    def test_batch_size_boundary_values_accepted(self, valid_mappers):
-        for bs in (1, 1000):
-            _, _, batch = _validate_and_normalize_input(["CC>>CC"], valid_mappers, bs)
-            assert batch == bs
+            _validate_and_normalize_input(["CC>>CC"], mappers)
 
 
 # ---------------------------------------------------------------------------
@@ -171,12 +144,12 @@ class TestMapReactionsUsingMappers:
 
     def test_validation_runs_on_invalid_input(self):
         with pytest.raises(ValueError, match="non-empty list of strings"):
-            map_reactions_using_mappers([], [_StubMapper()], 100)
+            map_reactions_using_mappers([], [_StubMapper()])
 
     def test_results_preserve_input_order(self):
         rxns = ["CC>>CC", "CCO>>CCO", "CCC>>CCC"]
         mapper = _StubMapper(mapper_name="stub")
-        results = map_reactions_using_mappers(rxns, [mapper], 100)
+        results = map_reactions_using_mappers(rxns, [mapper])
         assert len(results) == 3
         assert results[0].original_reaction == "CC>>CC"
         assert results[1].original_reaction == "CCO>>CCO"
@@ -188,13 +161,13 @@ class TestMapReactionsUsingMappers:
         mapper_filled = _StubMapper(
             mapper_name="filled", mappings=["[C:1][C:2]>>[C:1][C:2]"]
         )
-        results = map_reactions_using_mappers(rxns, [mapper_empty, mapper_filled], 100)
+        results = map_reactions_using_mappers(rxns, [mapper_empty, mapper_filled])
         assert results[0].final_mapping == "[C:1][C:2]>>[C:1][C:2]"
 
     def test_final_mapping_empty_when_all_mappers_fail(self):
         rxns = ["CC>>CC"]
         mapper = _StubMapper(mapper_name="fail", mappings=[""])
-        results = map_reactions_using_mappers(rxns, [mapper], 100)
+        results = map_reactions_using_mappers(rxns, [mapper])
         assert results[0].final_mapping == ""
 
     def test_mapper_results_collected_per_reaction(self):
@@ -202,7 +175,7 @@ class TestMapReactionsUsingMappers:
         m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
         m2 = _StubMapper(mapper_name="m2", mappings=["map2"])
         results = map_reactions_using_mappers(
-            rxns, [m1, m2], 100, return_detailed_mapper_info=True
+            rxns, [m1, m2], return_detailed_mapper_info=True
         )
         assert len(results[0].mapper_results) == 2
         assert results[0].mapper_results[0].selected_mapping == "map1"
@@ -212,7 +185,7 @@ class TestMapReactionsUsingMappers:
         rxns = ["CC>>CC"]
         m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
         m2 = _StubMapper(mapper_name="m2", mappings=["map2"])
-        results = map_reactions_using_mappers(rxns, [m1, m2], 100)
+        results = map_reactions_using_mappers(rxns, [m1, m2])
         assert results[0].mapper_results == []
         assert results[0].final_mapping == "map2"
 
@@ -220,24 +193,184 @@ class TestMapReactionsUsingMappers:
         rxns = ["CC>>CC"]
         m1 = _StubMapper(mapper_name="m1", mappings=["map1"])
         results = map_reactions_using_mappers(
-            rxns, [m1], 100, return_detailed_mapper_info=False
+            rxns, [m1], return_detailed_mapper_info=False
         )
         assert results[0].mapper_results == []
         assert results[0].final_mapping == "map1"
 
-    def test_batching_with_multiple_batches(self):
-        rxns = [f"R{i}>>P{i}" for i in range(5)]
-        mapper = _StubMapper(mapper_name="stub")
-        results = map_reactions_using_mappers(rxns, [mapper], 2)
-        assert len(results) == 5
-        for i, r in enumerate(results):
-            assert r.original_reaction == f"R{i}>>P{i}"
-
     def test_string_input_accepted(self):
         mapper = _StubMapper(mapper_name="stub")
-        results = map_reactions_using_mappers("CC>>CC", [mapper], 100)
+        results = map_reactions_using_mappers("CC>>CC", [mapper])
         assert len(results) == 1
         assert results[0].original_reaction == "CC>>CC"
+
+
+class TestMcsInDetailedMapperInfo:
+    """Tests for MCS result injection into mapper_results."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_identical_fragment_mapper(self):
+        """Replace IdenticalFragmentMapper with a pass-through to avoid SMILES parsing."""
+        with patch(
+            "agave_chem.main.IdenticalFragmentMapper",
+            _PassThroughIdenticalFragmentMapper,
+        ):
+            yield
+
+    def test_mcs_included_when_detailed_info_true(self):
+        """MCS result is prepended to mapper_results when return_detailed_mapper_info=True
+        and MCS was run as pre-processing (neural mapper present, no explicit MCS mapper)."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+        assert results[0].mapper_results[1].mapping_type == "neural"
+
+    def test_mcs_not_included_when_detailed_info_false(self):
+        """MCS result is not included when return_detailed_mapper_info=False."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(["CC>>CC"], [neural])
+        assert results[0].mapper_results == []
+
+    def test_mcs_not_included_when_explicit_mcs_mapper(self):
+        """MCS result is not prepended when user explicitly passes an MCS mapper,
+        since that result is already in mapper_results."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        mcs_mapper = _StubMapper(
+            mapper_name="mcs_explicit", mapper_type="mcs", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [mcs_mapper], return_detailed_mapper_info=True
+            )
+        # Only the explicit MCS mapper result, no prepended pre-processing MCS
+        assert len(results[0].mapper_results) == 1
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+
+    def test_mcs_not_included_when_mcs_not_run(self):
+        """No MCS result when needs_mcs is False (no neural/template mappers)."""
+        stub = _StubMapper(mapper_name="stub", mapper_type="stub", mappings=["map1"])
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [None],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [stub], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 1
+        assert results[0].mapper_results[0].mapping_type == "stub"
+
+    def test_mcs_does_not_affect_final_mapping(self):
+        """final_mapping stays empty when neural/template both return empty,
+        even though MCS has a non-empty mapping."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="[C:1]>>[C:1]",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(mapper_name="neural", mapper_type="neural", mappings=[""])
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert results[0].final_mapping == ""
+        # MCS is still in mapper_results for informational purposes
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == "[C:1]>>[C:1]"
+
+    def test_mcs_result_with_empty_mapping_still_included(self):
+        """MCS result with empty selected_mapping is still included in mapper_results."""
+        mcs_result = ReactionMapperResult(
+            original_smiles="CC>>CC",
+            selected_mapping="",
+            mapping_type="mcs",
+        )
+        neural = _StubMapper(
+            mapper_name="neural", mapper_type="neural", mappings=["[C:1]>>[C:1]"]
+        )
+        with patch("agave_chem.main._prepare_reaction_inputs") as mock_prep:
+            mock_prep.return_value = (
+                [
+                    ReactionInput(
+                        stripped_smiles="CC>>CC", one_to_one_correspondence=True
+                    )
+                ],
+                [[]],
+                [mcs_result],
+            )
+            results = map_reactions_using_mappers(
+                ["CC>>CC"], [neural], return_detailed_mapper_info=True
+            )
+        assert len(results[0].mapper_results) == 2
+        assert results[0].mapper_results[0].mapping_type == "mcs"
+        assert results[0].mapper_results[0].selected_mapping == ""
 
 
 # ---------------------------------------------------------------------------
@@ -290,10 +423,6 @@ class TestMapReactions:
     def test_invalid_mapping_selection_mode_raises(self):
         with pytest.raises(TypeError, match="mapping_selection_mode"):
             map_reactions(["CC>>CC"], mapping_selection_mode=42)
-
-    def test_invalid_batch_size_raises(self):
-        with pytest.raises(ValueError, match="between 1-1000"):
-            map_reactions(["CC>>CC"], batch_size=0)
 
     def test_custom_mappers_used_when_provided(self):
         mapper = _StubMapper(mapper_name="custom", mappings=["custom_map"])
@@ -519,3 +648,112 @@ class TestMapReactions:
         )
         results = map_reactions(["CC>>CC"], mappers_list=[template, neural])
         assert results[0].confidence == 0.87
+
+
+# ---------------------------------------------------------------------------
+# num_processes parameter
+# ---------------------------------------------------------------------------
+
+
+class TestNumProcesses:
+    """Tests for the num_processes parameter in map_reactions."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_identical_fragment_mapper(self):
+        """Replace IdenticalFragmentMapper with a pass-through to avoid SMILES parsing."""
+        with patch(
+            "agave_chem.main.IdenticalFragmentMapper",
+            _PassThroughIdenticalFragmentMapper,
+        ):
+            yield
+
+    def test_num_processes_default_is_one(self):
+        """Default num_processes is 1 (serial)."""
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper])
+        assert len(results) == 1
+        assert results[0].final_mapping == "map1"
+
+    def test_num_processes_one_with_explicit_mappers(self):
+        """num_processes=1 with explicit mappers runs serially."""
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        results = map_reactions(["CC>>CC"], mappers_list=[mapper], num_processes=1)
+        assert len(results) == 1
+        assert results[0].final_mapping == "map1"
+
+    def test_num_processes_passed_to_map_reactions_using_mappers(self):
+        """num_processes is forwarded to map_reactions_using_mappers."""
+        mapper = _StubMapper(mapper_name="stub", mappings=["map1"])
+        with patch(
+            "agave_chem.main.map_reactions_using_mappers",
+            wraps=map_reactions_using_mappers,
+        ) as mock:
+            map_reactions(["CC>>CC"], mappers_list=[mapper], num_processes=4)
+        assert mock.call_count == 1
+        assert mock.call_args.kwargs["num_processes"] == 4
+
+    def test_num_processes_greater_than_one_selects_parallel_default_mappers(self):
+        """When num_processes > 1 and mappers_list is None, parallel default mappers are used."""
+        with (
+            patch("agave_chem.main._get_default_mappers_parallel") as mock_parallel,
+            patch("agave_chem.main._get_default_mappers") as mock_serial,
+        ):
+            mock_parallel.return_value = (
+                _StubMapper(mapper_name="neural", mapper_type="neural"),
+                _StubMapper(mapper_name="template", mapper_type="template"),
+            )
+            map_reactions(["CC>>CC"], num_processes=4)
+        assert mock_parallel.call_count == 1
+        assert mock_parallel.call_args.args[0] == 4
+        assert mock_serial.call_count == 0
+
+    def test_num_processes_one_selects_serial_default_mappers(self):
+        """When num_processes=1 and mappers_list is None, serial default mappers are used."""
+        with (
+            patch("agave_chem.main._get_default_mappers") as mock_serial,
+            patch("agave_chem.main._get_default_mappers_parallel") as mock_parallel,
+        ):
+            mock_serial.return_value = (
+                _StubMapper(mapper_name="neural", mapper_type="neural"),
+                _StubMapper(mapper_name="template", mapper_type="template"),
+            )
+            map_reactions(["CC>>CC"])
+        assert mock_serial.call_count == 1
+        assert mock_parallel.call_count == 0
+
+    def test_num_processes_zero_raises_value_error(self):
+        """num_processes=0 raises ValueError."""
+        with pytest.raises(ValueError, match="num_processes"):
+            map_reactions(["CC>>CC"], num_processes=0)
+
+    def test_num_processes_negative_raises_value_error(self):
+        """num_processes=-1 raises ValueError."""
+        with pytest.raises(ValueError, match="num_processes"):
+            map_reactions(["CC>>CC"], num_processes=-1)
+
+    def test_num_processes_parallel_mcs_preprocessing_matches_serial(self):
+        """Parallel MCS pre-processing (num_processes=2) produces same results as serial."""
+        from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
+
+        rxns = [
+            "CCCCCO>>CCCCCO",
+            "CCCCCO.O>>CCCCCO.O",
+        ]
+
+        # Serial
+        serial_results = map_reactions(
+            rxns,
+            mappers_list=[MCSReactionMapper("test_mcs")],
+            num_processes=1,
+        )
+
+        # Parallel (exercises real _prepare_reaction_inputs parallel MCS path)
+        parallel_results = map_reactions(
+            rxns,
+            mappers_list=[MCSReactionMapper("test_mcs_par")],
+            num_processes=2,
+        )
+
+        assert len(serial_results) == len(parallel_results)
+        for s, p in zip(serial_results, parallel_results):
+            assert s.final_mapping == p.final_mapping

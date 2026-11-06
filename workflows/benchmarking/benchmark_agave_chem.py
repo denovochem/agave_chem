@@ -6,10 +6,10 @@ Env var AGAVE_BENCH_DIR must point to the benchmarking directory
 (or pass --gold-reactions explicitly).
 
 Supports two modes:
-  - Per-mapper: benchmark individual mappers (neural, template) one at a time.
-  - Pipeline:   benchmark the full map_reactions pipeline (batch processing,
-                identical-fragment handling, multi-mapper fallback) by passing
-                --mapper pipeline.
+  - Per-mapper: benchmark individual mappers (neural, template) by calling
+    ``map_reactions`` on the full reaction list.
+  - Pipeline:   benchmark the full ``map_reactions`` pipeline (identical-fragment
+                handling, multi-mapper fallback) by passing --mapper pipeline.
 """
 
 import argparse
@@ -39,12 +39,28 @@ _MAPPER_LABELS = {
 }
 
 
-def _build_mapper(name: str):
+def _build_mapper(name: str, num_processes: int = 8):
     if name == "mcs":
+        if num_processes > 1:
+            from agave_chem.mappers.mcs.parallel_mcs_mapper import (
+                ParallelMCSReactionMapper,
+            )
+
+            return ParallelMCSReactionMapper("mcs_parallel", workers=num_processes)
         return MCSReactionMapper(mapper_name="mcs", mapper_weight=1)
     if name == "neural":
-        return NeuralReactionMapper(mapper_name="neural_mapper", mapper_weight=1)
+        return NeuralReactionMapper(
+            mapper_name="neural_mapper", mapper_weight=1, num_processes=num_processes
+        )
     if name == "template":
+        if num_processes > 1:
+            from agave_chem.mappers.template.parallel_template_mapper import (
+                ParallelTemplateReactionMapper,
+            )
+
+            return ParallelTemplateReactionMapper(
+                "template_parallel", workers=num_processes
+            )
         return TemplateReactionMapper("template_default")
     if name == "pipeline":
         raise ValueError(
@@ -53,52 +69,38 @@ def _build_mapper(name: str):
     raise ValueError(f"Unknown mapper: {name}")
 
 
-def _benchmark_one(
-    mapper_name: str,
-    gold_reactions: list[str],
+def _evaluate(
+    label: str,
     unmapped: list[str],
+    gold_reactions: list[str],
+    results: list,
     output_prefix: str | None,
+    mapper_name: str,
     dump_errors: bool = False,
+    total_elapsed: float = 0.0,
 ) -> dict:
-    mapper = _build_mapper(mapper_name)
-    label = _MAPPER_LABELS[mapper_name]
-
-    mapped_results = []
+    """Evaluate mapping results against gold standard and print summary."""
+    mapped_results: list[str] = []
     error_records: list[str] = []
     correct = 0
     failed = 0
     incorrect = 0
-    log_interval = max(1, len(gold_reactions) // 20)
 
-    print(f"\nBenchmarking {label} on {len(gold_reactions)} reactions...")
-    total_start = time.time()
-
-    for i, (rxn, gold) in enumerate(zip(unmapped, gold_reactions)):
-        try:
-            result = mapper.map_reaction(rxn)
-            pred_rxn = result.selected_mapping
-        except Exception as e:
-            pred_rxn = ""
-            print(f"  [{i}] failed: {e}")
-
-        mapped_results.append(pred_rxn if pred_rxn else "")
+    for i, (result, gold) in enumerate(zip(results, gold_reactions)):
+        pred_rxn = getattr(result, "final_mapping", None) or getattr(
+            result, "selected_mapping", None
+        )
+        pred_rxn = pred_rxn or ""
+        mapped_results.append(pred_rxn)
         if not pred_rxn:
             failed += 1
-            error_records.append(f"{i}\tFAILED\t{rxn}\t{gold}\t")
+            error_records.append(f"{i}\tFAILED\t{unmapped[i]}\t{gold}\t")
         elif mappings_equivalent(gold, pred_rxn):
             correct += 1
         else:
             incorrect += 1
-            error_records.append(f"{i}\tINCORRECT\t{rxn}\t{gold}\t{pred_rxn}")
+            error_records.append(f"{i}\tINCORRECT\t{unmapped[i]}\t{gold}\t{pred_rxn}")
 
-        if (i + 1) % log_interval == 0:
-            elapsed = time.time() - total_start
-            print(
-                f"  {i + 1}/{len(gold_reactions)} | correct={correct} | incorrect={incorrect} | "
-                f"failed={failed} | elapsed={elapsed:.1f}s"
-            )
-
-    total_elapsed = time.time() - total_start
     total = len(gold_reactions)
     summary = {
         "tool": label,
@@ -131,106 +133,79 @@ def _benchmark_one(
     return summary
 
 
+def _benchmark_one(
+    mapper_name: str,
+    gold_reactions: list[str],
+    unmapped: list[str],
+    output_prefix: str | None,
+    num_processes: int = 8,
+    dump_errors: bool = False,
+) -> dict:
+    mapper = _build_mapper(mapper_name, num_processes=num_processes)
+    label = _MAPPER_LABELS[mapper_name]
+
+    print(f"\nBenchmarking {label} on {len(gold_reactions)} reactions...")
+    total_start = time.time()
+    results = mapper.map_reactions(unmapped)
+    total_elapsed = time.time() - total_start
+    print(f"  Completed in {total_elapsed:.1f}s")
+
+    return _evaluate(
+        label=label,
+        unmapped=unmapped,
+        gold_reactions=gold_reactions,
+        results=results,
+        output_prefix=output_prefix,
+        mapper_name=mapper_name,
+        dump_errors=dump_errors,
+        total_elapsed=total_elapsed,
+    )
+
+
 def _benchmark_pipeline(
     gold_reactions: list[str],
     unmapped: list[str],
     output_prefix: str | None,
+    num_processes: int = 8,
     dump_errors: bool = False,
 ) -> dict:
     """
     Benchmark the full agave_chem map_reactions pipeline.
 
-    Calls ``agave_chem.main.map_reactions`` with default mappers (MCS +
-    Template) and batch processing, identical-fragment handling, and
-    multi-mapper fallback.  This reflects the real-world usage pattern
-    rather than testing individual mappers in isolation.
+    Calls ``agave_chem.main.map_reactions`` with default mappers and batch
+    processing, identical-fragment handling, and multi-mapper fallback.  This
+    reflects the real-world usage pattern rather than testing individual
+    mappers in isolation.
 
     Args:
         gold_reactions (list[str]): Gold-standard mapped reaction SMILES.
         unmapped (list[str]): Unmapped reaction SMILES to feed to the pipeline.
         output_prefix (str | None): If set, save mapped reactions to
             ``{output_prefix}_pipeline.txt``.
+        num_processes (int): Number of parallel processes (default: 8).
+        dump_errors (bool): If True, write error details to a TSV file.
 
     Returns:
         dict: Summary statistics with the same keys as ``_benchmark_one``.
     """
     label = _MAPPER_LABELS["pipeline"]
 
-    mapped_results: list[str] = []
-    error_records: list[str] = []
-    correct = 0
-    failed = 0
-    incorrect = 0
-
     print(f"\nBenchmarking {label} on {len(gold_reactions)} reactions...")
     total_start = time.time()
-
-    batch_size = 500
-    for batch_start in range(0, len(unmapped), batch_size):
-        batch_unmapped = unmapped[batch_start : batch_start + batch_size]
-        batch_gold = gold_reactions[batch_start : batch_start + batch_size]
-
-        try:
-            results = map_reactions(batch_unmapped, batch_size=batch_size)
-        except Exception as e:
-            print(f"  Batch {batch_start} failed: {e}")
-            results = []
-
-        for i, (result, gold) in enumerate(zip(results, batch_gold)):
-            global_idx = batch_start + i
-            pred_rxn = result.final_mapping
-            mapped_results.append(pred_rxn if pred_rxn else "")
-            if not pred_rxn:
-                failed += 1
-                error_records.append(
-                    f"{global_idx}\tFAILED\t{unmapped[global_idx]}\t{gold}\t"
-                )
-            elif mappings_equivalent(gold, pred_rxn):
-                correct += 1
-            else:
-                incorrect += 1
-                error_records.append(
-                    f"{global_idx}\tINCORRECT\t{unmapped[global_idx]}\t{gold}\t{pred_rxn}"
-                )
-
-        done = min(batch_start + batch_size, len(unmapped))
-        elapsed = time.time() - total_start
-        print(
-            f"  {done}/{len(unmapped)} | correct={correct} | incorrect={incorrect} | "
-            f"failed={failed} | elapsed={elapsed:.1f}s"
-        )
-
+    results = map_reactions(unmapped, num_processes=num_processes)
     total_elapsed = time.time() - total_start
-    total = len(gold_reactions)
-    summary = {
-        "tool": label,
-        "total": total,
-        "correct": correct,
-        "failed": failed,
-        "incorrect": incorrect,
-        "accuracy": correct / (total - failed) if (total - failed) > 0 else 0.0,
-        "pct_correct": round(100.0 * correct / total, 2) if total > 0 else 0.0,
-        "total_time_s": round(total_elapsed, 2),
-        "avg_time_per_rxn_s": round(total_elapsed / total, 4) if total > 0 else 0.0,
-    }
-    print(f"\n=== {label} benchmark results ===")
-    print(json.dumps(summary, indent=2))
+    print(f"  Completed in {total_elapsed:.1f}s")
 
-    if output_prefix:
-        out_path = Path(f"{output_prefix}_pipeline.txt")
-        out_path.write_text("\n".join(mapped_results) + "\n")
-        print(f"Mapped reactions saved to {out_path}")
-
-    if dump_errors and error_records:
-        err_path = Path(f"{output_prefix or 'benchmark'}_pipeline_errors.tsv")
-        err_path.write_text(
-            "index\tstatus\tunmapped\tgold\tpredicted\n"
-            + "\n".join(error_records)
-            + "\n"
-        )
-        print(f"Error details saved to {err_path}")
-
-    return summary
+    return _evaluate(
+        label=label,
+        unmapped=unmapped,
+        gold_reactions=gold_reactions,
+        results=results,
+        output_prefix=output_prefix,
+        mapper_name="pipeline",
+        dump_errors=dump_errors,
+        total_elapsed=total_elapsed,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +240,12 @@ def main() -> None:
         action="store_true",
         help="Write incorrect/failed reactions to a TSV file",
     )
+    parser.add_argument(
+        "--num-processes",
+        type=int,
+        default=8,
+        help="Number of parallel processes for MCS and template mapping (default: 8)",
+    )
     args = parser.parse_args()
 
     gold_reactions = Path(args.gold_reactions).read_text().splitlines()
@@ -281,6 +262,7 @@ def main() -> None:
                 gold_reactions=gold_reactions,
                 unmapped=unmapped,
                 output_prefix=args.output_prefix,
+                num_processes=args.num_processes,
                 dump_errors=args.dump_errors,
             )
         else:
@@ -289,6 +271,7 @@ def main() -> None:
                 gold_reactions=gold_reactions,
                 unmapped=unmapped,
                 output_prefix=args.output_prefix,
+                num_processes=args.num_processes,
                 dump_errors=args.dump_errors,
             )
         all_summaries.append(summary)

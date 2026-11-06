@@ -5,6 +5,7 @@ from agave_chem.mappers.identical_fragments.identical_fragment_mapper import (
     IdenticalFragmentMapper,
 )
 from agave_chem.mappers.mcs.mcs_mapper import MCSReactionMapper
+from agave_chem.mappers.mcs.parallel_mcs_mapper import ParallelMCSReactionMapper
 from agave_chem.mappers.neural.neural_mapper import NeuralReactionMapper
 from agave_chem.mappers.template.parallel_template_mapper import (
     ParallelTemplateReactionMapper,
@@ -17,6 +18,7 @@ __all__ = [
     "MCSReactionMapper",
     "MappingScorer",
     "NeuralReactionMapper",
+    "ParallelMCSReactionMapper",
     "ParallelTemplateReactionMapper",
     "TemplateReactionMapper",
     "map_reactions",

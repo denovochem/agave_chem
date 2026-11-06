@@ -12,6 +12,8 @@
 
 An open-source Python library for classification and atom-to-atom mapping (AAM) of chemical reactions. The default interface `map_reactions` for extracting atom-mapped reaction SMILES achieves state-of-the-art accuracy on the 1,758 reaction [golden dataset benchmark](https://www.nature.com/articles/s41467-024-46364-y).
 
+> **Note:** This library is under active development and the API may change between releases. Users should pin to a specific version (e.g., `pip install agave-chem==X.Y.Z`) for stability in production environments.
+
 **AgaveChem mappers**:
 
 - **Template mapper**: Reaction SMIRKS templates sourced from [ReactionFlash](https://apps.apple.com/us/app/reactionflash/id432080813), [Rxn-INSIGHT](https://github.com/mrodobbe/Rxn-INSIGHT), and manual curation are applied to classify and map reactions into a scheme inspired by [Carey et al.](https://pubs.rsc.org/ob/article-abstract/4/12/2337/234845/Analysis-of-the-reactions-used-for-the-preparation?redirectedFrom=fulltext), as well as [RXNO](https://www.ebi.ac.uk/ols4/ontologies/rxno) ontology classifications.
@@ -34,6 +36,8 @@ These mappers can be used individually, or called as a pipeline using `map_react
 | [LocalMapper](https://www.nature.com/articles/s41467-024-46364-y) | 89.59% |
 | AgaveChem (neural only) | 91.52% |
 | AgaveChem (using `map_reactions()`) | 91.74% |
+
+> **Caveat:** The 1,758-reaction golden dataset ([Chen et al., 2024](https://www.nature.com/articles/s41467-024-46364-y)) was not used as training data for any AgaveChem mapper. However, it was inspected during development to identify failure cases and iteratively improve templates and mapper logic. It should therefore be regarded as a **validation set**. We plan to release a separate test set in the future.
 
 ## Requirements
 
